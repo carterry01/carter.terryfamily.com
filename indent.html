@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Collect the Dots Game</title>
+    <style>
+        body, html { margin: 0; height: 100%; overflow: hidden; }
+        canvas { display: block; }
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: hsl(170, 100%, 50%); /* Green background */
+            color: rgb(255, 0, 0); /* White text */
+            font-size: 24px; /* Larger text */
+            padding: 20px 40px; /* Padding for a larger button */
+            border: none;
+            cursor: pointer;
+            border-radius: 10px; /* Rounded corners */
+        }
+        #startButton:hover {
+            background-color: hsl(170, 100%, 50%); /* Darker green on hover */
+        }
+    </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<button id="startButton">Start Game</button>
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const startButton = document.getElementById("startButton");
+
+    let width, height;
+    let player = { x: 50, y: 50, size: 20, score: 0 };
+    let dot = { x: Math.random() * 500, y: Math.random() * 500, size: 5 };
+    let state = { moveForward: false, moveBackward: false, strafeLeft: false, strafeRight: false };
+
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    function drawPlayer() {
+        ctx.fillStyle = "blue";
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawDot() {
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, dot.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function updatePlayerPosition() {
+        if (state.moveForward && player.y - player.size > 0) {
+            player.y -= 5;
+        }
+        if (state.moveBackward && player.y + player.size < height) {
+            player.y += 5;
+        }
+        if (state.strafeLeft && player.x - player.size > 0) {
+            player.x -= 5;
+        }
+        if (state.strafeRight && player.x + player.size < width) {
+            player.x += 5;
+        }
+    }
+
+    function checkCollision() {
+        const dx = player.x - dot.x;
+        const dy = player.y - dot.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < player.size + dot.size) {
+            player.score++;
+            dot.x = Math.random() * (width - dot.size * 2) + dot.size; // Move dot to a new random position
+            dot.y = Math.random() * (height - dot.size * 2) + dot.size;
+        }
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, width, height);
+        drawPlayer();
+        drawDot();
+        updatePlayerPosition();
+        checkCollision();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function handleKeyPress(event) {
+        switch (event.key) {
+            case "ArrowUp": state.moveForward = event.type === "keydown"; break;
+            case "ArrowDown": state.moveBackward = event.type === "keydown"; break;
+            case "ArrowLeft": state.strafeLeft = event.type === "keydown"; break;
+            case "ArrowRight": state.strafeRight = event.type === "keydown"; break;
+        }
+    }
+
+    function startGame() {
+        startButton.style.display = 'none';
+        canvas.style.display = 'block';
+        resizeCanvas();
+        gameLoop();
+    }
+
+    startButton.addEventListener('click', startGame);
+    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("keydown", handleKeyPress);
+    window.addEventListener("keyup", handleKeyPress);
+</script>
+</body>
+</html>

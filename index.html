@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Games</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-image: url('background.png'); /* Updated background image */
+            background-size: cover; /* Ensures the background covers the entire page */
+            background-position: center; /* Centers the background */
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .games-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1200px;
+            gap: 20px;
+        }
+        .game-link {
+            margin: 10px;
+            padding: 20px;
+            background: rgba(139, 0, 0, 0.7); /* Dark red with transparency */
+            color: white;
+            text-decoration: none;
+            font-size: 24px;
+            border-radius: 10px;
+            transition: background 0.3s;
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+        }
+        .game-link:hover {
+            background: rgba(255, 0, 0, 0.8); /* Lighter red with transparency */
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to My Games</h1>
+    <div class="games-container">
+        <a href="index2.html" class="game-link">Meteor Shower</a>
+        <a href="turtle invator.html" class="game-link">Turtle Invator</a>
+        <a href="Turtle Invator 2.html" class="game-link">Turtle Invator 2</a>
+        <a href="y.html" class="game-link">Slippery Penguin</a>
+        <a href="t.html" class="game-link">3d game</a>
+        <a href="i.html" class="game-link">hard collect the dots game</a>
+        <a href="indent.html" class="game-link">easy collect the dots game</a>
+        <a href="911.html" class="game-link">just a game</a>
+        <a href="u.html" class="game-link">ai maze</a>
+    </div>
+</body>
+</html>

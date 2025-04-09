@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Turtle Invader 2</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+        }
+        canvas {
+            display: block;
+        }
+        #instructions {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            position: absolute;
+            z-index: 1;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #instructions button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        #playAgainButton {
+            position: absolute;
+            z-index: 2;
+            display: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background-color: blue;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+        #gameOverMessage {
+            position: absolute;
+            z-index: 2;
+            top: 40%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 50px;
+            color: black;
+            display: none;
+        }
+        #difficultySelection {
+            position: absolute;
+            z-index: 3;
+            display: block;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+        }
+        #difficultySelection button {
+            padding: 10px 20px;
+            font-size: 18px;
+            margin: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="instructions">
+        <button id="closeInstructionsButton">Close</button>
+        <h2>Game Instructions</h2>
+        <p><strong>Objective:</strong> Destroy as many enemies as possible by shooting them with bullets.</p>
+        <p><strong>Controls:</strong></p>
+        <ul>
+            <li>Player (Turtle): Use the <strong>↑, ↓, ←, →</strong> arrow keys to move, and press <strong>Spacebar</strong> to shoot.</li>
+        </ul>
+        <p><strong>Gameplay:</strong></p>
+        <ul>
+            <li>Enemies: Green squares that move randomly across the canvas.</li>
+            <li>Score: Earn 10 points for each enemy you destroy. The score is displayed at the top left corner of the canvas.</li>
+        </ul>
+        <p><strong>Tips:</strong> Stay mobile to dodge enemies and time your shots to hit moving targets effectively.</p>
+        <p><strong>Fame:</strong> after you die go to gmail and send your score and Difficulty to carterry01@gmail.com.</p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <button id="playAgainButton">Play Again</button>
+    <div id="gameOverMessage">Game Over</div>
+
+    <div id="difficultySelection">
+        <h2>Select Difficulty</h2>
+        <button id="easyModeButton">Easy</button>
+        <button id="mediumModeButton">Medium</button>
+        <button id="hardModeButton">Hard</button>
+        <button id="legendaryModeButton">Legendary</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const playAgainButton = document.getElementById('playAgainButton');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        const closeInstructionsButton = document.getElementById('closeInstructionsButton');
+        const instructionsDiv = document.getElementById('instructions');
+        const difficultySelection = document.getElementById('difficultySelection');
+        const easyModeButton = document.getElementById('easyModeButton');
+        const mediumModeButton = document.getElementById('mediumModeButton');
+        const hardModeButton = document.getElementById('hardModeButton');
+        const legendaryModeButton = document.getElementById('legendaryModeButton');
+
+        let gamePaused = false;
+        let reloadTime = 50;
+        let lastShotTime = 0;
+        let enemySpawnRate = 1500; // Default spawn rate (Easy)
+        let enemySpeed = 2; // Default speed (Easy)
+        let score = 0;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Player setup
+        const player1 = {
+            x: canvas.width / 2 - 100,
+            y: canvas.height / 2,
+            size: 150,
+            speed: 5,
+            dx: 0,
+            dy: 0,
+            direction: 'right',
+            image: new Image()
+        };
+        player1.image.src = 'turtle.png';
+
+        const bullets = [];
+        const enemies = [];
+
+        // Draw Player
+        function drawPlayer(player) {
+            ctx.drawImage(player.image, player.x, player.y, player.size, player.size);
+        }
+
+        // Draw bullets
+        function drawBullets() {
+            ctx.fillStyle = 'red';
+            bullets.forEach(bullet => {
+                ctx.fillRect(bullet.x, bullet.y, bullet.size, bullet.size);
+            });
+        }
+
+        // Draw enemies (bad guys)
+        function drawEnemies() {
+            ctx.fillStyle = 'green';
+            enemies.forEach(enemy => {
+                ctx.fillRect(enemy.x, enemy.y, enemy.size, enemy.size);
+            });
+        }
+
+        // Draw score
+        function drawScore() {
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${score}`, 10, 30);
+        }
+
+        // Player movement
+        function updatePlayer(player) {
+            if (gamePaused) return;
+            player.x += player.dx;
+            player.y += player.dy;
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.size > canvas.width) player.x = canvas.width - player.size;
+            if (player.y + player.size > canvas.height) player.y = canvas.height - player.size;
+        }
+
+        // Bullet movement
+        function updateBullets() {
+            if (gamePaused) return;
+            bullets.forEach((bullet, index) => {
+                bullet.x += bullet.dx;
+                bullet.y += bullet.dy;
+                if (bullet.x < 0 || bullet.y < 0 || bullet.x > canvas.width || bullet.y > canvas.height) {
+                    bullets.splice(index, 1);
+                }
+            });
+        }
+
+        // Enemy movement
+        function updateEnemies() {
+            if (gamePaused) return;
+            enemies.forEach(enemy => {
+                const angle = Math.atan2(player1.y - enemy.y, player1.x - enemy.x);
+                const speed = enemySpeed;
+                enemy.dx = Math.cos(angle) * speed;
+                enemy.dy = Math.sin(angle) * speed;
+                enemy.x += enemy.dx;
+                enemy.y += enemy.dy;
+                if (enemy.x < 0 || enemy.x + enemy.size > canvas.width) enemy.dx *= -1;
+                if (enemy.y < 0 || enemy.y + enemy.size > canvas.height) enemy.dy *= -1;
+            });
+        }
+
+        // Collision detection
+        function checkCollisions() {
+            bullets.forEach((bullet, bIndex) => {
+                enemies.forEach((enemy, eIndex) => {
+                    if (
+                        bullet.x < enemy.x + enemy.size &&
+                        bullet.x + bullet.size > enemy.x &&
+                        bullet.y < enemy.y + enemy.size &&
+                        bullet.y + bullet.size > enemy.y
+                    ) {
+                        bullets.splice(bIndex, 1);
+                        enemies.splice(eIndex, 1);
+                        score += 10;
+                    }
+                });
+            });
+
+            enemies.forEach((enemy) => {
+                if (
+                    player1.x < enemy.x + enemy.size &&
+                    player1.x + player1.size > enemy.x &&
+                    player1.y < enemy.y + enemy.size &&
+                    player1.y + player1.size > enemy.y
+                ) {
+                    gameOver();
+                }
+            });
+        }
+
+        // Game Over
+        function gameOver() {
+            gamePaused = true;
+            gameOverMessage.style.display = 'block';
+            playAgainButton.style.display = 'block';
+        }
+
+        // Handle Play Again
+        function handlePlayAgain() {
+            score = 0;
+            player1.x = canvas.width / 2 - 100;
+            player1.y = canvas.height / 2;
+            bullets.length = 0;
+            enemies.length = 0;
+            gamePaused = false;
+            gameOverMessage.style.display = 'none';
+            playAgainButton.style.display = 'none';
+            difficultySelection.style.display = 'block';
+        }
+
+        // Start game with selected difficulty
+        function startGame(difficulty) {
+            difficultySelection.style.display = 'none';
+            gamePaused = false;
+            score = 0;
+            enemies.length = 0;
+            bullets.length = 0;
+            gameOverMessage.style.display = 'none';
+            playAgainButton.style.display = 'none';
+
+            if (difficulty === 'easy') {
+                enemySpawnRate = 300;
+                enemySpeed = 2;
+            } else if (difficulty === 'medium') {
+                enemySpawnRate = 500;
+                enemySpeed = 4;
+            } else if (difficulty === 'hard') {
+                enemySpawnRate = 800;
+                enemySpeed = 6;
+            } else if (difficulty === 'legendary') {
+                enemySpawnRate = 1000;
+                enemySpeed = 8;
+            }
+
+            // Start spawning enemies
+            setInterval(spawnEnemy, enemySpawnRate);
+
+            gameLoop();
+        }
+
+        // Spawn enemies (bad guys)
+        function spawnEnemy() {
+            if (gamePaused) return;
+            const size = 30;
+            const x = Math.random() * (canvas.width - size);
+            const y = Math.random() * (canvas.height - size);
+            enemies.push({ x, y, size, dx: 0, dy: 0 });
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (gamePaused) return;
+
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update game state
+            updatePlayer(player1);
+            updateBullets();
+            updateEnemies();
+            checkCollisions();
+
+            // Render
+            drawPlayer(player1);
+            drawBullets();
+            drawEnemies();
+            drawScore();
+
+            // Request the next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners
+        closeInstructionsButton.addEventListener('click', () => {
+            instructionsDiv.style.display = 'none';
+        });
+
+        easyModeButton.addEventListener('click', () => startGame('easy'));
+        mediumModeButton.addEventListener('click', () => startGame('medium'));
+        hardModeButton.addEventListener('click', () => startGame('hard'));
+        legendaryModeButton.addEventListener('click', () => startGame('legendary'));
+
+        playAgainButton.addEventListener('click', handlePlayAgain);
+
+        // Movement controls
+        window.addEventListener('keydown', (e) => {
+            if (gamePaused) return;
+            if (e.key === 'ArrowUp') {
+                player1.dy = -player1.speed;
+                player1.direction = 'up';
+            }
+            if (e.key === 'ArrowDown') {
+                player1.dy = player1.speed;
+                player1.direction = 'down';
+            }
+            if (e.key === 'ArrowLeft') {
+                player1.dx = -player1.speed;
+                player1.direction = 'left';
+            }
+            if (e.key === 'ArrowRight') {
+                player1.dx = player1.speed;
+                player1.direction = 'right';
+            }
+            if (e.key === ' ') {
+                const now = Date.now();
+                if (now - lastShotTime > reloadTime) {
+                    lastShotTime = now;
+                    let bulletDx = 0;
+                    let bulletDy = 0;
+                    const bulletSpeed = 5;
+
+                    if (player1.direction === 'up') {
+                        bulletDy = -bulletSpeed;
+                    } else if (player1.direction === 'down') {
+                        bulletDy = bulletSpeed;
+                    } else if (player1.direction === 'left') {
+                        bulletDx = -bulletSpeed;
+                    } else if (player1.direction === 'right') {
+                        bulletDx = bulletSpeed;
+                    }
+
+                    bullets.push({
+                        x: player1.x + player1.size / 2,
+                        y: player1.y + player1.size / 2,
+                        size: 10,
+                        dx: bulletDx,
+                        dy: bulletDy
+                    });
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player1.dy = 0;
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player1.dx = 0;
+        });
+
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>
+  

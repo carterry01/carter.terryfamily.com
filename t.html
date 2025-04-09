@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Raycasting Game</title>
+    <style>
+        body, html { margin: 0; height: 100%; overflow: hidden; }
+        canvas { display: block; }
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: hsl(170, 100%, 50%); /* Green background */
+            color: rgb(255, 0, 0); /* White text */
+            font-size: 24px; /* Larger text */
+            padding: 20px 40px; /* Padding for a larger button */
+            border: none;
+            cursor: pointer;
+            border-radius: 10px; /* Rounded corners */
+        }
+        #startButton:hover {
+            background-color: hsl(170, 100%, 50%); /* Darker green on hover */
+        }
+    </style>
+</head>
+<body>
+<canvas id="gameCanvas" style="display: none;"></canvas>
+<button id="startButton">Start Game</button>
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const startButton = document.getElementById("startButton");
+
+    let width, height;
+    let mapWidth = 16, mapHeight = 16; // Increased map size
+    let player = { x: 2, y: 2, angle: Math.PI / 2, moveSpeed: 0.03, rotSpeed: 0.03 };
+    let state = { moveForward: false, moveBackward: false, strafeLeft: false, strafeRight: false, turnLeft: false, turnRight: false, shoot: false };
+
+    const minimapScale = 10;
+    const map = [
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+        [1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+        [1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1],
+        [1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+        [1, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1],
+        [1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+        [1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+        [1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    ];
+
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    function drawMinimap() {
+        const minimapSize = Math.min(width, height) / 4; // Size of the minimap
+        const scale = minimapSize / mapWidth; // Scale based on the map width
+
+        // Draw map background
+        ctx.fillStyle = "black";
+        ctx.fillRect(10, 10, minimapSize, minimapSize);
+
+        for (let row = 0; row < mapHeight; row++) {
+            for (let col = 0; col < mapWidth; col++) {
+                if (map[row][col] === 1) {
+                    ctx.fillStyle = "grey"; // Wall color
+                    ctx.fillRect(10 + col * scale, 10 + row * scale, scale, scale);
+                }
+            }
+        }
+
+        // Draw player on minimap
+        const playerSize = 2 * (minimapSize / (mapWidth * 2)); // Adjust player size to make it smaller
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(10 + player.x * scale + scale / 2, 10 + player.y * scale + scale / 2, playerSize, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function castRays() {
+        const numRays = 1000; // Increase the number of rays for smoother rendering
+        const fov = Math.PI / 3;
+        const distToWall = new Array(numRays);
+        const rayAngleIncrement = fov / numRays;
+
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = 0; i < numRays; i++) {
+            const rayAngle = player.angle - fov / 2 + rayAngleIncrement * i;
+            let rayX = player.x;
+            let rayY = player.y;
+            let distance = 0;
+            let hitWall = false;
+
+            while (!hitWall && distance < 20) {
+                distance += 0.01; // Decrease the step size for smoother rendering
+                rayX = player.x + Math.cos(rayAngle) * distance;
+                rayY = player.y + Math.sin(rayAngle) * distance;
+
+                if (map[Math.floor(rayY)][Math.floor(rayX)] === 1) {
+                    hitWall = true;
+                }
+            }
+
+            distToWall[i] = distance;
+            const wallHeight = height / (distance + 0.0001);
+            const shade = Math.max(0, 150 - distance * 24); // Calculate shade based on distance
+            const wallColor = `rgb(${shade}, ${shade}, ${shade})`; // Apply shading to wall color
+
+            ctx.fillStyle = wallColor;
+            ctx.fillRect(i * (width / numRays), (height - wallHeight) / 2, width / numRays, wallHeight);
+        }
+    }
+
+    function updatePlayerPosition() {
+        const speed = player.moveSpeed;
+        const rotation = player.rotSpeed;
+
+        let newX = player.x;
+        let newY = player.y;
+
+        // Handle movement
+        if (state.moveForward) {
+            newX += Math.cos(player.angle) * speed;
+            newY += Math.sin(player.angle) * speed;
+        }
+        if (state.moveBackward) {
+            newX -= Math.cos(player.angle) * speed;
+            newY -= Math.sin(player.angle) * speed;
+        }
+        if (state.strafeLeft) {
+            newX -= Math.cos(player.angle - Math.PI / 2) * speed;
+            newY -= Math.sin(player.angle - Math.PI / 2) * speed;
+        }
+        if (state.strafeRight) {
+            newX += Math.cos(player.angle + Math.PI / 2) * speed;
+            newY += Math.sin(player.angle + Math.PI / 2) * speed;
+        }
+
+        // Check for wall collisions
+        if (map[Math.floor(newY)][Math.floor(newX)] === 0 && map[Math.floor(newY + 0.1)][Math.floor(newX)] === 0 && map[Math.floor(newY - 0.1)][Math.floor(newX)] === 0 && map[Math.floor(newY)][Math.floor(newX + 0.1)] === 0 && map[Math.floor(newY)][Math.floor(newX - 0.1)] === 0) {
+            player.x = newX;
+            player.y = newY;
+        }
+
+        // Handle rotation
+        if (state.turnLeft) {
+            player.angle -= rotation;
+        }
+        if (state.turnRight) {
+            player.angle += rotation;
+        }
+    }
+
+    function shoot() {
+        const rayAngle = player.angle;
+        let rayX = player.x + Math.cos(rayAngle) * 0.5; // Spawn in front of the player
+        let rayY = player.y + Math.sin(rayAngle) * 0.5;
+        let distance = 0;
+        let hitWall = false;
+
+        function moveWhiteBullet() {
+            if (!hitWall && distance < 20) {
+                distance += 0.1; // Move the ball forward
+                rayX = player.x + Math.cos(rayAngle) * distance;
+                rayY = player.y + Math.sin(rayAngle) * distance;
+
+                if (map[Math.floor(rayY)][Math.floor(rayX)] === 1) {
+                    hitWall = true;
+                }
+
+                // Clear the canvas and redraw the game elements
+                ctx.clearRect(0, 0, width, height);
+                castRays();
+                drawMinimap();
+
+                // Draw white ball at the current position
+                ctx.fillStyle = "white";
+                ctx.beginPath();
+                ctx.arc(rayX * minimapScale, rayY * minimapScale, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (!hitWall) {
+                    requestAnimationFrame(moveWhiteBall);
+                }
+            }
+        }
+
+        moveWhiteBall();
+    }
+
+    function gameLoop() {
+        updatePlayerPosition();
+        if (state.shoot) {
+            shoot();
+            state.shoot = false; // Reset shoot state
+        }
+        castRays();
+        drawMinimap();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function handleKeyPress(event) {
+        switch (event.key) {
+            case "ArrowUp": state.moveForward = event.type === "keydown"; break;
+            case "ArrowDown": state.moveBackward = event.type === "keydown"; break;
+            case "ArrowLeft": state.turnLeft = event.type === "keydown"; break;
+            case "ArrowRight": state.turnRight = event.type === "keydown"; break;
+            case " ": 
+                if (event.type === "keydown" && !state.shoot) { // make it shoot white bullets
+                    state.shoot = true;
+                }
+                break; // Space bar to shoot
+        }
+    }
+
+    function startGame() {
+        startButton.style.display = 'none';
+        canvas.style.display = 'block';
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("keydown", handleKeyPress);
+        window.addEventListener("keyup", handleKeyPress);
+        resizeCanvas();
+        gameLoop();
+    }
+
+    startButton.addEventListener('click', startGame);
+</script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hard Collect the Dots Game</title>
+    <style>
+        body, html { margin: 0; height: 100%; overflow: hidden; }
+        canvas { display: block; }
+        #startButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: hsl(170, 100%, 50%); /* Green background */
+            color: rgb(255, 0, 0); /* White text */
+            font-size: 24px; /* Larger text */
+            padding: 20px 40px; /* Padding for a larger button */
+            border: none;
+            cursor: pointer;
+            border-radius: 10px; /* Rounded corners */
+        }
+        #startButton:hover {
+            background-color: hsl(170, 100%, 50%); /* Darker green on hover */
+        }
+    </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<button id="startButton">Start Game</button>
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const startButton = document.getElementById("startButton");
+
+    let width, height;
+    let player = { x: 50, y: 50, size: 20, score: 0 };
+    let dot = { x: Math.random() * 500, y: Math.random() * 500, size: 5 };
+    let obstacles = [];
+    let state = { moveForward: false, moveBackward: false, strafeLeft: false, strafeRight: false };
+    let timer = 60; // Set timer to 60 seconds
+    let gameInterval;
+
+    function resizeCanvas() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+
+    function drawPlayer() {
+        ctx.fillStyle = "blue";
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawDot() {
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, dot.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawObstacles() {
+        ctx.fillStyle = "green";
+        obstacles.forEach(obstacle => {
+            ctx.fillRect(obstacle.x, obstacle.y, obstacle.size, obstacle.size);
+        });
+    }
+
+    function drawTimer() {
+        ctx.fillStyle = "white"; // Set the color of the timer text
+        ctx.font = "20px Arial"; // Set the font size and family
+        ctx.fillText("Time: " + timer + "s", 10, 30); // Draw the timer text at the top-left corner
+    }
+
+    function updatePlayerPosition() {
+        const speed = 10; // Increased speed by 20 (from 5 to 25)
+        if (state.moveForward && player.y - player.size > 0) {
+            player.y -= speed; // Move up
+        }
+        if (state.moveBackward && player.y + player.size < height) {
+            player.y += speed; // Move down
+        }
+        if (state.strafeLeft && player.x - player.size > 0) {
+            player.x -= speed; // Move left
+        }
+        if (state.strafeRight && player.x + player.size < width) {
+            player.x += speed; // Move right
+        }
+    }
+
+    function checkCollision() {
+        const dx = player.x - dot.x;
+        const dy = player.y - dot.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < player.size + dot.size) {
+            player.score++;
+            dot.x = Math.random() * (width - dot.size * 2) + dot.size; // Move dot to a new random position
+            dot.y = Math.random() * (height - dot.size * 2) + dot.size;
+        }
+
+        // Check collision with obstacles
+        for (let obstacle of obstacles) {
+            if (player.x + player.size > obstacle.x && player.x - player.size < obstacle.x + obstacle.size &&
+                player.y + player.size > obstacle.y && player.y - player.size < obstacle.y + obstacle.size) {
+                alert("Game Over! Your score: " + player.score);
+                resetGame();
+            }
+        }
+    }
+
+    function resetGame() {
+        player.score = 0;
+        player.x = 50;
+        player.y = 50;
+        obstacles = [];
+        clearInterval(gameInterval);
+        startButton.style.display = 'block';
+        canvas.style.display = 'none';
+    }
+
+    function spawnObstacles() {
+        if (obstacles.length < 5) { // Limit the number of obstacles
+            const size = 30;
+            const x = Math.random() * (width - size);
+            const y = Math.random() * (height - size);
+            obstacles.push({ x, y, size });
+        }
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, width, height);
+        drawPlayer();
+        drawDot();
+        drawObstacles();
+        drawTimer(); // Draw the timer
+        updatePlayerPosition();
+        checkCollision();
+        spawnObstacles();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function handleKeyPress(event) {
+        switch (event.key) {
+            case "ArrowUp": state.moveForward = event.type === "keydown"; break;
+            case "ArrowDown": state.moveBackward = event.type === "keydown"; break;
+            case "ArrowLeft": state.strafeLeft = event.type === "keydown"; break;
+            case "ArrowRight": state.strafeRight = event.type === "keydown"; break;
+        }
+    }
+
+    function startGame() {
+        startButton.style.display = 'none';
+        canvas.style.display = 'block';
+        resizeCanvas();
+        gameLoop();
+        gameInterval = setInterval(() => {
+            timer--;
+            if (timer <= 0) {
+                alert("Time's up! Your score: " + player.score);
+                resetGame();
+            }
+        }, 1000);
+    }
+
+    startButton.addEventListener('click', startGame);
+    window.addEventListener("resize", resizeCanvas);
+    window.addEventListener("keydown", handleKeyPress);
+    window.addEventListener("keyup", handleKeyPress);
+</script>
+</body>
+</html>

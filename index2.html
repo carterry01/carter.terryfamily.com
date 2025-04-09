@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>meteor shower</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            display: none;
+            margin: 0;
+            background: darkred;
+            width: 100%;
+            height: 100%;
+        }
+        #score {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+        }
+        #leaderboard {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: red;
+        }
+        #goodJob {
+            display: none;
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: yellow;
+        }
+        #respawnButton {
+            display: none;
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #playButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #howToPlay {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="leaderboard">
+        Leaderboard:
+        <div id="leaderboard1">1.  - 0</div>
+        <div id="leaderboard2">2.  - 0</div>
+        <div id="leaderboard3">3.  - 0</div>
+        <div id="leaderboard4">4.  - 0</div>
+        <div id="leaderboard5">5.  - 0</div>
+        <div id="leaderboard6">6.  - 0</div>
+        <div id="leaderboard7">7.  - 0</div>
+        <div id="leaderboard8">8.  - 0</div>
+        <div id="leaderboard9">9.  - 0</div>
+        <div id="leaderboard10">10.  - 0</div>
+        <div id="leaderboard11">11.  - 0</div>
+        <div id="leaderboard12">12.  - 0</div>
+        <div id="leaderboard13">13.  - 0</div>
+        <div id="leaderboard14">14.  - 0</div>
+        <div id="leaderboard15">15.  - 0</div>
+        <div id="leaderboard16">16.  - 0</div>
+        <div id="leaderboard17">17.  - 0</div>
+        <div id="leaderboard18">18.  - 0</div>
+        <div id="leaderboard19">19.  - 0</div>
+        <div id="leaderboard20">20.  - 0</div>
+    </div>
+    <div id="gameOver">Game Over</div>
+    <div id="goodJob">Good Job!</div>
+    <button id="respawnButton" onclick="respawn()">Respawn</button>
+    <button id="playButton" onclick="startGame()">Play</button>
+    <div id="howToPlay">Use arrow keys to move the player and avoid meteors.</div>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let score = 0;
+        let gameOver = false;
+
+        const player = {
+            x: canvas.width / 2 - 25, // Adjusted for smaller player
+            y: canvas.height / 2 - 25, // Adjusted for smaller player
+            width: 50, // Decreased player width
+            height: 50, // Decreased player height
+            speed: 5,
+            dx: 0,
+            dy: 0,
+            image: new Image()
+        };
+        player.image.src = 'cappy.png'; // Assuming you have an image of Cappy named 'cappy.png'
+
+        const enemies = [];
+        const enemySpeed = 10; // Increased enemy speed
+        const enemyImage = new Image();
+        enemyImage.src = 'meteor.png'; // Assuming you have an image of a meteor named 'meteor.png'
+
+        function drawPlayer() {
+            ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.drawImage(enemyImage, enemy.x, enemy.y, enemy.width, enemy.height);
+            });
+        }
+
+        function updatePlayer() {
+            player.x += player.dx;
+            player.y += player.dy;
+
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+        }
+
+        function updateEnemies() {
+            enemies.forEach((enemy, index) => {
+                enemy.y += enemySpeed;
+
+                if (enemy.y + enemy.height > canvas.height) {
+                    enemies.splice(index, 1);
+                    score++;
+                    document.getElementById('score').innerText = `Score: ${score}`;
+                }
+
+                if (
+                    player.x < enemy.x + enemy.width &&
+                    player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemy.height &&
+                    player.y + player.height > enemy.y
+                ) {
+                    gameOver = true;
+                    document.getElementById('gameOver').style.display = 'block';
+                    document.getElementById('goodJob').style.display = 'block';
+                    document.getElementById('respawnButton').style.display = 'block';
+                    updateLeaderboard(score);
+                }
+            });
+        }
+
+        function addEnemy() {
+            const x = Math.random() * (canvas.width - 50);
+            const y = -50;
+            const width = 50;
+            const height = 50;
+            enemies.push({ x, y, width, height });
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function gameLoop() {
+            if (gameOver) return;
+
+            clearCanvas();
+            drawPlayer();
+            drawEnemies();
+            updatePlayer();
+            updateEnemies();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function movePlayer(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                    player.dx = -player.speed;
+                    break;
+                case 'ArrowRight':
+                    player.dx = player.speed;
+                    break;
+                case 'ArrowUp':
+                    player.dy = -player.speed;
+                    break;
+                case 'ArrowDown':
+                    player.dy = player.speed;
+                    break;
+            }
+        }
+
+        function stopPlayer(e) {
+            switch (e.key) {
+                case 'ArrowLeft':
+                case 'ArrowRight':
+                    player.dx = 0;
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                    player.dy = 0;
+                    break;
+            }
+        }
+
+        function respawn() {
+            score = 0;
+            gameOver = false;
+            player.x = canvas.width / 2 - 25; // Adjusted for smaller player
+            player.y = canvas.height / 2 - 25; // Adjusted for smaller player
+            enemies.length = 0;
+            document.getElementById('score').innerText = `Score: ${score}`;
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('goodJob').style.display = 'none';
+            document.getElementById('respawnButton').style.display = 'none';
+            gameLoop();
+        }
+
+        function updateLeaderboard(newScore) {
+            let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+            const name = prompt("Game Over! Enter your name: ");
+            if (!name) return; // Do not add to leaderboard if name is empty
+
+            const existingEntryIndex = leaderboard.findIndex(entry => entry.name === name);
+
+            if (existingEntryIndex !== -1) {
+                if (leaderboard[existingEntryIndex].score < newScore) {
+                    leaderboard.splice(existingEntryIndex, 1);
+                } else {
+                    return;
+                }
+            }
+
+            leaderboard.push({ name, score: newScore });
+            leaderboard.sort((a, b) => b.score - a.score);
+            leaderboard = leaderboard.slice(0, 20);
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+            loadLeaderboard();
+        }
+
+        function loadLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+            for (let i = 0; i < 20; i++) {
+                const entry = leaderboard[i] || { name: '', score: 0 };
+                document.getElementById(`leaderboard${i + 1}`).innerText = `${i + 1}. ${entry.name} - ${entry.score}`;
+            }
+        }
+
+        function startGame() {
+            document.getElementById('playButton').style.display = 'none';
+            document.getElementById('howToPlay').style.display = 'none';
+            document.getElementById('score').style.display = 'block';
+            document.getElementById('leaderboard').style.display = 'block';
+            document.getElementById('gameCanvas').style.display = 'block';
+            gameLoop();
+        }
+
+        document.addEventListener('keydown', movePlayer);
+        document.addEventListener('keyup', stopPlayer);
+
+        setInterval(addEnemy, 500); // Enemies spawn faster
+
+        loadLeaderboard();
+    </script>
+</body>
+</html>

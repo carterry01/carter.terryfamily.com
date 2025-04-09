@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunAway line</title>
+    
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet); /* Rainbow background */
+        }
+        #myCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #timer {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: white;
+        }
+        #startButton, #playAgainButton, #howToPlayButton {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            font-size: 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #playAgainButton {
+            top: 60%; /* Lower the play again button */
+            display: none;
+        }
+        #howToPlayButton {
+            top: 70%; /* Lower the how to play button */
+        }
+        #instructions {
+            display: none;
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            color: black;
+            width: 80%;
+            max-width: 600px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="myCanvas" style="display: none;"></canvas>
+    <div id="timer" style="display: none;">60</div>
+    <button id="startButton">Start Game</button>
+    <button id="playAgainButton">Play Again</button>
+    <button id="howToPlayButton">How to Play</button>
+    <div id="instructions">
+        <h2>Game Instructions</h2>
+        <p><strong>Objective:</strong> Avoid the circle with the line for as long as possible.</p>
+        <p><strong>Controls:</strong></p>
+        <ul>
+            <li>Move the Circle: Use the arrow keys (↑, ↓, ←, →) to move the circle around the canvas.</li>
+            <li>Move the Line: Use the WASD keys (W, A, S, D) to move the line around the canvas.</li>
+        </ul>
+        <p><strong>Gameplay:</strong></p>
+        <ul>
+            <li>The line must avoid the circle for 60 seconds to win.</li>
+            <li>If the circle touches the line, the game is over and the line loses.</li>
+        </ul>
+        <button id="closeInstructionsButton">Close</button>
+    </div>
+    <script>
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        var lineOffsetX = 150;
+        var lineOffsetY = 0;
+        var circleOffsetX = 0;
+        var circleOffsetY = 0;
+        var keysPressed = {};
+        var gameOver = false;
+        var lineDirection = { x: 1, y: 0 }; // Initial direction to the right
+        var timerElement = document.getElementById("timer");
+        var timeLeft = 60; // Change the timer to 60 seconds
+
+        function drawMap() {
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the background
+            ctx.fillStyle = "#e0f7fa"; // Light blue background
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw boundaries
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100); // Outer boundary
+
+            // Draw paths
+            ctx.fillStyle = "#a5d6a7"; // Light green for paths
+            ctx.fillRect(100, 100, 600, 50); // Horizontal path
+            ctx.fillRect(300, 150, 50, 400); // Vertical path
+
+            // Draw obstacles
+            ctx.fillStyle = "#ffcc80"; // Light orange for obstacles
+            ctx.fillRect(200, 200, 100, 50); // Obstacle 1
+            ctx.fillRect(500, 300, 150, 75); // Obstacle 2
+            ctx.fillRect(400, 500, 100, 100); // Obstacle 3
+
+            // Draw decorative elements
+            ctx.fillStyle = "#90caf9"; // Light blue for water
+            ctx.beginPath();
+            ctx.arc(700, 400, 30, 0, 2 * Math.PI);
+            ctx.fillStyle = "blue";
+            ctx.fill();
+        }
+
+        function draw() {
+            if (gameOver) {
+                document.getElementById("playAgainButton").style.display = "block";
+                return;
+            }
+
+            // Create a rainbow gradient background
+            var gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, "red");
+            gradient.addColorStop(0.16, "orange");
+            gradient.addColorStop(0.33, "yellow");
+            gradient.addColorStop(0.5, "green");
+            gradient.addColorStop(0.66, "blue");
+            gradient.addColorStop(0.83, "indigo");
+            gradient.addColorStop(1, "violet");
+
+            // Fill the background with the gradient
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the textured circle
+            drawTexturedCircle(canvas.width / 2 + circleOffsetX, canvas.height / 2 + circleOffsetY, 30); // Reduced radius to 30
+
+            // Draw a grey line facing the direction of movement
+            var lineLength = 120; // Increased line length to make it more forward
+            var lineStartX = canvas.width / 2 + lineOffsetX;
+            var lineStartY = canvas.height / 2 + lineOffsetY;
+            var lineEndX = lineStartX + lineLength * lineDirection.x;
+            var lineEndY = lineStartY + lineLength * lineDirection.y;
+
+            ctx.beginPath();
+            ctx.moveTo(lineStartX, lineStartY);
+            ctx.lineTo(lineEndX, lineEndY);
+            ctx.strokeStyle = "grey";
+            ctx.lineWidth = 5;
+            ctx.stroke();
+
+            checkCollision();
+        }
+
+        function drawTexturedCircle(x, y, radius) {
+            // Draw the main circle
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = "#c2a679"; // Brownish color
+            ctx.fill();
+
+            // Simulate cut-out sections
+            ctx.globalCompositeOperation = 'destination-out';
+            drawCutout(x, y, radius * 0.5, radius * 0.2);
+            drawCutout(x - radius * 0.3, y - radius * 0.3, radius * 0.3, radius * 0.15);
+            drawCutout(x + radius * 0.3, y - radius * 0.3, radius * 0.3, radius * 0.15);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function drawCutout(x, y, width, height) {
+            ctx.beginPath();
+            ctx.ellipse(x, y, width, height, 0, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function checkCollision() {
+            var circleX = canvas.width / 2 + circleOffsetX;
+            var circleY = canvas.height / 2 + circleOffsetY;
+            var lineStartX = canvas.width / 2 + lineOffsetX;
+            var lineEndX = lineStartX + 120 * lineDirection.x; // Adjusted for increased line length
+            var lineY = canvas.height / 2 + lineOffsetY;
+            var lineEndY = lineY + 120 * lineDirection.y; // Adjusted for increased line length
+
+            // Check if the line intersects the circle
+            if (lineY >= circleY - 30 && lineY <= circleY + 30 && // Adjusted for smaller circle
+                ((lineStartX >= circleX - 30 && lineStartX <= circleX + 30) ||
+                 (lineEndX >= circleX - 30 && lineEndX <= circleX + 30))) {
+                gameOver = true;
+                draw(); // Redraw to show the "Circle Wins, Line Loses" message
+                ctx.fillStyle = 'black';
+                ctx.font = '50px Arial';
+                ctx.fillText('Circle Wins, Line Loses', canvas.width / 2 - 200, canvas.height / 2 - 50);
+            }
+        }
+
+        function updateTimer() {
+            if (timeLeft > 0) {
+                timeLeft -= 0.1; // Decrease the timer by 0.1 seconds to make it move slower
+                timerElement.textContent = Math.ceil(timeLeft); // Display the rounded-up value
+            } else if (!gameOver) {
+                gameOver = true;
+                setTimeout(() => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+                    ctx.fillStyle = 'black';
+                    ctx.font = '50px Arial';
+                    ctx.fillText('Line Wins, Circle Loses', canvas.width / 2 - 200, canvas.height / 2 - 50);
+                    setTimeout(() => {
+                        document.getElementById("playAgainButton").style.display = "block";
+                    }, 500); // Wait for 0.5 seconds before showing the final message
+                }, 2000); // Wait for 2 seconds before clearing the message
+            }
+        }
+
+        function startGame() {
+            document.getElementById("startButton").style.display = "none";
+            document.getElementById("playAgainButton").style.display = "none";
+            document.getElementById("howToPlayButton").style.display = "none";
+            document.getElementById("instructions").style.display = "none";
+            canvas.style.display = "block";
+            timerElement.style.display = "block";
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            setInterval(updateTimer, 500); // Update the timer every 0.5 seconds
+            draw();
+        }
+
+        function resetGame() {
+            lineOffsetX = 150;
+            lineOffsetY = 0;
+            circleOffsetX = 0;
+            circleOffsetY = 0;
+            keysPressed = {};
+            gameOver = false;
+            lineDirection = { x: 1, y: 0 }; // Reset direction to the right
+            timeLeft = 60; // Reset the timer to 60 seconds
+            timerElement.textContent = timeLeft;
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            draw(); // Redraw the game elements
+        }
+
+        function showInstructions() {
+            document.getElementById("instructions").style.display = "block";
+        }
+
+        function closeInstructions() {
+            document.getElementById("instructions").style.display = "none";
+        }
+
+        document.getElementById("startButton").addEventListener("click", startGame);
+        document.getElementById("playAgainButton").addEventListener("click", function() {
+            resetGame();
+            startGame();
+        });
+        document.getElementById("howToPlayButton").addEventListener("click", showInstructions);
+        document.getElementById("closeInstructionsButton").addEventListener("click", closeInstructions);
+
+        window.addEventListener('keydown', function(event) {
+            keysPressed[event.key] = true;
+            updateOffsets();
+            draw();
+        });
+
+        window.addEventListener('keyup', function(event) {
+            delete keysPressed[event.key];
+        });
+
+        function updateOffsets() {
+            if (keysPressed['ArrowLeft']) {
+                circleOffsetX -= 5; // Move the circle to the left
+            }
+            if (keysPressed['ArrowRight']) {
+                circleOffsetX += 5; // Move the circle to the right
+            }
+            if (keysPressed['ArrowUp']) {
+                circleOffsetY -= 5; // Move the circle up
+            }
+            if (keysPressed['ArrowDown']) {
+                circleOffsetY += 5; // Move the circle down
+            }
+            if (keysPressed['a']) {
+                lineOffsetX -= 5; // Move the line to the left
+                lineDirection = { x: -1, y: 0 }; // Face left
+            }
+            if (keysPressed['d']) {
+                lineOffsetX += 5; // Move the line to the right
+                lineDirection = { x: 1, y: 0 }; // Face right
+            }
+            if (keysPressed['w']) {
+                lineOffsetY -= 5; // Move the line up
+                lineDirection = { x: 0, y: -1 }; // Face up
+            }
+            if (keysPressed['s']) {
+                lineOffsetY += 5; // Move the line down
+                lineDirection = { x: 0, y: 1 }; // Face down
+            }
+        }
+    </script>
+</body>
+</html>

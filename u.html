@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Solver AI</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #333;
+        }
+        canvas {
+            border: 2px solid white;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button onclick="resetMaze()">New Maze</button>
+        <button onclick="toggleAI()">Toggle AI</button>
+    </div>
+    <canvas id="mazeCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size to fill window
+        function resizeCanvas() {
+            const windowWidth = window.innerWidth - 40; // Leave some margin
+            const windowHeight = window.innerHeight - 40;
+            
+            // Calculate cell size based on window size
+            const cellSize = Math.min(
+                Math.floor(windowWidth / cols), // Based on new cols
+                Math.floor(windowHeight / rows)  // Based on new rows
+            );
+            
+            // Update canvas size
+            canvas.width = cols * cellSize;
+            canvas.height = rows * cellSize;
+            
+            // Redraw maze if it exists
+            if (maze.length > 0) {
+                drawMaze();
+            }
+        }
+
+        // Set initial maze dimensions
+        const cols = 80; // Increased from 50
+        const rows = 60; // Increased from 40
+        let cellSize = 12; // Initial cell size, will be updated by resizeCanvas
+
+        // Add event listener for window resize
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('load', resizeCanvas);
+
+        // Maze variables
+        let maze = [];
+        let visited = [];
+        let aiPath = [];
+        let aiRunning = false;
+        let aiInterval;
+        let start = { x: 1, y: 1 };
+        let end = { x: cols - 2, y: rows - 2 };
+
+        // Add these variables at the top with other variables
+        let visitedCells = new Set();
+        let maxBacktrack = 500; // Increased for larger maze
+        let backtrackCount = 0;
+
+        // Initialize maze
+        function initMaze() {
+            maze = [];
+            visited = [];
+            aiPath = [];
+            
+            // Create empty maze with walls
+            for (let y = 0; y < rows; y++) {
+                maze[y] = [];
+                visited[y] = [];
+                for (let x = 0; x < cols; x++) {
+                    maze[y][x] = 1; // 1 = wall, 0 = path
+                    visited[y][x] = false;
+                }
+            }
+
+            // Generate maze using recursive backtracking
+            generateMaze(start.x, start.y);
+            
+            // Ensure start and end are paths
+            maze[start.y][start.x] = 0;
+            maze[end.y][end.x] = 0;
+            
+            // Add complexity while ensuring path to end
+            addComplexity();
+        }
+
+        function generateMaze(x, y) {
+            maze[y][x] = 0;
+            visited[y][x] = true;
+
+            const directions = [
+                { x: 0, y: -2 }, // Up
+                { x: 2, y: 0 },  // Right
+                { x: 0, y: 2 },  // Down
+                { x: -2, y: 0 }  // Left
+            ];
+
+            // Shuffle directions
+            for (let i = directions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [directions[i], directions[j]] = [directions[j], directions[i]];
+            }
+
+            for (const dir of directions) {
+                const newX = x + dir.x;
+                const newY = y + dir.y;
+
+                if (newX > 0 && newX < cols - 1 && newY > 0 && newY < rows - 1 && !visited[newY][newX]) {
+                    maze[y + dir.y/2][x + dir.x/2] = 0;
+                    generateMaze(newX, newY);
+                }
+            }
+        }
+
+        function addComplexity() {
+            // First, ensure there's a path to the end
+            ensurePathToEnd();
+            
+            // Add more complex paths and dead ends
+            for (let i = 0; i < 200; i++) { // More attempts for larger maze
+                const x = Math.floor(Math.random() * (cols - 2)) + 1;
+                const y = Math.floor(Math.random() * (rows - 2)) + 1;
+                if (maze[y][x] === 1) {
+                    // Only convert walls to paths if they connect to existing paths
+                    let adjacentPaths = 0;
+                    if (x > 0 && maze[y][x-1] === 0) adjacentPaths++;
+                    if (x < cols-1 && maze[y][x+1] === 0) adjacentPaths++;
+                    if (y > 0 && maze[y-1][x] === 0) adjacentPaths++;
+                    if (y < rows-1 && maze[y+1][x] === 0) adjacentPaths++;
+                    
+                    // More complex path creation
+                    if (adjacentPaths >= 1) { // Allow paths with only one connection
+                        maze[y][x] = 0;
+                        
+                        // Add some random dead ends
+                        if (Math.random() < 0.4) { // Increased chance of dead ends
+                            const dir = Math.floor(Math.random() * 4);
+                            const deadEndX = x + (dir === 0 ? 1 : dir === 1 ? -1 : 0);
+                            const deadEndY = y + (dir === 2 ? 1 : dir === 3 ? -1 : 0);
+                            if (deadEndX > 0 && deadEndX < cols - 1 && deadEndY > 0 && deadEndY < rows - 1) {
+                                maze[deadEndY][deadEndX] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function ensurePathToEnd() {
+            // Create a guaranteed path from start to end with more complexity
+            let currentX = start.x;
+            let currentY = start.y;
+            let pathLength = 0;
+            const maxPathLength = 400; // Increased for larger maze
+            
+            while ((currentX !== end.x || currentY !== end.y) && pathLength < maxPathLength) {
+                // Determine direction to move with more randomness
+                let dirX = 0;
+                let dirY = 0;
+                
+                if (Math.random() < 0.6) { // 60% chance to move towards end
+                    if (currentX < end.x) dirX = 1;
+                    else if (currentX > end.x) dirX = -1;
+                    
+                    if (currentY < end.y) dirY = 1;
+                    else if (currentY > end.y) dirY = -1;
+                } else { // 40% chance to move randomly
+                    dirX = Math.floor(Math.random() * 3) - 1;
+                    dirY = Math.floor(Math.random() * 3) - 1;
+                }
+                
+                // Move in chosen direction
+                const newX = currentX + dirX;
+                const newY = currentY + dirY;
+                
+                // Ensure we don't go out of bounds
+                if (newX > 0 && newX < cols - 1 && newY > 0 && newY < rows - 1) {
+                    currentX = newX;
+                    currentY = newY;
+                    maze[currentY][currentX] = 0;
+                    pathLength++;
+                    
+                    // Add more random side paths
+                    if (Math.random() < 0.5) { // 50% chance to add side path
+                        const sideDir = Math.floor(Math.random() * 4);
+                        const sideX = currentX + (sideDir === 0 ? 1 : sideDir === 1 ? -1 : 0);
+                        const sideY = currentY + (sideDir === 2 ? 1 : sideDir === 3 ? -1 : 0);
+                        if (sideX > 0 && sideX < cols - 1 && sideY > 0 && sideY < rows - 1) {
+                            maze[sideY][sideX] = 0;
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawMaze() {
+            // Clear canvas
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate current cell size based on canvas dimensions
+            const currentCellSize = canvas.width / cols;
+
+            // Draw maze
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    if (maze[y][x] === 1) {
+                        ctx.fillStyle = '#666';
+                        ctx.fillRect(x * currentCellSize, y * currentCellSize, currentCellSize, currentCellSize);
+                    }
+                }
+            }
+
+            // Draw start and end
+            ctx.fillStyle = '#0f0';
+            ctx.fillRect(start.x * currentCellSize, start.y * currentCellSize, currentCellSize, currentCellSize);
+            ctx.fillStyle = '#f00';
+            ctx.fillRect(end.x * currentCellSize, end.y * currentCellSize, currentCellSize, currentCellSize);
+
+            // Draw AI path with a thicker, more visible line
+            ctx.strokeStyle = '#00f';
+            ctx.lineWidth = Math.max(2, currentCellSize / 6); // Scale line width with cell size
+            ctx.beginPath();
+            for (let i = 0; i < aiPath.length; i++) {
+                const point = aiPath[i];
+                if (i === 0) {
+                    ctx.moveTo(point.x * currentCellSize + currentCellSize/2, point.y * currentCellSize + currentCellSize/2);
+                } else {
+                    ctx.lineTo(point.x * currentCellSize + currentCellSize/2, point.y * currentCellSize + currentCellSize/2);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function solveMaze() {
+            const current = aiPath[aiPath.length - 1];
+            if (current.x === end.x && current.y === end.y) {
+                clearInterval(aiInterval);
+                return;
+            }
+
+            // Mark current cell as visited
+            visitedCells.add(`${current.x},${current.y}`);
+
+            const directions = [
+                { x: 0, y: -1 }, // Up
+                { x: 1, y: 0 },  // Right
+                { x: 0, y: 1 },  // Down
+                { x: -1, y: 0 }  // Left
+            ];
+
+            // Shuffle directions to make it more random
+            for (let i = directions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [directions[i], directions[j]] = [directions[j], directions[i]];
+            }
+
+            let foundNewPath = false;
+            for (const dir of directions) {
+                const newX = current.x + dir.x;
+                const newY = current.y + dir.y;
+                const newCellKey = `${newX},${newY}`;
+
+                if (newX >= 0 && newX < cols && newY >= 0 && newY < rows &&
+                    maze[newY][newX] === 0 && !visitedCells.has(newCellKey)) {
+                    aiPath.push({ x: newX, y: newY });
+                    foundNewPath = true;
+                    backtrackCount = 0;
+                    break;
+                }
+            }
+
+            // If no valid moves, backtrack
+            if (!foundNewPath) {
+                if (aiPath.length > 1) {
+                    aiPath.pop();
+                    backtrackCount++;
+                    
+                    // If stuck in too many backtracks, reset to start
+                    if (backtrackCount > maxBacktrack) {
+                        aiPath = [{ x: start.x, y: start.y }];
+                        visitedCells.clear();
+                        backtrackCount = 0;
+                    }
+                } else {
+                    // If stuck at start, reset
+                    aiPath = [{ x: start.x, y: start.y }];
+                    visitedCells.clear();
+                    backtrackCount = 0;
+                }
+            }
+        }
+
+        function resetMaze() {
+            clearInterval(aiInterval);
+            initMaze();
+            aiPath = [{ x: start.x, y: start.y }];
+            visitedCells.clear();
+            backtrackCount = 0;
+            resizeCanvas(); // Ensure canvas is properly sized
+            drawMaze();
+        }
+
+        function toggleAI() {
+            aiRunning = !aiRunning;
+            if (aiRunning) {
+                aiInterval = setInterval(() => {
+                    solveMaze();
+                    drawMaze();
+                }, 50);
+            } else {
+                clearInterval(aiInterval);
+            }
+        }
+
+        // Initialize
+        resetMaze();
+    </script>
+</body>
+</html>
