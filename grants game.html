@@ -103,9 +103,9 @@
     </div>
 
     <!-- Background Music -->
-    <!-- The 'loop' attribute makes the audio repeat automatically -->
-    <audio id="background-music" loop>
-        <source src="poo.mp4" type="video/mp4"> <!-- Browsers can often play audio from mp4 -->
+    <!-- Removed 'loop' attribute to handle sequence in JS -->
+    <audio id="background-music">
+        <source src="poo.mp4" type="video/mp4"> <!-- Start with poo.mp4 -->
         Your browser does not support the audio element.
     </audio>
 
@@ -158,15 +158,24 @@
         const backgroundMusic = document.getElementById('background-music'); // Get audio element
         let canvasElement; // Will be assigned in init
 
+        // Music Tracks
+        const musicTracks = ['poo.mp4', 'o.mp4'];
+        let currentTrackIndex = 0;
+
         // Event listener for the start button
         startButton.addEventListener('click', startGame);
 
-        // Note: The HTML <audio> tag already has the 'loop' attribute,
-        // which should make the music repeat. This JS listener is an
-        // alternative/fallback way to ensure looping if needed.
+        // Event listener to play the next track when one ends
         backgroundMusic.addEventListener('ended', function() {
-            this.currentTime = 0; // Reset playback position to the beginning
-            this.play();          // Play the audio again
+            // Increment track index, wrapping around
+            currentTrackIndex = (currentTrackIndex + 1) % musicTracks.length;
+            // Set the source to the new track
+            this.src = musicTracks[currentTrackIndex];
+            // Load and play the new track
+            this.load(); // Important: load the new source
+            this.play().catch(error => {
+                console.error("Audio playback failed for next track:", error);
+            });
         }, false);
 
 
@@ -181,9 +190,10 @@
             videoButtonContainer.style.display = 'block';
             if (canvasElement) canvasElement.style.display = 'block'; // Show canvas
 
-            // Start background music (it will loop based on the 'loop' attribute or the 'ended' event listener)
+            // Start background music (it will sequence based on the 'ended' event listener)
+            backgroundMusic.src = musicTracks[currentTrackIndex]; // Ensure starting with the first track
             backgroundMusic.play().catch(error => {
-                console.error("Audio playback failed:", error);
+                console.error("Initial audio playback failed:", error);
                 // Inform user or handle gracefully (e.g., show a mute button)
             });
 
