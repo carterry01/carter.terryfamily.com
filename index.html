@@ -59,11 +59,13 @@
         .nav-link {
             padding: 10px 20px;
             background: rgba(0, 0, 139, 0.7); /* Dark blue */
-            color: white;
+            color: rgb(231, 7, 7);
             text-decoration: none;
-            font-size: 18px;
+            font-size: 18px; /* Adjusted font size for arrow visibility */
             border-radius: 8px;
             transition: background 0.3s;
+            display: inline-block; /* Ensure padding applies correctly */
+            line-height: 1; /* Adjust line height for better vertical centering */
         }
         .nav-link:hover {
             background: rgba(0, 0, 255, 0.8); /* Lighter blue */
@@ -83,7 +85,7 @@
         <a href="911.html" class="game-link">just a game</a>
     </div>
     <div class="navigation">
-        <a href="page2.html" class="nav-link">Next Page (Page 2) &rarr;</a>
+        <a href="page2.html" class="nav-link">&rarr;</a>
     </div>
 </body>
 </html>
