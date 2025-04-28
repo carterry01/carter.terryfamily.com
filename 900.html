@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Pixel Platformer</title> 
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scroll bars */
+            background-color: #222; /* Dark background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Full viewport height */
+            color: rgb(0, 255, 242);
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas {
+            border: 2px solid rgb(101, 254, 6);
+            background-color: #ff0000; /* Match clear color */
+            /* Ensure crisp pixels when scaling */
+            image-rendering: -moz-crisp-edges;         /* Firefox */
+            image-rendering: -webkit-crisp-edges;    /* Webkit (Chrome, Safari) */
+            image-rendering: pixelated;              /* Standard */
+            image-rendering: crisp-edges;            /* Fallback */
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+            background-color: rgba(6, 245, 233, 0.5);
+            padding: 5px;
+            border-radius: 3px;
+            z-index: 10; /* Ensure instructions are above canvas */
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 3px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <!-- Canvas where the game will be drawn -->
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <div id="instructions">Use A/D or Arrows to move, W/Up/Space to jump (Double Jump Enabled!)</div>
+    <div id="score">Score: 0</div>  
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score'); // Get score element
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        // --- Game Settings ---
+        const gravity = 0.6;
+        const playerSpeed = 4;
+        const jumpPower = 12;
+        const playerSize = 24;
+        const platformColor = '#8B4513';
+        const playerColor = '#3498DB';
+        const maxJumps = 2;
+        const cameraScrollThreshold = canvasHeight / 3;
+        const cameraSmoothing = 0.05;
+
+        // --- Camera State ---
+        let cameraY = 0;
+
+        // --- Player State ---
+        let player = {
+            x: canvasWidth / 2 - playerSize / 2,
+            y: canvasHeight - playerSize - 50,
+            width: playerSize,
+            height: playerSize,
+            velocityX: 0,
+            velocityY: 0,
+            onGround: false,
+            jumpsRemaining: maxJumps,
+            canJump: true
+        };
+
+        // --- Score ---
+        let score = 0;
+        let maxPlayerY = player.y; // Track highest point reached by player
+
+        // --- Platforms ---
+        let platforms = []; // Changed to let, start empty except for initial ones
+        let highestPlatformY = canvasHeight - 20; // Track the Y position of the highest generated platform
+
+        // --- Platform Generation Settings ---
+        const platformMinYGap = 70;     // Min vertical distance between platforms
+        const platformMaxYGap = 130;    // Max vertical distance
+        const platformMinWidth = 70;    // Min width of a platform
+        const platformMaxWidth = 140;   // Max width
+        const platformHeight = 15;      // Fixed height for generated platforms
+        const generationLookahead = canvasHeight * 1.5; // Generate platforms up to this distance above the camera view
+        const removalDistance = canvasHeight * 2; // Remove platforms this far below the camera view
+
+        // --- Helper Function: Generate Random Number in Range ---
+        function randomRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // --- Function to Generate New Platforms ---
+        function generatePlatforms() {
+            // Generate upwards from the current highest platform until well above the camera view
+            while (highestPlatformY > cameraY - generationLookahead) {
+                const newY = highestPlatformY - randomRange(platformMinYGap, platformMaxYGap);
+                const newWidth = randomRange(platformMinWidth, platformMaxWidth);
+                // Ensure platform is within horizontal bounds
+                const newX = randomRange(0, canvasWidth - newWidth);
+
+                platforms.push({
+                    x: newX,
+                    y: newY,
+                    width: newWidth,
+                    height: platformHeight
+                });
+                highestPlatformY = newY; // Update the highest point
+            }
+        }
+
+        // --- Function to Remove Old Platforms ---
+        function removeOldPlatforms() {
+            const removalThreshold = cameraY + removalDistance;
+            // Keep platforms that are above the removal threshold OR the initial ground platform
+            platforms = platforms.filter(platform => platform.y < removalThreshold || platform.y === canvasHeight - 20);
+            // Note: We could optimize by not checking the ground platform every time,
+            // but this is simpler and likely performant enough.
+        }
+
+        // --- Input Handling ---
+        let keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            keys[key] = false;
+            if (['w', 'arrowup', ' '].includes(key)) {
+                player.canJump = true;
+            }
+        });
+
+        // --- Game Logic Update Function ---
+        function update() {
+            // 1. Apply Gravity
+            player.velocityY += gravity;
+            player.onGround = false;
+
+            // 2. Handle Horizontal Movement Input
+            player.velocityX = 0;
+            if (keys['a'] || keys['arrowleft']) {
+                player.velocityX = -playerSpeed;
+            }
+            if (keys['d'] || keys['arrowright']) {
+                player.velocityX = playerSpeed;
+            }
+
+            // 3. Apply Horizontal Velocity & Check Horizontal Collisions
+            player.x += player.velocityX;
+            platforms.forEach(platform => {
+                if (player.y + player.height > platform.y && player.y < platform.y + platform.height) {
+                    if (player.x < platform.x + platform.width && player.x + player.width > platform.x) {
+                        if (player.velocityX > 0) {
+                            player.x = platform.x - player.width;
+                        } else if (player.velocityX < 0) {
+                            player.x = platform.x + platform.width;
+                        }
+                        player.velocityX = 0;
+                    }
+                }
+            });
+
+            // 4. Apply Vertical Velocity & Check Vertical Collisions
+            player.y += player.velocityY;
+            platforms.forEach(platform => {
+                if (player.x < platform.x + platform.width && player.x + player.width > platform.x) {
+                    if (player.y + player.height > platform.y && player.y < platform.y + platform.height) {
+                        if (player.velocityY >= 0) {
+                            let previousPlayerBottom = (player.y - player.velocityY) + player.height;
+                            if (previousPlayerBottom <= platform.y + 1) { // +1 tolerance
+                                player.y = platform.y - player.height;
+                                player.velocityY = 0;
+                                player.onGround = true;
+                                player.jumpsRemaining = maxJumps;
+                            }
+                        } else { // velocityY < 0 (hitting underside)
+                             let previousPlayerTop = player.y - player.velocityY;
+                             if (previousPlayerTop >= platform.y + platform.height - 1) { // -1 tolerance
+                                player.y = platform.y + platform.height;
+                                player.velocityY = 0;
+                             }
+                        }
+                    }
+                }
+            });
+
+            // 5. Handle Jumping Input
+            const jumpKeyPressed = keys['w'] || keys['arrowup'] || keys[' '];
+            if (jumpKeyPressed && player.canJump && player.jumpsRemaining > 0) {
+                player.velocityY = -jumpPower;
+                player.onGround = false;
+                player.jumpsRemaining--;
+                player.canJump = false;
+            }
+
+            // 6. Keep Player within Canvas Bounds (Horizontal)
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvasWidth) player.x = canvasWidth - player.width;
+
+            // 7. Update Camera Position
+            let targetCameraY = cameraY;
+            if (player.y < cameraY + cameraScrollThreshold) {
+                targetCameraY = player.y - cameraScrollThreshold;
+            }
+            cameraY += (targetCameraY - cameraY) * cameraSmoothing;
+            // Optional: Prevent camera going below initial view
+            // cameraY = Math.min(0, cameraY);
+
+            // --- NEW: Platform Management ---
+            generatePlatforms(); // Generate new platforms if needed
+            removeOldPlatforms(); // Remove platforms far below the view
+
+            // --- Update Score ---
+            // Score based on the highest point reached (lower Y is higher)
+            if (player.y < maxPlayerY) {
+                score += Math.floor(maxPlayerY - player.y); // Add distance climbed
+                maxPlayerY = player.y; // Update highest point
+                scoreElement.textContent = `Score: ${score}`; // Update score display
+            }
+
+
+            // 8. Handle Falling Off Screen (Reset)
+            if (player.y > cameraY + canvasHeight + player.height * 2) {
+                 resetGame();
+            }
+        }
+
+        // --- NEW: Reset Function ---
+        function resetGame() {
+            console.log("Player fell! Resetting...");
+            // Reset player position and state
+            player.x = canvasWidth / 2 - playerSize / 2;
+            player.y = canvasHeight - playerSize - 50;
+            player.velocityX = 0;
+            player.velocityY = 0;
+            player.onGround = false;
+            player.jumpsRemaining = maxJumps;
+            player.canJump = true;
+
+            // Reset camera
+            cameraY = 0;
+
+            // Reset score tracking
+            score = 0;
+            maxPlayerY = player.y;
+            scoreElement.textContent = `Score: ${score}`;
+
+            // Reset platforms to initial state and regenerate
+            platforms = [
+                { x: 0, y: canvasHeight - 20, width: canvasWidth, height: 20 }, // Ground
+                // Add a few starting platforms again
+                { x: randomRange(50, canvasWidth - 150), y: canvasHeight - 100, width: randomRange(platformMinWidth, platformMaxWidth), height: platformHeight },
+                { x: randomRange(50, canvasWidth - 150), y: canvasHeight - 180, width: randomRange(platformMinWidth, platformMaxWidth), height: platformHeight },
+            ];
+            // Find the highest Y among the initial set for the tracker
+            highestPlatformY = Math.min(...platforms.map(p => p.y));
+
+            generatePlatforms(); // Generate initial set above the view
+        }
+
+
+        // --- Drawing Function ---
+        function draw() {
+            // 1. Clear the canvas
+            ctx.fillStyle = '#4a4a4a';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // --- Apply Camera Transform ---
+            ctx.save();
+            ctx.translate(0, -Math.floor(cameraY));
+
+            // --- Draw Game Elements ---
+            // 2. Draw Platforms
+            ctx.fillStyle = platformColor;
+            platforms.forEach(platform => {
+                // Optimization: Only draw platforms potentially within the camera view + a buffer
+                if (platform.y + platform.height > cameraY - platformHeight && platform.y < cameraY + canvasHeight + platformHeight) {
+                     ctx.fillRect(Math.floor(platform.x), Math.floor(platform.y), platform.width, platform.height);
+                }
+            });
+
+            // 3. Draw Player
+            ctx.fillStyle = playerColor;
+            ctx.fillRect(Math.floor(player.x), Math.floor(player.y), player.width, player.height);
+
+            // --- Restore Camera Transform ---
+            ctx.restore();
+
+            // --- Draw UI Elements ---
+            // (Score and Instructions handled by HTML/CSS)
+        }
+
+        // --- Game Loop ---
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- Start the Game ---
+        console.log("Starting Infinite Pixel Platformer...");
+        resetGame(); // Use resetGame to perform initial setup
+        // generatePlatforms(); // Called within resetGame now
+        gameLoop(); // Initial call to start the loop
+
+    </script>
+</body>
+</html>
