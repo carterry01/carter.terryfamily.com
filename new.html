@@ -1,0 +1,1004 @@
+<!-- Start of Selection -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Platformer Game</title>
+    <style>
+        body, html {
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+            background: #333;
+        }
+        canvas {
+            display: block;
+            background-image: url('back.png');
+            background-size: cover;
+        }
+        #buttonContainer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 16px;
+            z-index: 5;
+        }
+        #startButton, #videoButton, #videoToolButton {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #startButton:hover, #videoButton:hover, #videoToolButton:hover {
+            background: #45a049;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            z-index: 10;
+            display: none;
+        }
+        #restartButton {
+            margin-top: 30px;
+            font-size: 24px;
+            padding: 10px 30px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #restartButton:hover {
+            background: #45a049;
+        }
+        #minimapContainer {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            z-index: 20;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            padding: 8px;
+        }
+        #minimapTitle {
+            color: #fff;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 2px;
+        }
+        #minimap, #minimap2 {
+            display: block;
+            background: #222;
+            border: 2px solid #fff;
+            border-radius: 4px;
+            margin: 0 auto;
+        }
+        #minimap2 {
+            margin-top: 8px;
+        }
+        #chestVideo {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            max-width: 80vw;
+            max-height: 80vh;
+            background: #000;
+            border: 4px solid #FFD700;
+            border-radius: 12px;
+        }
+        #chestVideoClose {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: calc(50% + 45vh);
+            transform: translate(-50%, 0);
+            z-index: 101;
+            font-size: 22px;
+            background: #FFD700;
+            color: #222;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 24px;
+            cursor: pointer;
+        }
+        #chestVideoClose:hover {
+            background: #ffb700;
+        }
+        #mainVideo {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            max-width: 80vw;
+            max-height: 80vh;
+            background: #000;
+            border: 4px solid #4CAF50;
+            border-radius: 12px;
+        }
+        #mainVideoClose {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: calc(50% + 45vh);
+            transform: translate(-50%, 0);
+            z-index: 201;
+            font-size: 22px;
+            background: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 24px;
+            cursor: pointer;
+        }
+        #mainVideoClose:hover {
+            background: #388e3c;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="buttonContainer">
+        <button id="startButton">Start Game</button>
+        <button id="videoButton">Video</button>
+        <button id="videoToolButton">Video Tool</button>
+    </div>
+    <div id="gameOverScreen">
+        <div id="gameOverText">Game Over</div>
+        <div id="finalScore"></div>
+        <button id="restartButton">Restart</button>
+    </div>
+    <div id="minimapContainer">
+        <div id="minimapTitle">Minimap</div>
+        <canvas id="minimap" width="200" height="40"></canvas>
+        <canvas id="minimap2" width="200" height="40" style="display:none"></canvas>
+    </div>
+    <!-- Chest video overlay -->
+    <video id="chestVideo" src="chest.mp4" controls></video>
+    <button id="chestVideoClose">Close</button>
+    <!-- Main video overlay for Video button -->
+    <video id="mainVideo" src="vid.mp4" controls></video>
+    <button id="mainVideoClose">Close</button>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startButton = document.getElementById('startButton');
+        const videoButton = document.getElementById('videoButton');
+        const videoToolButton = document.getElementById('videoToolButton');
+        const buttonContainer = document.getElementById('buttonContainer');
+        const badGuyImage = new Image();
+        badGuyImage.src = 'bad.png';
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const gameOverText = document.getElementById('gameOverText');
+        const finalScore = document.getElementById('finalScore');
+        const restartButton = document.getElementById('restartButton');
+
+        // Lava image
+        const lavaImage = new Image();
+        lavaImage.src = 'lava.png';
+
+        // Chest image (simple icon)
+        const chestImage = new Image();
+        chestImage.src = 'chest.png'; // You can use a placeholder or draw a simple chest if not available
+
+        // Minimap
+        const minimap = document.getElementById('minimap');
+        const minimapCtx = minimap.getContext('2d');
+        const minimap2 = document.getElementById('minimap2');
+        const minimap2Ctx = minimap2.getContext('2d');
+        const minimapTitle = document.getElementById('minimapTitle');
+
+        // Chest video
+        const chestVideo = document.getElementById('chestVideo');
+        const chestVideoClose = document.getElementById('chestVideoClose');
+
+        // Main video for Video button
+        const mainVideo = document.getElementById('mainVideo');
+        const mainVideoClose = document.getElementById('mainVideoClose');
+
+        // Set canvas size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Infinite world: no WORLD_WIDTH
+        // Game objects
+        let player, platforms, coins, badGuys, chests, score, gameStarted, keys, cameraX, gameOver, difficulty, lastPlatformX, lastCoinX, lastBadGuySpawnX, lastChestX;
+
+        // Track if chest video is open
+        let chestVideoOpen = false;
+        // Track if main video is open
+        let mainVideoOpen = false;
+
+        // Helper: get a random visible platform (not ground)
+        function getRandomVisiblePlatform() {
+            let visiblePlatforms = platforms.filter(p =>
+                (p.x + p.width > cameraX) && (p.x < cameraX + canvas.width) && p.y < canvas.height - 10 && p.y < canvas.height - 20
+            );
+            if (visiblePlatforms.length === 0) return null;
+            return visiblePlatforms[Math.floor(Math.random() * visiblePlatforms.length)];
+        }
+
+        function randomBetween(a, b) {
+            return Math.random() * (b - a) + a;
+        }
+
+        // --- Platform reachability parameters ---
+        function getPlayerMaxJump() {
+            const jumpForce = 15;
+            const gravity = 0.8 + 0.05 * (difficulty || 1);
+            const doubleJump = 2;
+            const t1 = jumpForce / gravity;
+            const t_total = t1 * 2 * doubleJump * 0.85;
+            const maxVertical = (jumpForce * jumpForce) / (2 * gravity) * doubleJump * 0.85;
+            const maxHorizontal = player ? player.speed * t_total : 5 * t_total;
+            return { maxHorizontal, maxVertical };
+        }
+
+        function resetGame() {
+            player = {
+                x: 50,
+                y: canvas.height - 100,
+                width: 30,
+                height: 50,
+                speed: 5,
+                jumpForce: 15,
+                velocityY: 0,
+                isJumping: false,
+                jumpCount: 0
+            };
+
+            // Initial platforms: ground and a few to the right
+            platforms = [
+                { x: -1000, y: canvas.height - 50, width: 2000, height: 50 }
+            ];
+            let platX = 200;
+            let prevPlatY = canvas.height - 200;
+            const { maxHorizontal, maxVertical } = getPlayerMaxJump();
+            for (let i = 0; i < 8; i++) {
+                let platGap = randomBetween(maxHorizontal * 0.5, maxHorizontal * 0.85);
+                platX += platGap;
+                let minY = Math.max(80, prevPlatY - maxVertical * 0.7);
+                let maxY = Math.min(canvas.height - 120, prevPlatY + maxVertical * 0.7);
+                let platY = randomBetween(minY, maxY);
+                let platWidth = randomBetween(120, 200);
+                platforms.push({
+                    x: platX,
+                    y: platY,
+                    width: platWidth,
+                    height: 20
+                });
+                prevPlatY = platY;
+            }
+            lastPlatformX = platX;
+
+            // Initial coins
+            coins = [];
+            let coinX = 250;
+            for (let i = 0; i < 10; i++) {
+                let plat = platforms[1 + Math.floor(Math.random() * (platforms.length - 1))];
+                coins.push({
+                    x: plat.x + plat.width / 2 - 10,
+                    y: plat.y - 30,
+                    width: 20,
+                    height: 20,
+                    collected: false,
+                    value: 10
+                });
+                coinX += 250 + Math.random() * 200;
+            }
+            lastCoinX = coinX;
+
+            // Initial bad guys
+            badGuys = [];
+            for (let i = 0; i < 3; i++) {
+                let plat = platforms[1 + Math.floor(Math.random() * (platforms.length - 1))];
+                let minX = plat.x;
+                let maxX = plat.x + plat.width - 40;
+                badGuys.push({
+                    x: minX,
+                    y: plat.y - 40,
+                    width: 40,
+                    height: 40,
+                    minX: minX,
+                    maxX: maxX,
+                    speed: 2,
+                    direction: 1,
+                    visible: true
+                });
+            }
+            lastBadGuySpawnX = player.x;
+
+            // Initial chests
+            chests = [];
+            let chestX = 400;
+            for (let i = 0; i < 3 && i < 10; i++) { // Limit to 10 chests max at start
+                let plat = platforms[1 + Math.floor(Math.random() * (platforms.length - 1))];
+                chests.push({
+                    x: plat.x + plat.width / 2 - 12.5,
+                    y: plat.y - 25,
+                    width: 25,
+                    height: 25,
+                    opened: false
+                });
+                chestX += 800 + Math.random() * 600;
+            }
+            lastChestX = chestX;
+
+            score = 0;
+            gameStarted = false;
+            keys = {};
+            cameraX = 0;
+            gameOver = false;
+            difficulty = 1;
+        }
+
+        resetGame();
+
+        // Event listeners
+        window.addEventListener('keydown', (e) => {
+            // Only allow movement if not game over and not chest video open or main video open
+            if (!chestVideoOpen && !mainVideoOpen && !gameOver) {
+                if (!keys[e.key]) {
+                    keys[e.key] = true;
+                    if (e.key === 'ArrowUp' && gameStarted) {
+                        if (player.jumpCount < 2) {
+                            player.velocityY = -player.jumpForce;
+                            player.isJumping = true;
+                            player.jumpCount++;
+                        }
+                    }
+                }
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+            if (!chestVideoOpen && !mainVideoOpen && !gameOver) {
+                keys[e.key] = false;
+            }
+        });
+        startButton.addEventListener('click', () => {
+            startGame();
+            buttonContainer.style.display = 'none';
+        });
+        videoButton.addEventListener('click', () => {
+            // Show the main video overlay directly (vid.mp4)
+            showMainVideo();
+            buttonContainer.style.display = 'none';
+        });
+        videoToolButton.addEventListener('click', () => {
+            // Go to the video tool site
+            window.location.href = "https://clideo.com/editor/";
+        });
+        restartButton.addEventListener('click', () => {
+            resetGame();
+            gameOverScreen.style.display = 'none';
+            buttonContainer.style.display = 'none';
+            gameStarted = true;
+            gameLoop();
+        });
+
+        // Chest video controls
+        chestVideoClose.addEventListener('click', () => {
+            chestVideo.pause();
+            chestVideo.currentTime = 0;
+            chestVideo.style.display = "none";
+            chestVideoClose.style.display = "none";
+            chestVideoOpen = false;
+            // Unpause the game and allow movement after closing chest video
+            if (!gameOver) {
+                gameStarted = true;
+                requestAnimationFrame(gameLoop);
+            }
+        });
+        chestVideo.addEventListener('ended', () => {
+            chestVideo.style.display = "none";
+            chestVideoClose.style.display = "none";
+            chestVideoOpen = false;
+            if (!gameOver) {
+                gameStarted = true;
+                requestAnimationFrame(gameLoop);
+            }
+        });
+
+        // Main video controls
+        mainVideoClose.addEventListener('click', () => {
+            mainVideo.pause();
+            mainVideo.currentTime = 0;
+            mainVideo.style.display = "none";
+            mainVideoClose.style.display = "none";
+            mainVideoOpen = false;
+            // Unpause the game and allow movement after closing main video
+            if (!gameOver) {
+                gameStarted = true;
+                requestAnimationFrame(gameLoop);
+            }
+        });
+        mainVideo.addEventListener('ended', () => {
+            mainVideo.style.display = "none";
+            mainVideoClose.style.display = "none";
+            mainVideoOpen = false;
+            if (!gameOver) {
+                gameStarted = true;
+                requestAnimationFrame(gameLoop);
+            }
+        });
+
+        function showChestVideo() {
+            chestVideo.style.display = "block";
+            chestVideoClose.style.display = "block";
+            chestVideo.currentTime = 0;
+            chestVideo.play();
+            chestVideoOpen = true;
+        }
+
+        function showMainVideo() {
+            mainVideo.style.display = "block";
+            mainVideoClose.style.display = "block";
+            mainVideo.currentTime = 0;
+            mainVideo.play();
+            mainVideoOpen = true;
+        }
+
+        function startGame() {
+            resetGame();
+            gameStarted = true;
+            buttonContainer.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            gameLoop();
+        }
+
+        function generatePlatforms() {
+            difficulty = 1 + Math.floor(player.x / 2000);
+            const { maxHorizontal, maxVertical } = getPlayerMaxJump();
+            let prevPlat = platforms[platforms.length - 1];
+            let prevPlatY = prevPlat.y;
+            while (lastPlatformX < player.x + 1200) {
+                let minY = Math.max(80, prevPlatY - maxVertical * 0.7);
+                let maxY = Math.min(canvas.height - 120, prevPlatY + maxVertical * 0.7);
+                let platY = randomBetween(minY, maxY);
+                let platWidth = randomBetween(100, 180);
+                let platGap = randomBetween(maxHorizontal * 0.5, maxHorizontal * 0.85);
+                platforms.push({
+                    x: lastPlatformX + platGap,
+                    y: platY,
+                    width: platWidth,
+                    height: 20
+                });
+                lastPlatformX += platGap;
+                prevPlatY = platY;
+                prevPlat = platforms[platforms.length - 1];
+            }
+            while (platforms.length > 0 && platforms[0].x + platforms[0].width < player.x - 800) {
+                platforms.shift();
+            }
+        }
+
+        function generateCoins() {
+            while (lastCoinX < player.x + 1000) {
+                let candidatePlatforms = platforms.filter(p => p.x > lastCoinX - 200 && p.x < lastCoinX + 400 && p.y < canvas.height - 20);
+                if (candidatePlatforms.length > 0) {
+                    let plat = candidatePlatforms[Math.floor(Math.random() * candidatePlatforms.length)];
+                    coins.push({
+                        x: plat.x + plat.width / 2 - 10,
+                        y: plat.y - 30,
+                        width: 20,
+                        height: 20,
+                        collected: false,
+                        value: 10
+                    });
+                }
+                lastCoinX += 200 + Math.random() * 200;
+            }
+            while (coins.length > 0 && coins[0].x + coins[0].width < player.x - 800) {
+                coins.shift();
+            }
+        }
+
+        function generateBadGuys() {
+            let maxBadGuys = Math.min(3 + Math.floor(difficulty / 2), 8);
+            if (badGuys.length < maxBadGuys && player.x - lastBadGuySpawnX > 600 / (1 + 0.2 * difficulty)) {
+                let candidatePlatforms = platforms.filter(p => p.x > player.x + 200 && p.x < player.x + 900 && p.y < canvas.height - 20);
+                if (candidatePlatforms.length > 0) {
+                    let plat = candidatePlatforms[Math.floor(Math.random() * candidatePlatforms.length)];
+                    let minX = plat.x;
+                    let maxX = plat.x + plat.width - 40;
+                    badGuys.push({
+                        x: minX,
+                        y: plat.y - 40,
+                        width: 40,
+                        height: 40,
+                        minX: minX,
+                        maxX: maxX,
+                        speed: 2 + 0.3 * difficulty,
+                        direction: Math.random() < 0.5 ? 1 : -1,
+                        visible: true
+                    });
+                    lastBadGuySpawnX = player.x;
+                }
+            }
+            for (let i = badGuys.length - 1; i >= 0; i--) {
+                if (badGuys[i].x + badGuys[i].width < player.x - 800) {
+                    badGuys.splice(i, 1);
+                }
+            }
+        }
+
+        function generateChests() {
+            // Place a chest every ~1000-1500 units, but not too close to each other
+            // Limit to 10 chests per level (per difficulty)
+            const maxChestsPerLevel = 10;
+            // Only count unopened chests in the current level window
+            let currentLevel = difficulty;
+            // We'll define "per level" as chests that are within the current level's x-range
+            // For this, let's define the level's x-range:
+            let levelStartX = (currentLevel - 1) * 2000;
+            let levelEndX = currentLevel * 2000;
+            // Count chests in this level that are not opened
+            let chestsInLevel = chests.filter(
+                chest =>
+                    !chest.opened &&
+                    chest.x >= levelStartX &&
+                    chest.x < levelEndX
+            ).length;
+
+            while (
+                lastChestX < player.x + 1200 &&
+                chestsInLevel < maxChestsPerLevel
+            ) {
+                let candidatePlatforms = platforms.filter(p => p.x > lastChestX - 400 && p.x < lastChestX + 800 && p.y < canvas.height - 20);
+                if (candidatePlatforms.length > 0) {
+                    let plat = candidatePlatforms[Math.floor(Math.random() * candidatePlatforms.length)];
+                    let newChestX = plat.x + plat.width / 2 - 12.5;
+                    // Only add if it would be in this level's range and not exceeding max
+                    if (newChestX >= levelStartX && newChestX < levelEndX) {
+                        chests.push({
+                            x: newChestX,
+                            y: plat.y - 25,
+                            width: 25,
+                            height: 25,
+                            opened: false
+                        });
+                        chestsInLevel++;
+                    }
+                }
+                lastChestX += 1000 + Math.random() * 500;
+            }
+            // Remove chests far behind
+            while (chests.length > 0 && chests[0].x + chests[0].width < player.x - 800) {
+                chests.shift();
+            }
+        }
+
+        function update() {
+            if (gameOver) return;
+            if (chestVideoOpen || mainVideoOpen) return; // Don't update game state while any video is open
+
+            difficulty = 1 + Math.floor(player.x / 2000);
+
+            if (keys['ArrowLeft']) player.x -= player.speed;
+            if (keys['ArrowRight']) player.x += player.speed;
+
+            player.velocityY += 0.8 + 0.05 * difficulty;
+            player.y += player.velocityY;
+
+            let onPlatform = false;
+            for (let platform of platforms) {
+                if (player.x + player.width > platform.x &&
+                    player.x < platform.x + platform.width &&
+                    player.y + player.height > platform.y &&
+                    player.y < platform.y + platform.height) {
+                    if (player.velocityY > 0) {
+                        player.y = platform.y - player.height;
+                        player.velocityY = 0;
+                        player.isJumping = false;
+                        player.jumpCount = 0;
+                        onPlatform = true;
+                    }
+                    else if (player.velocityY < 0) {
+                        player.y = platform.y + platform.height;
+                        player.velocityY = 0;
+                    }
+                }
+            }
+            if (!onPlatform) {
+                player.isJumping = true;
+            }
+
+            for (let badGuy of badGuys) {
+                badGuy.x += badGuy.speed * badGuy.direction;
+                if (badGuy.x <= badGuy.minX) {
+                    badGuy.x = badGuy.minX;
+                    badGuy.direction = 1;
+                }
+                if (badGuy.x >= badGuy.maxX) {
+                    badGuy.x = badGuy.maxX;
+                    badGuy.direction = -1;
+                }
+                if (
+                    badGuy.x + badGuy.width > cameraX &&
+                    badGuy.x < cameraX + canvas.width &&
+                    badGuy.y + badGuy.height > 0 &&
+                    badGuy.y < canvas.height
+                ) {
+                    badGuy.visible = true;
+                } else {
+                    badGuy.visible = false;
+                }
+            }
+
+            for (let i = badGuys.length - 1; i >= 0; i--) {
+                if (!badGuys[i].visible && badGuys[i].x + badGuys[i].width < player.x - 800) {
+                    badGuys.splice(i, 1);
+                }
+            }
+
+            for (let badGuy of badGuys) {
+                if (
+                    player.x + player.width > badGuy.x &&
+                    player.x < badGuy.x + badGuy.width &&
+                    player.y + player.height > badGuy.y &&
+                    player.y < badGuy.y + badGuy.height
+                ) {
+                    gameOver = true;
+                    gameStarted = false;
+                    showGameOver();
+                    return;
+                }
+            }
+
+            for (let coin of coins) {
+                if (!coin.collected &&
+                    player.x + player.width > coin.x &&
+                    player.x < coin.x + coin.width &&
+                    player.y + player.height > coin.y &&
+                    player.y < coin.y + coin.height) {
+                    coin.collected = true;
+                    score += coin.value;
+                }
+            }
+
+            // Chest collision
+            for (let chest of chests) {
+                if (!chest.opened &&
+                    player.x + player.width > chest.x &&
+                    player.x < chest.x + chest.width &&
+                    player.y + player.height > chest.y &&
+                    player.y < chest.y + chest.height) {
+                    chest.opened = true;
+                    // Pause game loop and show video
+                    gameStarted = false;
+                    chestVideoOpen = true;
+                    setTimeout(() => {
+                        showChestVideo();
+                    }, 100); // slight delay for effect
+                    // Give 25 points for opening a chest
+                    score += 25;
+                    return; // Pause update until video closes
+                }
+            }
+
+            if (player.y > canvas.height + 200) {
+                gameOver = true;
+                gameStarted = false;
+                showGameOver();
+                return;
+            }
+
+            cameraX = player.x + player.width / 2 - canvas.width / 2;
+
+            generatePlatforms();
+            generateCoins();
+            generateBadGuys();
+            generateChests();
+        }
+
+        // Helper: check if there is a platform (ground) at a given x
+        function isGroundAt(x) {
+            for (let platform of platforms) {
+                if (
+                    platform.y >= canvas.height - 50 &&
+                    x >= platform.x &&
+                    x <= platform.x + platform.width
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw lava where there is no ground below platforms
+            const lavaY = canvas.height - 50;
+            const lavaHeight = 50;
+            const step = 20;
+            for (let x = Math.floor(cameraX / step) * step; x < cameraX + canvas.width; x += step) {
+                if (!isGroundAt(x)) {
+                    if (lavaImage.complete && lavaImage.naturalWidth > 0) {
+                        ctx.drawImage(
+                            lavaImage,
+                            x - cameraX,
+                            lavaY,
+                            step,
+                            lavaHeight
+                        );
+                    } else {
+                        ctx.fillStyle = "#ff5500";
+                        ctx.fillRect(x - cameraX, lavaY, step, lavaHeight);
+                    }
+                }
+            }
+
+            // Draw platforms (including ground) in red
+            ctx.fillStyle = '#FF0000';
+            for (let platform of platforms) {
+                if (platform.x + platform.width > cameraX && platform.x < cameraX + canvas.width) {
+                    ctx.fillRect(platform.x - cameraX, platform.y, platform.width, platform.height);
+                }
+            }
+
+            // Draw coins
+            ctx.fillStyle = '#FFD700';
+            for (let coin of coins) {
+                if (!coin.collected && coin.x + coin.width > cameraX && coin.x < cameraX + canvas.width) {
+                    ctx.beginPath();
+                    ctx.arc(coin.x + coin.width/2 - cameraX, coin.y + coin.height/2, coin.width/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Draw chests
+            for (let chest of chests) {
+                if (chest.x + chest.width > cameraX && chest.x < cameraX + canvas.width) {
+                    if (chestImage.complete && chestImage.naturalWidth > 0) {
+                        ctx.globalAlpha = chest.opened ? 0.4 : 1.0;
+                        ctx.drawImage(chestImage, chest.x - cameraX, chest.y, chest.width, chest.height);
+                        ctx.globalAlpha = 1.0;
+                    } else {
+                        // Draw a simple chest shape if image not loaded
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.rect(chest.x - cameraX, chest.y, chest.width, chest.height);
+                        ctx.fillStyle = chest.opened ? "#bfa76f" : "#FFD700";
+                        ctx.fill();
+                        ctx.strokeStyle = "#8B6B22";
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.restore();
+                        if (!chest.opened) {
+                            ctx.save();
+                            ctx.strokeStyle = "#8B6B22";
+                            ctx.beginPath();
+                            ctx.moveTo(chest.x - cameraX, chest.y + chest.height * 0.5);
+                            ctx.lineTo(chest.x - cameraX + chest.width, chest.y + chest.height * 0.5);
+                            ctx.stroke();
+                            ctx.restore();
+                        }
+                    }
+                }
+            }
+
+            // Draw bad guys (moving)
+            for (let badGuy of badGuys) {
+                if (badGuy.x + badGuy.width > cameraX && badGuy.x < cameraX + canvas.width) {
+                    ctx.drawImage(badGuyImage, badGuy.x - cameraX, badGuy.y, badGuy.width, badGuy.height);
+                }
+            }
+
+            // Draw player
+            ctx.fillStyle = '#FF0000';
+            ctx.fillRect(player.x - cameraX, player.y, player.width, player.height);
+
+            // Draw score and difficulty
+            ctx.fillStyle = '#fff';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${score}`, 20, 30);
+            ctx.fillText(`Level: ${difficulty}`, 20, 60);
+
+            // Draw minimap(s)
+            drawMinimap();
+        }
+
+        // Minimap logic
+        function drawMinimap() {
+            // Minimap 1: always shown, for level 1
+            minimapCtx.clearRect(0, 0, minimap.width, minimap.height);
+
+            // Find visible platforms for minimap
+            let minX = player.x - 400;
+            let maxX = player.x + 800;
+            let platMin = minX, platMax = maxX;
+            for (let p of platforms) {
+                if (p.x < platMin) platMin = p.x;
+                if (p.x + p.width > platMax) platMax = p.x + p.width;
+            }
+            // Clamp minimap window
+            platMin = Math.min(platMin, player.x - 400);
+            platMax = Math.max(platMax, player.x + 800);
+
+            // Minimap scale
+            let mapW = minimap.width, mapH = minimap.height;
+            let scaleX = mapW / (platMax - platMin);
+            let scaleY = mapH / canvas.height;
+
+            // Draw ground (red)
+            minimapCtx.fillStyle = "#FF0000";
+            for (let platform of platforms) {
+                if (platform.y >= canvas.height - 50) {
+                    let x = (platform.x - platMin) * scaleX;
+                    let w = platform.width * scaleX;
+                    let y = (platform.y) * scaleY;
+                    let h = platform.height * scaleY;
+                    minimapCtx.fillRect(x, y, w, h);
+                }
+            }
+            // Draw platforms (red)
+            for (let platform of platforms) {
+                if (platform.y < canvas.height - 50) {
+                    let x = (platform.x - platMin) * scaleX;
+                    let w = platform.width * scaleX;
+                    let y = (platform.y) * scaleY;
+                    let h = platform.height * scaleY;
+                    minimapCtx.fillRect(x, y, w, h);
+                }
+            }
+            // Draw coins (yellow)
+            minimapCtx.fillStyle = "#FFD700";
+            for (let coin of coins) {
+                if (!coin.collected) {
+                    let x = (coin.x - platMin) * scaleX + (coin.width/2)*scaleX;
+                    let y = (coin.y) * scaleY + (coin.height/2)*scaleY;
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(x, y, 4, 0, Math.PI*2);
+                    minimapCtx.fill();
+                }
+            }
+            // Draw chests (brown/gold)
+            minimapCtx.fillStyle = "#bfa76f";
+            for (let chest of chests) {
+                if (!chest.opened) {
+                    let x = (chest.x - platMin) * scaleX + (chest.width/2)*scaleX;
+                    let y = (chest.y) * scaleY + (chest.height/2)*scaleY;
+                    minimapCtx.beginPath();
+                    minimapCtx.arc(x, y, 5, 0, Math.PI*2);
+                    minimapCtx.fill();
+                }
+            }
+            // Draw bad guys (black)
+            minimapCtx.fillStyle = "#000";
+            for (let badGuy of badGuys) {
+                let x = (badGuy.x - platMin) * scaleX + (badGuy.width/2)*scaleX;
+                let y = (badGuy.y) * scaleY + (badGuy.height/2)*scaleY;
+                minimapCtx.beginPath();
+                minimapCtx.arc(x, y, 5, 0, Math.PI*2);
+                minimapCtx.fill();
+            }
+            // Draw player (white)
+            minimapCtx.fillStyle = "#fff";
+            let px = (player.x - platMin) * scaleX + (player.width/2)*scaleX;
+            let py = (player.y) * scaleY + (player.height/2)*scaleY;
+            minimapCtx.beginPath();
+            minimapCtx.arc(px, py, 6, 0, Math.PI*2);
+            minimapCtx.fill();
+
+            // Minimap 2: for level 2 and above
+            if (difficulty >= 2) {
+                minimap2.style.display = "";
+                minimapTitle.textContent = "Minimap (Level 2)";
+                minimap2Ctx.clearRect(0, 0, minimap2.width, minimap2.height);
+
+                // For level 2 minimap, show a wider area
+                let minX2 = player.x - 800;
+                let maxX2 = player.x + 1600;
+                let platMin2 = minX2, platMax2 = maxX2;
+                for (let p of platforms) {
+                    if (p.x < platMin2) platMin2 = p.x;
+                    if (p.x + p.width > platMax2) platMax2 = p.x + p.width;
+                }
+                platMin2 = Math.min(platMin2, player.x - 800);
+                platMax2 = Math.max(platMax2, player.x + 1600);
+
+                let mapW2 = minimap2.width, mapH2 = minimap2.height;
+                let scaleX2 = mapW2 / (platMax2 - platMin2);
+                let scaleY2 = mapH2 / canvas.height;
+
+                // Draw ground (red)
+                minimap2Ctx.fillStyle = "#FF0000";
+                for (let platform of platforms) {
+                    if (platform.y >= canvas.height - 50) {
+                        let x = (platform.x - platMin2) * scaleX2;
+                        let w = platform.width * scaleX2;
+                        let y = (platform.y) * scaleY2;
+                        let h = platform.height * scaleY2;
+                        minimap2Ctx.fillRect(x, y, w, h);
+                    }
+                }
+                // Draw platforms (red)
+                for (let platform of platforms) {
+                    if (platform.y < canvas.height - 50) {
+                        let x = (platform.x - platMin2) * scaleX2;
+                        let w = platform.width * scaleX2;
+                        let y = (platform.y) * scaleY2;
+                        let h = platform.height * scaleY2;
+                        minimap2Ctx.fillRect(x, y, w, h);
+                    }
+                }
+                // Draw coins (yellow)
+                minimap2Ctx.fillStyle = "#FFD700";
+                for (let coin of coins) {
+                    if (!coin.collected) {
+                        let x = (coin.x - platMin2) * scaleX2 + (coin.width/2)*scaleX2;
+                        let y = (coin.y) * scaleY2 + (coin.height/2)*scaleY2;
+                        minimap2Ctx.beginPath();
+                        minimap2Ctx.arc(x, y, 3, 0, Math.PI*2);
+                        minimap2Ctx.fill();
+                    }
+                }
+                // Draw chests (brown/gold)
+                minimap2Ctx.fillStyle = "#bfa76f";
+                for (let chest of chests) {
+                    if (!chest.opened) {
+                        let x = (chest.x - platMin2) * scaleX2 + (chest.width/2)*scaleX2;
+                        let y = (chest.y) * scaleY2 + (chest.height/2)*scaleY2;
+                        minimap2Ctx.beginPath();
+                        minimap2Ctx.arc(x, y, 4, 0, Math.PI*2);
+                        minimap2Ctx.fill();
+                    }
+                }
+                // Draw bad guys (black)
+                minimap2Ctx.fillStyle = "#000";
+                for (let badGuy of badGuys) {
+                    let x = (badGuy.x - platMin2) * scaleX2 + (badGuy.width/2)*scaleX2;
+                    let y = (badGuy.y) * scaleY2 + (badGuy.height/2)*scaleY2;
+                    minimap2Ctx.beginPath();
+                    minimap2Ctx.arc(x, y, 4, 0, Math.PI*2);
+                    minimap2Ctx.fill();
+                }
+                // Draw player (white)
+                minimap2Ctx.fillStyle = "#fff";
+                let px2 = (player.x - platMin2) * scaleX2 + (player.width/2)*scaleX2;
+                let py2 = (player.y) * scaleY2 + (player.height/2)*scaleY2;
+                minimap2Ctx.beginPath();
+                minimap2Ctx.arc(px2, py2, 5, 0, Math.PI*2);
+                minimap2Ctx.fill();
+            } else {
+                minimap2.style.display = "none";
+                minimapTitle.textContent = "Minimap";
+            }
+        }
+
+        function showGameOver() {
+            gameOverScreen.style.display = 'flex';
+            finalScore.textContent = `Final Score: ${score}`;
+        }
+
+        function gameLoop() {
+            if (!gameStarted) return;
+            update();
+            draw();
+            if (!gameOver && !chestVideoOpen && !mainVideoOpen) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+    </script>
+    <!-- Main video close button at the end of body for overlay -->
+    <button id="mainVideoClose">Close</button>
+</body>
+</html
