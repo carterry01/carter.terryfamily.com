@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chess-like Strategy Game</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #c00; color: #eee; }
+    #main-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      margin-top: 20px;
+    }
+    #game-board { display: grid; grid-template-columns: repeat(8, 48px); grid-gap: 0; width: max-content; }
+    .cell { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; border-radius: 0; }
+    .white { background: #f0d9b5; }
+    .black { background: #b58863; }
+    .selected { outline: 3px solid yellow; z-index: 2; }
+    #info { margin: 20px auto; width: 350px; text-align: center; }
+    #reset, #chess-btn, #custom-btn, #play-btn { margin-top: 10px; margin-right: 5px; }
+    /* Make black pieces black and white pieces white */
+    .piece-black { color: #000 !important; }
+    .piece-white { color: #fff !important; }
+    #custom-panel {
+      margin: 20px auto;
+      width: 400px;
+      background: #333;
+      padding: 10px;
+      border-radius: 8px;
+      display: none;
+      text-align: center;
+    }
+    #custom-pieces-sidebar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-right: 24px;
+      margin-top: 0;
+      background: #333;
+      border-radius: 8px;
+      padding: 10px 6px 10px 6px;
+      min-width: 60px;
+      min-height: 420px;
+      box-sizing: border-box;
+      /* Remove display: none so it always takes up space, but hide with JS if needed */
+    }
+    #custom-pieces-sidebar span {
+      font-size: 28px;
+      margin: 6px 0;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      padding: 2px 4px;
+      display: inline-block;
+      background: none;
+      transition: background 0.1s, border 0.1s;
+    }
+    #custom-pieces-sidebar .selected-piece {
+      border: 2px solid yellow;
+      background: #444;
+    }
+    #custom-eraser-sidebar {
+      font-size: 22px;
+      margin: 10px 0 0 0;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      background: none;
+      padding: 2px 4px;
+      transition: border 0.1s, background 0.1s;
+    }
+    #custom-eraser-sidebar.selected-piece {
+      border: 2px solid yellow;
+      background: #444;
+    }
+    #custom-panel label {
+      color: #eee;
+      margin-right: 8px;
+    }
+    @media (max-width: 700px) {
+      #main-container { flex-direction: column; align-items: center; }
+      #custom-pieces-sidebar { flex-direction: row; margin: 0 0 12px 0; min-width: 0; min-height: 0; }
+      #custom-pieces-sidebar span { margin: 0 6px; }
+    }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">Chess-like Strategy Game</h2>
+  <div id="info"></div>
+  <div style="text-align:center;">
+    <button id="chess-btn">Chess</button>
+    <button id="custom-btn">Custom</button>
+    <button id="reset">Reset Game</button>
+    <button id="play-btn" style="display:none;">Play</button>
+  </div>
+  <div id="main-container">
+    <div id="custom-pieces-sidebar" style="display:none;">
+      <!-- Piece buttons will be rendered here -->
+    </div>
+    <div id="game-board"></div>
+  </div>
+  <div id="custom-panel">
+    <div>
+      <span style="font-size:13px;color:#aaa;">Click a piece on the left, then click a square to place it. Use the broom to erase.</span>
+    </div>
+    <div style="margin-top:8px;">
+      <span style="font-size:13px;color:#aaa;">You must place at least one white king and one black king.</span>
+    </div>
+  </div>
+  <script>
+    // Chess constants
+    const SIZE = 8;
+    const EMPTY = null;
+    const PLAYER1 = 'w';
+    const PLAYER2 = 'b';
+
+    // Piece symbols and movement
+    // Use filled (black) and filled (white) Unicode chess pieces
+    const PIECES = {
+      wK: {name: 'King', symbol: '♔', player: PLAYER1, class: 'piece-white'},
+      wQ: {name: 'Queen', symbol: '♕', player: PLAYER1, class: 'piece-white'},
+      wR: {name: 'Rook', symbol: '♖', player: PLAYER1, class: 'piece-white'},
+      wB: {name: 'Bishop', symbol: '♗', player: PLAYER1, class: 'piece-white'},
+      wN: {name: 'Knight', symbol: '♘', player: PLAYER1, class: 'piece-white'},
+      wP: {name: 'Pawn', symbol: '♙', player: PLAYER1, class: 'piece-white'},
+      bK: {name: 'King', symbol: '♚', player: PLAYER2, class: 'piece-black'},
+      bQ: {name: 'Queen', symbol: '♛', player: PLAYER2, class: 'piece-black'},
+      bR: {name: 'Rook', symbol: '♜', player: PLAYER2, class: 'piece-black'},
+      bB: {name: 'Bishop', symbol: '♝', player: PLAYER2, class: 'piece-black'},
+      bN: {name: 'Knight', symbol: '♞', player: PLAYER2, class: 'piece-black'},
+      bP: {name: 'Pawn', symbol: '♟', player: PLAYER2, class: 'piece-black'},
+    };
+
+    // For custom setup
+    const CUSTOM_PIECE_ORDER = [
+      'wK','wQ','wR','wB','wN','wP',
+      'bK','bQ','bR','bB','bN','bP'
+    ];
+
+    let board = [];
+    let currentPlayer = PLAYER1;
+    let selected = null;
+    let gameOver = false;
+    let currentMode = 'chess'; // 'chess' or 'custom'
+    let customSetupMode = false;
+    let customBoard = null;
+    let selectedCustomPiece = 'wK'; // default to white king
+    let eraserMode = false;
+
+    // Standard chess starting position
+    function getChessBoard() {
+      return [
+        ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+        ['bP','bP','bP','bP','bP','bP','bP','bP'],
+        [null,null,null,null,null,null,null,null],
+        [null,null,null,null,null,null,null,null],
+        [null,null,null,null,null,null,null,null],
+        [null,null,null,null,null,null,null,null],
+        ['wP','wP','wP','wP','wP','wP','wP','wP'],
+        ['wR','wN','wB','wQ','wK','wB','wN','wR'],
+      ];
+    }
+
+    // Custom board is set by user, start empty
+    function getEmptyBoard() {
+      return Array.from({length: SIZE}, () => Array(SIZE).fill(null));
+    }
+
+    function initBoard(mode) {
+      if (mode === 'custom') {
+        customSetupMode = true;
+        customBoard = getEmptyBoard();
+        board = customBoard;
+        currentMode = 'custom';
+        selected = null;
+        gameOver = false;
+        currentPlayer = PLAYER1;
+        showCustomPanel(true);
+        renderCustomPiecesSidebar();
+        document.getElementById('play-btn').style.display = '';
+        document.getElementById('custom-pieces-sidebar').style.display = 'flex';
+      } else {
+        board = getChessBoard();
+        currentMode = 'chess';
+        selected = null;
+        gameOver = false;
+        currentPlayer = PLAYER1;
+        customSetupMode = false;
+        showCustomPanel(false);
+        document.getElementById('play-btn').style.display = 'none';
+        document.getElementById('custom-pieces-sidebar').style.display = 'none';
+      }
+    }
+
+    function startCustomGame() {
+      // Validate: must have at least one white king and one black king
+      let wKing = 0, bKing = 0;
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          if (customBoard[y][x] === 'wK') wKing++;
+          if (customBoard[y][x] === 'bK') bKing++;
+        }
+      }
+      if (wKing === 0 || bKing === 0) {
+        updateInfo("You must place at least one white king and one black king.");
+        return;
+      }
+      board = JSON.parse(JSON.stringify(customBoard));
+      customSetupMode = false;
+      selected = null;
+      gameOver = false;
+      currentPlayer = PLAYER1;
+      showCustomPanel(false);
+      document.getElementById('play-btn').style.display = 'none';
+      document.getElementById('custom-pieces-sidebar').style.display = 'none';
+      renderBoard();
+      updateInfo();
+    }
+
+    function showCustomPanel(show) {
+      document.getElementById('custom-panel').style.display = show ? '' : 'none';
+    }
+
+    // Render the sidebar with all pieces and eraser
+    function renderCustomPiecesSidebar() {
+      const container = document.getElementById('custom-pieces-sidebar');
+      container.innerHTML = '';
+      CUSTOM_PIECE_ORDER.forEach(pieceKey => {
+        const span = document.createElement('span');
+        span.textContent = PIECES[pieceKey].symbol;
+        span.className = PIECES[pieceKey].class;
+        if (selectedCustomPiece === pieceKey && !eraserMode) {
+          span.classList.add('selected-piece');
+        }
+        span.title = PIECES[pieceKey].name + (pieceKey[0] === 'w' ? ' (White)' : ' (Black)');
+        span.onclick = () => {
+          selectedCustomPiece = pieceKey;
+          eraserMode = false;
+          renderCustomPiecesSidebar();
+        };
+        container.appendChild(span);
+      });
+      // Eraser button
+      const eraserBtn = document.createElement('button');
+      eraserBtn.id = 'custom-eraser-sidebar';
+      eraserBtn.title = 'Eraser';
+      eraserBtn.innerText = '🧹';
+      if (eraserMode) {
+        eraserBtn.classList.add('selected-piece');
+      }
+      eraserBtn.onclick = function() {
+        eraserMode = true;
+        renderCustomPiecesSidebar();
+      };
+      container.appendChild(eraserBtn);
+    }
+
+    function renderBoard() {
+      const gameBoard = document.getElementById('game-board');
+      gameBoard.innerHTML = '';
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell ' + ((x + y) % 2 === 0 ? 'white' : 'black');
+          if (selected && selected.x === x && selected.y === y) {
+            cell.classList.add('selected');
+          }
+          cell.dataset.x = x;
+          cell.dataset.y = y;
+          if (customSetupMode) {
+            cell.onclick = () => handleCustomCellClick(x, y);
+          } else {
+            cell.onclick = () => handleCellClick(x, y);
+          }
+          const piece = board[y][x];
+          if (piece) {
+            const span = document.createElement('span');
+            span.textContent = PIECES[piece].symbol;
+            // Ensure correct color for each piece
+            if (PIECES[piece].player === PLAYER1) {
+              span.className = 'piece-white';
+            } else {
+              span.className = 'piece-black';
+            }
+            cell.appendChild(span);
+          }
+          gameBoard.appendChild(cell);
+        }
+      }
+      updateInfo();
+    }
+
+    function updateInfo(msg) {
+      const info = document.getElementById('info');
+      if (msg) {
+        info.textContent = msg;
+      } else if (gameOver) {
+        info.textContent = `Game Over! ${currentPlayer === PLAYER1 ? 'Black' : 'White'} wins!`;
+      } else if (customSetupMode) {
+        info.textContent = "Custom Setup: Click a piece on the left, then click a square to place it. Use the broom to erase.";
+      } else {
+        info.textContent = `Turn: ${currentPlayer === PLAYER1 ? 'White' : 'Black'} (${currentMode === 'chess' ? 'Chess' : 'Custom'} mode)`;
+      }
+    }
+
+    function handleCustomCellClick(x, y) {
+      if (!customSetupMode) return;
+      if (eraserMode) {
+        customBoard[y][x] = null;
+        eraserMode = false;
+        renderCustomPiecesSidebar();
+      } else {
+        customBoard[y][x] = selectedCustomPiece;
+      }
+      renderBoard();
+    }
+
+    function handleCellClick(x, y) {
+      if (gameOver || customSetupMode) return;
+      const piece = board[y][x];
+      if (!selected) {
+        // Select own piece
+        if (piece && PIECES[piece].player === currentPlayer) {
+          selected = {x, y};
+          renderBoard();
+        }
+      } else {
+        const from = selected;
+        const fromPiece = board[from.y][from.x];
+        if (x === from.x && y === from.y) {
+          selected = null;
+          renderBoard();
+          return;
+        }
+        // Select another own piece
+        if (piece && PIECES[piece].player === currentPlayer) {
+          selected = {x, y};
+          renderBoard();
+          return;
+        }
+        // Try to move
+        if (isLegalMove(from.x, from.y, x, y, fromPiece)) {
+          // If capturing king, game over
+          if (piece && PIECES[piece].name === 'King') {
+            board[y][x] = fromPiece;
+            board[from.y][from.x] = null;
+            gameOver = true;
+            renderBoard();
+            updateInfo(`Game Over! ${currentPlayer === PLAYER1 ? 'White' : 'Black'} wins!`);
+            return;
+          }
+          board[y][x] = fromPiece;
+          board[from.y][from.x] = null;
+          // Pawn promotion (simple: always to Queen)
+          if (fromPiece[1] === 'P' && ((currentPlayer === PLAYER1 && y === 0) || (currentPlayer === PLAYER2 && y === 7))) {
+            board[y][x] = currentPlayer + 'Q';
+          }
+          selected = null;
+          switchPlayer();
+        }
+        renderBoard();
+      }
+    }
+
+    function isLegalMove(x1, y1, x2, y2, piece) {
+      if (!piece) return false;
+      const player = PIECES[piece].player;
+      const dx = x2 - x1, dy = y2 - y1;
+      const absDx = Math.abs(dx), absDy = Math.abs(dy);
+      const dest = board[y2][x2];
+      if (dest && PIECES[dest].player === player) return false;
+
+      switch (piece[1]) {
+        case 'P': // Pawn
+          if (player === PLAYER1) {
+            // Move forward
+            if (dx === 0 && dy === -1 && !dest) return true;
+            // Double move from start
+            if (dx === 0 && dy === -2 && y1 === 6 && !dest && !board[y1-1][x1]) return true;
+            // Capture
+            if (absDx === 1 && dy === -1 && dest && PIECES[dest].player !== player) return true;
+          } else {
+            if (dx === 0 && dy === 1 && !dest) return true;
+            if (dx === 0 && dy === 2 && y1 === 1 && !dest && !board[y1+1][x1]) return true;
+            if (absDx === 1 && dy === 1 && dest && PIECES[dest].player !== player) return true;
+          }
+          return false;
+        case 'N': // Knight
+          return (absDx === 1 && absDy === 2) || (absDx === 2 && absDy === 1);
+        case 'B': // Bishop
+          if (absDx === absDy && absDx > 0) {
+            return isPathClear(x1, y1, x2, y2);
+          }
+          return false;
+        case 'R': // Rook
+          if ((dx === 0 && absDy > 0) || (dy === 0 && absDx > 0)) {
+            return isPathClear(x1, y1, x2, y2);
+          }
+          return false;
+        case 'Q': // Queen
+          if ((absDx === absDy && absDx > 0) || (dx === 0 && absDy > 0) || (dy === 0 && absDx > 0)) {
+            return isPathClear(x1, y1, x2, y2);
+          }
+          return false;
+        case 'K': // King
+          if (absDx <= 1 && absDy <= 1 && (absDx + absDy > 0)) {
+            return true;
+          }
+          return false;
+        default:
+          return false;
+      }
+    }
+
+    function isPathClear(x1, y1, x2, y2) {
+      const dx = Math.sign(x2 - x1);
+      const dy = Math.sign(y2 - y1);
+      let cx = x1 + dx, cy = y1 + dy;
+      while (cx !== x2 || cy !== y2) {
+        if (board[cy][cx]) return false;
+        cx += dx;
+        cy += dy;
+      }
+      return true;
+    }
+
+    function switchPlayer() {
+      currentPlayer = currentPlayer === PLAYER1 ? PLAYER2 : PLAYER1;
+    }
+
+    document.getElementById('reset').onclick = () => {
+      initBoard(currentMode);
+      renderBoard();
+    };
+
+    document.getElementById('chess-btn').onclick = () => {
+      initBoard('chess');
+      renderBoard();
+    };
+
+    document.getElementById('custom-btn').onclick = () => {
+      initBoard('custom');
+      renderBoard();
+    };
+
+    document.getElementById('play-btn').onclick = () => {
+      startCustomGame();
+    };
+
+    // Initialize game
+    initBoard('chess');
+    renderBoard();
+  </script>
+</body>
+</html>

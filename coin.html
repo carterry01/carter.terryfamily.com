@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penguin Clicker</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #ADD8E6; /* Light blue background */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            /* overflow: hidden; */ /* Allow potential scroll if sidebar content is large */
+            position: relative; /* Needed for positioning the sidebar */
+            padding-right: 0; /* Start with no padding */
+            transition: padding-right 0.3s ease; /* Smooth transition when sidebar opens */
+        }
+
+        body.shop-open {
+             /* Adjust padding to prevent content from overlapping with the open sidebar */
+             /* padding-right: 270px; /* Width of sidebar + some buffer */
+        }
+
+
+        /* Define the rocking animation */
+        @keyframes rocking {
+            0% { transform: rotate(-7deg); }
+            50% { transform: rotate(7deg); }
+            100% { transform: rotate(-7deg); }
+        }
+
+        #penguin {
+            width: 150px; /* Adjust size as needed */
+            height: auto;
+            cursor: pointer;
+            transition: transform 0.1s ease; /* Keep transition for click effect */
+            user-select: none; /* Prevent image selection */
+            -webkit-user-drag: none; /* Prevent image dragging */
+            animation: rocking 1.5s ease-in-out infinite; /* Apply the rocking animation */
+            transform-origin: bottom center; /* Pivot from the bottom */
+            margin-bottom: 20px; /* Add some space below the penguin */
+        }
+
+        #penguin:active {
+            /* Combine scale and maintain animation state (or override slightly) */
+            /* Note: The animation might visually interfere with the scale effect */
+            transform: scale(0.95) rotate(0deg); /* Temporarily stop rocking and scale down */
+            animation-play-state: paused; /* Pause animation on click */
+        }
+
+        #penguin-display { /* Renamed from #money-display */
+            margin-top: 20px;
+            font-size: 2em;
+            font-weight: bold;
+            color: #00008B; /* Dark blue text */
+        }
+        h1 {
+            color: #00008B;
+            margin-bottom: 10px; /* Add space below title */
+        }
+
+        #shop-button {
+            margin-top: 20px; /* Space above the button */
+            padding: 10px 20px;
+            font-size: 1.2em;
+            background-color: #4CAF50; /* Green background */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #shop-button:hover {
+            background-color: #45a049; /* Darker green on hover */
+        }
+
+        /* Shop Sidebar Styles */
+        #shop-sidebar {
+            position: fixed; /* Stay in place */
+            top: 0;
+            right: -270px; /* Start hidden off-screen (width + padding) */
+            width: 250px; /* Width of the sidebar */
+            height: 100%;
+            background-color: rgba(50, 50, 50, 0.9); /* Dark semi-transparent background */
+            color: white;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.5); /* Shadow on the left */
+            transition: right 0.3s ease; /* Smooth slide animation */
+            z-index: 1000; /* Ensure it's on top */
+            overflow-y: auto; /* Add scroll if content overflows */
+            display: flex;
+            flex-direction: column;
+        }
+
+        #shop-sidebar.open {
+            right: 0; /* Slide in */
+        }
+
+        #shop-sidebar h2 {
+            margin-top: 0;
+            color: #FFD700; /* Gold color for title */
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .shop-item {
+            background-color: rgba(80, 80, 80, 0.8);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .shop-item p {
+            margin: 0 0 10px 0;
+        }
+
+        .shop-item button {
+            padding: 8px 15px;
+            font-size: 1em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%; /* Make button fill container */
+        }
+
+        .shop-item button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        .shop-item button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+
+        #close-shop-button {
+            margin-top: auto; /* Push to the bottom */
+            padding: 10px 15px;
+            font-size: 1.1em;
+            background-color: #f44336; /* Red background */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #close-shop-button:hover {
+            background-color: #da190b; /* Darker red on hover */
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <h1>Penguin Clicker</h1>
+
+    <img id="penguin" src="pen.png" alt="Clickable Penguin">
+
+    <div id="penguin-display">Penguins: 🐧<span id="penguin-count">0</span> | Click Power: <span id="click-power-display">1</span></div>
+
+    <button id="shop-button">Shop</button>
+
+    <!-- Shop Sidebar Structure -->
+    <div id="shop-sidebar">
+        <h2>Shop</h2>
+
+        <div class="shop-item">
+            <p>Increase Click Power</p>
+            <p>Current Power: <span id="current-click-power">1</span></p>
+            <p>Cost: 🐧<span id="click-upgrade-cost">10</span></p>
+            <button id="upgrade-click-power-button">Buy Upgrade</button>
+        </div>
+
+        <!-- Add more shop items here later -->
+
+        <button id="close-shop-button">Close</button>
+    </div>
+
+    <script>
+        const penguinElement = document.getElementById('penguin'); // The clickable penguin image
+        const penguinCountElement = document.getElementById('penguin-count'); // The span showing the count
+        const clickPowerDisplayElement = document.getElementById('click-power-display'); // For main display
+        const shopButton = document.getElementById('shop-button');
+        const shopSidebar = document.getElementById('shop-sidebar'); // Get the sidebar element
+        const closeShopButton = document.getElementById('close-shop-button');
+        const upgradeClickPowerButton = document.getElementById('upgrade-click-power-button');
+        const currentClickPowerElement = document.getElementById('current-click-power'); // For shop display
+        const clickUpgradeCostElement = document.getElementById('click-upgrade-cost');
+
+        let penguins = 0; // Changed from money
+        let clickPower = 1;
+        let clickUpgradeCost = 10;
+
+        // Function to update the penguin count and click power display
+        function updateDisplay() {
+            penguinCountElement.textContent = penguins; // Update penguin count display
+            clickPowerDisplayElement.textContent = clickPower; // Update main display
+            currentClickPowerElement.textContent = clickPower; // Update shop display
+            clickUpgradeCostElement.textContent = clickUpgradeCost; // Update shop cost display
+
+            // Enable/disable upgrade button based on cost
+            upgradeClickPowerButton.disabled = penguins < clickUpgradeCost;
+        }
+
+        // Event listener for clicking the penguin
+        penguinElement.addEventListener('mousedown', () => {
+            penguins += clickPower; // Increment penguins by clickPower
+            updateDisplay(); // Update the display
+            // Optional: Pause animation via JS if CSS :active isn't sufficient
+            // penguinElement.style.animationPlayState = 'paused';
+        });
+
+        // Resume animation when mouse button is released or leaves
+        function resumeAnimation() {
+             if (penguinElement.style.animationPlayState === 'paused') {
+                 penguinElement.style.animationPlayState = 'running';
+             }
+             // Reset transform if needed, though CSS transition should handle this
+             // penguinElement.style.transform = ''; // Or back to its base state if needed
+        }
+        penguinElement.addEventListener('mouseup', resumeAnimation);
+        penguinElement.addEventListener('mouseleave', resumeAnimation);
+
+
+        // Event listener for the shop button
+        shopButton.addEventListener('click', () => {
+            shopSidebar.classList.add('open'); // Show the sidebar
+            // document.body.classList.add('shop-open'); // Optional: Add class to body
+        });
+
+        // Event listener for the close shop button
+        closeShopButton.addEventListener('click', () => {
+            shopSidebar.classList.remove('open'); // Hide the sidebar
+            // document.body.classList.remove('shop-open'); // Optional: Remove class from body
+        });
+
+        // Event listener for the click power upgrade button
+        upgradeClickPowerButton.addEventListener('click', () => {
+            if (penguins >= clickUpgradeCost) {
+                penguins -= clickUpgradeCost; // Subtract cost
+                clickPower++; // Increase click power
+                // Optional: Increase cost for next upgrade
+                clickUpgradeCost = Math.ceil(clickUpgradeCost * 1.15); // Increase cost by 15%
+                updateDisplay(); // Update penguin count, power, and cost display
+            } else {
+                // Button should be disabled, but good practice to have a fallback
+                console.log("Not enough penguins!"); // Changed from money
+                // Optionally show a message to the user
+            }
+        });
+
+
+        // Initial display update
+        updateDisplay();
+    </script>
+
+</body>
+</html>
