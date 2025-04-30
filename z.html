@@ -116,6 +116,10 @@
       opacity: 0.7;
       letter-spacing: 1px;
     }
+    /* Hide the audio element */
+    #bgmAudio {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -128,6 +132,8 @@
   </div>
   <div id="usernameDisplay" style="display:none;"></div>
   <canvas id="gameCanvas" style="display:none;"></canvas>
+  <!-- Background music audio element, hidden -->
+  <audio id="bgmAudio" src="bgm.mp4" loop preload="auto"></audio>
   <script>
     // --- Start Screen Logic (Offline/Local Only) ---
     const startScreen = document.getElementById('startScreen');
@@ -135,6 +141,7 @@
     const startBtn = document.getElementById('startBtn');
     const usernameDisplay = document.getElementById('usernameDisplay');
     const canvas = document.getElementById('gameCanvas');
+    const bgmAudio = document.getElementById('bgmAudio');
     let username = "";
 
     // Enable start button only if username is not empty
@@ -158,6 +165,12 @@
       usernameDisplay.style.display = "block";
       // Start the game loop
       startGame();
+      // Start background music (user interaction has occurred)
+      if (bgmAudio) {
+        bgmAudio.currentTime = 0;
+        bgmAudio.volume = 0.5;
+        bgmAudio.play().catch(()=>{});
+      }
     });
 
     // --- Game Logic (All Local/Offline) ---
@@ -478,6 +491,11 @@
       usernameInput.value = "";
       startBtn.disabled = true;
       username = "";
+      // Pause and reset background music
+      if (bgmAudio) {
+        bgmAudio.pause();
+        bgmAudio.currentTime = 0;
+      }
     }
 
     // Optional: allow restarting by pressing Escape
