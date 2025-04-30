@@ -12,8 +12,9 @@
       align-items: flex-start;
       margin-top: 20px;
     }
-    #game-board { display: grid; grid-template-columns: repeat(8, 48px); grid-gap: 0; width: max-content; }
-    .cell { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; border-radius: 0; }
+    /* 8x8 board, 64px cells for bigger squares */
+    #game-board { display: grid; grid-template-columns: repeat(8, 64px); grid-gap: 0; width: max-content; }
+    .cell { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 44px; cursor: pointer; border-radius: 0; }
     .white { background: #f0d9b5; }
     .black { background: #b58863; }
     .selected { outline: 3px solid yellow; z-index: 2; }
@@ -43,10 +44,9 @@
       min-width: 60px;
       min-height: 420px;
       box-sizing: border-box;
-      /* Remove display: none so it always takes up space, but hide with JS if needed */
     }
     #custom-pieces-sidebar span {
-      font-size: 28px;
+      font-size: 44px;
       margin: 6px 0;
       cursor: pointer;
       border: 2px solid transparent;
@@ -61,7 +61,7 @@
       background: #444;
     }
     #custom-eraser-sidebar {
-      font-size: 22px;
+      font-size: 32px;
       margin: 10px 0 0 0;
       cursor: pointer;
       border: 2px solid transparent;
@@ -110,7 +110,7 @@
   </div>
   <script>
     // Chess constants
-    const SIZE = 8;
+    const SIZE = 8; // 8x8 board
     const EMPTY = null;
     const PLAYER1 = 'w';
     const PLAYER2 = 'b';
@@ -148,18 +148,17 @@
     let selectedCustomPiece = 'wK'; // default to white king
     let eraserMode = false;
 
-    // Standard chess starting position
+    // Standard chess starting position for 8x8
     function getChessBoard() {
-      return [
-        ['bR','bN','bB','bQ','bK','bB','bN','bR'],
-        ['bP','bP','bP','bP','bP','bP','bP','bP'],
-        [null,null,null,null,null,null,null,null],
-        [null,null,null,null,null,null,null,null],
-        [null,null,null,null,null,null,null,null],
-        [null,null,null,null,null,null,null,null],
-        ['wP','wP','wP','wP','wP','wP','wP','wP'],
-        ['wR','wN','wB','wQ','wK','wB','wN','wR'],
-      ];
+      // Create empty 8x8
+      let b = Array.from({length: SIZE}, () => Array(SIZE).fill(null));
+      // Black pieces
+      b[0] = ['bR','bN','bB','bQ','bK','bB','bN','bR'];
+      b[1] = Array(8).fill('bP');
+      // White pieces
+      b[6] = Array(8).fill('wP');
+      b[7] = ['wR','wN','wB','wQ','wK','wB','wN','wR'];
+      return b;
     }
 
     // Custom board is set by user, start empty
@@ -353,7 +352,7 @@
           board[y][x] = fromPiece;
           board[from.y][from.x] = null;
           // Pawn promotion (simple: always to Queen)
-          if (fromPiece[1] === 'P' && ((currentPlayer === PLAYER1 && y === 0) || (currentPlayer === PLAYER2 && y === 7))) {
+          if (fromPiece[1] === 'P' && ((currentPlayer === PLAYER1 && y === 0) || (currentPlayer === PLAYER2 && y === SIZE-1))) {
             board[y][x] = currentPlayer + 'Q';
           }
           selected = null;
@@ -377,7 +376,7 @@
             // Move forward
             if (dx === 0 && dy === -1 && !dest) return true;
             // Double move from start
-            if (dx === 0 && dy === -2 && y1 === 6 && !dest && !board[y1-1][x1]) return true;
+            if (dx === 0 && dy === -2 && y1 === SIZE-2 && !dest && !board[y1-1][x1]) return true;
             // Capture
             if (absDx === 1 && dy === -1 && dest && PIECES[dest].player !== player) return true;
           } else {
