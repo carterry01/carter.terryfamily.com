@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Idle Mining Empire</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1a1a1a;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 30px;
+    }
+
+    h1 {
+      color: #00ff99;
+      margin-bottom: 10px;
+    }
+
+    .game-container {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 255, 153, 0.2);
+      width: 320px;
+    }
+
+    .stats {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      background: #333;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    .factory-layout {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .mine {
+      width: 50px;
+      height: 50px;
+      background-color: #555;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .mine.active {
+      background-color: #00ff99;
+    }
+    .mine.gold {
+      background-color: #ffd700;
+      color: #222;
+    }
+    .mine.gold.active {
+      background-color: #ffe066;
+    }
+    .mine.diamond {
+      background-color: #00e6ff;
+      color: #222;
+    }
+    .mine.diamond.active {
+      background-color: #b3f0ff;
+    }
+
+    /* Overworld mine styles */
+    .mine.wood {
+      background-color: #8B5A2B;
+      color: #fff;
+    }
+    .mine.wood.active {
+      background-color: #C19A6B;
+    }
+    .mine.lava {
+      background-color: #ff4500;
+      color: #fff;
+    }
+    .mine.lava.active {
+      background-color: #ff7f50;
+    }
+    .mine.water {
+      background-color: #1e90ff;
+      color: #fff;
+    }
+    .mine.water.active {
+      background-color: #87cefa;
+    }
+    .mine.stone {
+      background-color: #888;
+      color: #fff;
+    }
+    .mine.stone.active {
+      background-color: #b0b0b0;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #00ff99;
+      border: none;
+      border-radius: 5px;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    button:hover {
+      background-color: #00cc7a;
+    }
+    .gold-btn {
+      background-color: #ffd700;
+      color: #222;
+    }
+    .gold-btn:hover {
+      background-color: #ffe066;
+    }
+    .diamond-btn {
+      background-color: #00e6ff;
+      color: #222;
+    }
+    .diamond-btn:hover {
+      background-color: #b3f0ff;
+    }
+    .overworld-btn {
+      background-color: #888;
+      color: #fff;
+    }
+    .overworld-btn:hover {
+      background-color: #b0b0b0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛠️ Idle Mining Empire</h1>
+
+  <div class="game-container">
+    <div class="stats" id="stats">
+      <!-- Overworld stats first -->
+      <div class="stat"><span>Wood:</span> <span id="wood">0</span></div>
+      <div class="stat"><span>Lava:</span> <span id="lava">0</span></div>
+      <div class="stat"><span>Water:</span> <span id="water">0</span></div>
+      <div class="stat"><span>Stone:</span> <span id="stone">0</span></div>
+      <div class="stat"><span>Wood Mines:</span> <span id="woodMines">1</span></div>
+      <div class="stat"><span>Lava Mines:</span> <span id="lavaMines">0</span></div>
+      <div class="stat"><span>Water Mines:</span> <span id="waterMines">0</span></div>
+      <div class="stat"><span>Stone Mines:</span> <span id="stoneMines">0</span></div>
+      <!-- Underground stats next -->
+      <div class="stat"><span>Ore:</span> <span id="ore">0</span></div>
+      <div class="stat"><span>Gold:</span> <span id="gold">0</span></div>
+      <div class="stat"><span>Diamond:</span> <span id="diamond">0</span></div>
+      <div class="stat"><span>Money:</span> <span id="money">0</span></div>
+      <div class="stat"><span>Ore Mines:</span> <span id="mines">0</span></div>
+      <div class="stat"><span>Gold Mines:</span> <span id="goldMines">0</span></div>
+      <div class="stat"><span>Diamond Mines:</span> <span id="diamondMines">0</span></div>
+    </div>
+
+    <div class="factory-layout" id="factory-layout">
+      <div class="mine wood active" onclick="toggleMine(0)">🌲</div>
+    </div>
+
+    <div class="buttons" id="buttons">
+      <!-- Overworld buttons first -->
+      <button class="overworld-btn" onclick="sellWater()">Sell Water (+$1 each)</button>
+      <button class="overworld-btn" onclick="sellWood()">Sell Wood (+$5 each)</button>
+      <button class="overworld-btn" onclick="sellStone()">Sell Stone (+$10 each)</button>
+      <button class="overworld-btn" onclick="sellLava()">Sell Lava (+$20 each)</button>
+      <button class="overworld-btn" onclick="buyWaterMine()">Buy Water Mine ($10)</button>
+      <button class="overworld-btn" onclick="buyWoodMine()">Buy Wood Mine ($100)</button>
+      <button class="overworld-btn" onclick="buyLavaMine()">Buy Lava Mine ($1000)</button>
+      <button class="overworld-btn" onclick="buyStoneMine()">Buy Stone Mine ($500)</button>
+      <!-- Underground buttons next -->
+      <button onclick="sellOre()">Sell Ore (+$1 each)</button>
+      <button class="gold-btn" onclick="sellGold()">Sell Gold (+$5 each)</button>
+      <button class="diamond-btn" onclick="sellDiamond()">Sell Diamond (+$20 each)</button>
+      <button onclick="buyMine()">Buy Ore Mine ($10)</button>
+      <button class="gold-btn" onclick="buyGoldMine()">Buy Gold Mine ($100)</button>
+      <button class="diamond-btn" onclick="buyDiamondMine()">Buy Diamond Mine ($1000)</button>
+    </div>
+  </div>
+
+  <script>
+    // Overworld resources
+    let wood = 0, lava = 0, water = 0, stone = 0;
+    let woodMines = 1, lavaMines = 0, waterMines = 0, stoneMines = 0;
+
+    // Underground resources
+    let ore = 0;
+    let gold = 0;
+    let diamond = 0;
+    let oreMines = 0;
+    let goldMines = 0;
+    let diamondMines = 0;
+
+    let money = 0;
+
+    // Each mine is an object: {type: 'wood'|'lava'|'water'|'stone'|'ore'|'gold'|'diamond', active: true/false}
+    let factoryLayout = [{type: 'wood', active: true}];
+
+    function updateUI() {
+      // Overworld
+      document.getElementById("wood").textContent = wood;
+      document.getElementById("lava").textContent = lava;
+      document.getElementById("water").textContent = water;
+      document.getElementById("stone").textContent = stone;
+      document.getElementById("woodMines").textContent = woodMines;
+      document.getElementById("lavaMines").textContent = lavaMines;
+      document.getElementById("waterMines").textContent = waterMines;
+      document.getElementById("stoneMines").textContent = stoneMines;
+      // Underground
+      document.getElementById("ore").textContent = ore;
+      document.getElementById("gold").textContent = gold;
+      document.getElementById("diamond").textContent = diamond;
+      document.getElementById("money").textContent = money;
+      document.getElementById("mines").textContent = oreMines;
+      document.getElementById("goldMines").textContent = goldMines;
+      document.getElementById("diamondMines").textContent = diamondMines;
+
+      updateFactoryLayout();
+    }
+
+    function updateFactoryLayout() {
+      const layout = document.getElementById("factory-layout");
+      layout.innerHTML = '';
+      factoryLayout.forEach((mine, i) => {
+        const mineDiv = document.createElement('div');
+        mineDiv.classList.add('mine');
+        if (mine.type === 'gold') mineDiv.classList.add('gold');
+        if (mine.type === 'diamond') mineDiv.classList.add('diamond');
+        if (mine.type === 'wood') mineDiv.classList.add('wood');
+        if (mine.type === 'lava') mineDiv.classList.add('lava');
+        if (mine.type === 'water') mineDiv.classList.add('water');
+        if (mine.type === 'stone') mineDiv.classList.add('stone');
+        if (mine.active) mineDiv.classList.add('active');
+        if (mine.type === 'ore') mineDiv.textContent = '⛏️';
+        else if (mine.type === 'gold') mineDiv.textContent = '🥇';
+        else if (mine.type === 'diamond') mineDiv.textContent = '💎';
+        else if (mine.type === 'wood') mineDiv.textContent = '🌲';
+        else if (mine.type === 'lava') mineDiv.textContent = '🌋';
+        else if (mine.type === 'water') mineDiv.textContent = '💧';
+        else if (mine.type === 'stone') mineDiv.textContent = '🪨';
+        mineDiv.onclick = () => toggleMine(i);
+        layout.appendChild(mineDiv);
+      });
+    }
+
+    function toggleMine(index) {
+      factoryLayout[index].active = !factoryLayout[index].active;
+      updateUI();
+    }
+
+    // Overworld sell functions
+    function sellWood() {
+      if (wood > 0) {
+        money += wood * 100;
+        wood = 0;
+        updateUI();
+      }
+    }
+    function sellLava() {
+      if (lava > 0) {
+        money += lava * 200;
+        lava = 0;
+        updateUI();
+      }
+    }
+    function sellWater() {
+      if (water > 0) {
+        money += water * 400;
+        water = 0;
+        updateUI();
+      }
+    }
+    function sellStone() {
+      if (stone > 0) {
+        money += stone * 800;
+        stone = 0;
+        updateUI();
+      }
+    }
+
+    // Underground sell functions
+    function sellOre() {
+      if (ore > 0) {
+        money += ore;
+        ore = 0;
+        updateUI();
+      }
+    }
+    function sellGold() {
+      if (gold > 0) {
+        money += gold * 5;
+        gold = 0;
+        updateUI();
+      }
+    }
+    function sellDiamond() {
+      if (diamond > 0) {
+        money += diamond * 20;
+        diamond = 0;
+        updateUI();
+      }
+    }
+
+    // Overworld buy functions (new prices)
+    function buyWoodMine() {
+      if (money >= 100) {
+        woodMines += 1;
+        money -= 100;
+        factoryLayout.push({type: 'wood', active: true});
+        updateUI();
+      }
+    }
+    function buyLavaMine() {
+      if (money >= 1000) {
+        lavaMines += 1;
+        money -= 1000;
+        factoryLayout.push({type: 'lava', active: true});
+        updateUI();
+      }
+    }
+    function buyWaterMine() {
+      if (money >= 10) {
+        waterMines += 1;
+        money -= 10;
+        factoryLayout.push({type: 'water', active: true});
+        updateUI();
+      }
+    }
+    function buyStoneMine() {
+      if (money >= 500) {
+        stoneMines += 1;
+        money -= 500;
+        factoryLayout.push({type: 'stone', active: true});
+        updateUI();
+      }
+    }
+
+    // Underground buy functions (unchanged)
+    function buyMine() {
+      if (money >= 10) {
+        oreMines += 1;
+        money -= 10;
+        factoryLayout.push({type: 'ore', active: true});
+        updateUI();
+      }
+    }
+    function buyGoldMine() {
+      if (money >= 100) {
+        goldMines += 1;
+        money -= 100;
+        factoryLayout.push({type: 'gold', active: true});
+        updateUI();
+      }
+    }
+    function buyDiamondMine() {
+      if (money >= 1000) {
+        diamondMines += 1;
+        money -= 1000;
+        factoryLayout.push({type: 'diamond', active: true});
+        updateUI();
+      }
+    }
+
+    setInterval(() => {
+      // For each mine, if active, add resource
+      factoryLayout.forEach(mine => {
+        if (mine.active) {
+          if (mine.type === 'ore') ore += 1;
+          else if (mine.type === 'gold') gold += 1;
+          else if (mine.type === 'diamond') diamond += 1;
+          else if (mine.type === 'wood') wood += 1;
+          else if (mine.type === 'lava') lava += 1;
+          else if (mine.type === 'water') water += 1;
+          else if (mine.type === 'stone') stone += 1;
+        }
+      });
+      updateUI();
+    }, 1000);
+
+    updateUI();
+  </script>
+</body>
+</html>
