@@ -252,6 +252,40 @@
             ground.rotation.x = -Math.PI / 2;
             scene.add(ground);
 
+            // Add white walls
+            const wallThickness = 1;
+            const wallHeight = 20;
+            const wallLength = worldBounds * 2;
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+
+            // Left wall (x = -worldBounds)
+            const leftWallGeometry = new THREE.PlaneGeometry(wallThickness, wallHeight);
+            const leftWall = new THREE.Mesh(leftWallGeometry, wallMaterial);
+            leftWall.position.set(-worldBounds, wallHeight / 2, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            scene.add(leftWall);
+
+            // Right wall (x = +worldBounds)
+            const rightWallGeometry = new THREE.PlaneGeometry(wallThickness, wallHeight);
+            const rightWall = new THREE.Mesh(rightWallGeometry, wallMaterial);
+            rightWall.position.set(worldBounds, wallHeight / 2, 0);
+            rightWall.rotation.y = -Math.PI / 2;
+            scene.add(rightWall);
+
+            // Back wall (z = -worldBounds)
+            const backWallGeometry = new THREE.PlaneGeometry(wallLength, wallHeight);
+            const backWall = new THREE.Mesh(backWallGeometry, wallMaterial);
+            backWall.position.set(0, wallHeight / 2, -worldBounds);
+            backWall.rotation.y = 0;
+            scene.add(backWall);
+
+            // Front wall (z = +worldBounds)
+            const frontWallGeometry = new THREE.PlaneGeometry(wallLength, wallHeight);
+            const frontWall = new THREE.Mesh(frontWallGeometry, wallMaterial);
+            frontWall.position.set(0, wallHeight / 2, worldBounds);
+            frontWall.rotation.y = Math.PI;
+            scene.add(frontWall);
+
             // Initial World Generation
             generateInitialWorld();
 
