@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Blob Eater</title>
+  <title>Blob Eater (Offline)</title>
   <style>
     html, body {
       height: 100%;
@@ -103,19 +103,33 @@
       pointer-events: none;
       opacity: 0.85;
     }
+    #offlineNotice {
+      position: absolute;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      color: #aaa;
+      font-size: 1em;
+      z-index: 20;
+      text-align: center;
+      pointer-events: none;
+      opacity: 0.7;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
   <h1>Blob Eater</h1>
   <div id="startScreen">
-    <div id="usernameLabel">Enter your username:</div>
+    <div id="usernameLabel">Enter your name:</div>
     <input type="text" id="usernameInput" maxlength="16" autocomplete="off" placeholder="Your name..." />
     <button id="startBtn" disabled>Start</button>
+    <div id="offlineNotice">(Offline Mode: No network required. All play is local.)</div>
   </div>
   <div id="usernameDisplay" style="display:none;"></div>
   <canvas id="gameCanvas" style="display:none;"></canvas>
   <script>
-    // --- Start Screen Logic ---
+    // --- Start Screen Logic (Offline/Local Only) ---
     const startScreen = document.getElementById('startScreen');
     const usernameInput = document.getElementById('usernameInput');
     const startBtn = document.getElementById('startBtn');
@@ -146,7 +160,7 @@
       startGame();
     });
 
-    // --- Game Logic ---
+    // --- Game Logic (All Local/Offline) ---
     let ctx = canvas.getContext('2d');
 
     // Set canvas to full window size
