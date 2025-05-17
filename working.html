@@ -11,52 +11,6 @@
             background: #0a0a1a;
             cursor: none;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .start-container {
-            position: relative;
-            width: 200px;
-            height: 200px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .start-button {
-            width: 150px;
-            height: 150px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            z-index: 2;
-        }
-
-        .start-button:hover {
-            transform: scale(1.1);
-        }
-
-        .rotating-sparkle {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #fff;
-            border-radius: 50%;
-            mix-blend-mode: screen;
-            filter: blur(1px);
-            box-shadow: 0 0 10px currentColor;
-            animation: rotate 3s linear infinite;
-            transform-origin: 100px 100px;
-        }
-
-        @keyframes rotate {
-            from {
-                transform: rotate(0deg) translateX(100px) rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg) translateX(100px) rotate(-360deg);
-            }
         }
 
         .sparkle {
@@ -85,9 +39,20 @@
             pointer-events: none;
             border-radius: 50%;
             mix-blend-mode: screen;
-            animation: burst 0.8s ease-out forwards;
+            animation: burst 1s ease-out forwards;
             transform-origin: center;
             filter: blur(2px);
+        }
+
+        .burst-ring {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: burstRing 1.2s ease-out forwards;
+            transform-origin: center;
+            border: 2px solid;
+            filter: blur(1px);
         }
 
         @keyframes sparkle {
@@ -107,15 +72,31 @@
 
         @keyframes burst {
             0% {
-                transform: scale(0);
+                transform: scale(0) rotate(0deg);
                 opacity: 1;
             }
             50% {
                 opacity: 0.8;
             }
             100% {
-                transform: scale(2);
+                transform: scale(2.5) rotate(180deg);
                 opacity: 0;
+            }
+        }
+
+        @keyframes burstRing {
+            0% {
+                transform: scale(0) rotate(0deg);
+                opacity: 1;
+                border-width: 4px;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(3) rotate(360deg);
+                opacity: 0;
+                border-width: 1px;
             }
         }
 
@@ -130,112 +111,121 @@
     </style>
 </head>
 <body>
-    <div class="start-container">
-        <img src="start.png" alt="Start" class="start-button" id="startButton">
-    </div>
-
     <script>
-        // Create rotating sparkles
-        function createRotatingSparkles() {
-            const container = document.querySelector('.start-container');
-            const numSparkles = 8;
-            
-            for (let i = 0; i < numSparkles; i++) {
-                const sparkle = document.createElement('div');
-                sparkle.className = 'rotating-sparkle';
-                
-                // Calculate position and delay
-                const angle = (i / numSparkles) * 360;
-                const hue = (i / numSparkles) * 360;
-                
-                sparkle.style.transform = `rotate(${angle}deg) translateX(100px) rotate(-${angle}deg)`;
-                sparkle.style.animationDelay = `${i * (3 / numSparkles)}s`;
-                sparkle.style.color = `hsl(${hue}, 100%, 70%)`;
-                sparkle.style.background = `hsl(${hue}, 100%, 70%)`;
-                
-                container.appendChild(sparkle);
-            }
-        }
-
         function getRandomShape() {
             const shapes = ['sparkle', 'star', 'heart'];
             return shapes[Math.floor(Math.random() * shapes.length)];
         }
 
-        function createSparkle(x, y) {
+        function createSparkle(x, y, options = {}) {
             const sparkle = document.createElement('div');
-            const shape = getRandomShape();
+            const shape = options.shape || getRandomShape();
             sparkle.className = `sparkle ${shape}`;
             
-            const offsetX = (Math.random() - 0.5) * 30;
-            const offsetY = (Math.random() - 0.5) * 30;
+            // Random offset for each sparkle
+            const offsetX = (Math.random() - 0.5) * (options.spread || 30);
+            const offsetY = (Math.random() - 0.5) * (options.spread || 30);
             
             sparkle.style.left = (x + offsetX) + 'px';
             sparkle.style.top = (y + offsetY) + 'px';
             
-            const hue = Math.random() * 360;
+            // Random color for each sparkle
+            const hue = options.hue || Math.random() * 360;
             const saturation = Math.random() * 30 + 70;
             const lightness = Math.random() * 20 + 60;
             sparkle.style.color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
             sparkle.style.background = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
             
-            const size = Math.random() * 6 + 4;
+            // Random size
+            const size = Math.random() * (options.sizeRange || 6) + (options.minSize || 4);
             sparkle.style.width = size + 'px';
             sparkle.style.height = size + 'px';
             
-            const duration = Math.random() * 0.8 + 1.2;
+            // Random animation duration
+            const duration = Math.random() * (options.durationRange || 0.8) + (options.minDuration || 1.2);
             sparkle.style.animationDuration = duration + 's';
             
             document.body.appendChild(sparkle);
             
+            // Remove sparkle after animation
             setTimeout(() => {
                 sparkle.remove();
             }, duration * 1000);
         }
 
         function createBurst(x, y) {
-            for (let i = 0; i < 3; i++) {
-                const burst = document.createElement('div');
-                burst.className = 'burst';
+            // Create main burst
+            const burst = document.createElement('div');
+            burst.className = 'burst';
+            burst.style.left = x + 'px';
+            burst.style.top = y + 'px';
+            
+            // Random color for burst
+            const hue = Math.random() * 360;
+            const saturation = Math.random() * 30 + 70;
+            const lightness = Math.random() * 20 + 60;
+            burst.style.background = `radial-gradient(circle, 
+                hsl(${hue}, ${saturation}%, ${lightness}%) 0%,
+                transparent 70%)`;
+            
+            burst.style.width = '150px';
+            burst.style.height = '150px';
+            
+            document.body.appendChild(burst);
+            
+            // Create multiple rings
+            for (let i = 0; i < 4; i++) {
+                const ring = document.createElement('div');
+                ring.className = 'burst-ring';
+                ring.style.left = x + 'px';
+                ring.style.top = y + 'px';
+                ring.style.borderColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                ring.style.width = '100px';
+                ring.style.height = '100px';
+                ring.style.animationDelay = (i * 0.15) + 's';
                 
-                burst.style.left = (x - 50) + 'px';
-                burst.style.top = (y - 50) + 'px';
-                
-                const hue = Math.random() * 360;
-                const saturation = Math.random() * 30 + 70;
-                const lightness = Math.random() * 20 + 60;
-                burst.style.background = `radial-gradient(circle, 
-                    hsla(${hue}, ${saturation}%, ${lightness}%, 0.8) 0%,
-                    hsla(${hue}, ${saturation}%, ${lightness}%, 0.4) 50%,
-                    hsla(${hue}, ${saturation}%, ${lightness}%, 0) 100%)`;
-                
-                const size = 100 + (i * 50);
-                burst.style.width = size + 'px';
-                burst.style.height = size + 'px';
-                burst.style.animationDelay = (i * 0.1) + 's';
-                
-                document.body.appendChild(burst);
+                document.body.appendChild(ring);
                 
                 setTimeout(() => {
-                    burst.remove();
-                }, 800);
+                    ring.remove();
+                }, 1200);
             }
 
-            for (let i = 0; i < 20; i++) {
-                const angle = (Math.random() * Math.PI * 2);
-                const distance = Math.random() * 100;
+            // Create sparkle burst
+            for (let i = 0; i < 24; i++) {
+                const angle = (i / 24) * Math.PI * 2;
+                const distance = 30 + Math.random() * 40;
                 const sparkleX = x + Math.cos(angle) * distance;
                 const sparkleY = y + Math.sin(angle) * distance;
-                createSparkle(sparkleX, sparkleY);
+                
+                createSparkle(sparkleX, sparkleY, {
+                    hue: hue,
+                    spread: 10,
+                    sizeRange: 8,
+                    minSize: 6,
+                    durationRange: 1,
+                    minDuration: 1
+                });
             }
+
+            // Remove burst after animation
+            setTimeout(() => {
+                burst.remove();
+            }, 1000);
         }
 
         let lastTime = 0;
         document.addEventListener('mousemove', (e) => {
             const currentTime = Date.now();
             if (currentTime - lastTime > 16) {
-                for (let i = 0; i < 4; i++) {
-                    createSparkle(e.clientX, e.clientY);
+                for (let i = 0; i < 3; i++) {
+                    createSparkle(e.clientX, e.clientY, {
+                        spread: 20,
+                        sizeRange: 4,
+                        minSize: 3,
+                        durationRange: 0.5,
+                        minDuration: 0.8
+                    });
                 }
                 lastTime = currentTime;
             }
@@ -244,9 +234,6 @@
         document.addEventListener('mousedown', (e) => {
             createBurst(e.clientX, e.clientY);
         });
-
-        // Initialize rotating sparkles
-        createRotatingSparkles();
     </script>
 </body>
 </html> 
