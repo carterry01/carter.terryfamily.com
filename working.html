@@ -170,7 +170,7 @@
 </head>
 <body>
     <div id="score">Score: 0</div>
-    <div id="timer">Time: 30</div>
+    <div id="timer">Time: 90</div>
     <div id="gameOver">
         Game Over!
         <div id="finalScore"></div>
@@ -179,7 +179,7 @@
 
     <script>
         let score = 0;
-        let timeLeft = 30;
+        let timeLeft = 90;
         let gameActive = true;
         let targetInterval;
 
@@ -190,7 +190,9 @@
 
         function updateTimer() {
             timeLeft--;
-            document.getElementById('timer').textContent = `Time: ${timeLeft}`;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timer').textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
             if (timeLeft <= 0) {
                 endGame();
             }
@@ -205,7 +207,7 @@
 
         function startGame() {
             score = 0;
-            timeLeft = 30;
+            timeLeft = 90;
             gameActive = true;
             document.getElementById('gameOver').style.display = 'none';
             updateScore(0);
