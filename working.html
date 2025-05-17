@@ -34,6 +34,16 @@
             clip-path: path('M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402m5.726-20.583c-2.203 0-4.446 1.042-5.726 3.238-1.285-2.206-3.522-3.248-5.719-3.248-3.183 0-6.281 2.187-6.281 6.191 0 4.661 5.571 9.429 12 15.809 6.43-6.38 12-11.148 12-15.809 0-4.011-3.095-6.181-6.274-6.181');
         }
 
+        .burst {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            animation: burst 0.8s ease-out forwards;
+            transform-origin: center;
+            filter: blur(2px);
+        }
+
         @keyframes sparkle {
             0% {
                 transform: scale(1) rotate(0deg) translateY(0);
@@ -45,6 +55,20 @@
             }
             100% {
                 transform: scale(0) rotate(360deg) translateY(20px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes burst {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(2);
                 opacity: 0;
             }
         }
@@ -102,16 +126,62 @@
             }, duration * 1000);
         }
 
+        function createBurst(x, y) {
+            // Create multiple burst rings
+            for (let i = 0; i < 3; i++) {
+                const burst = document.createElement('div');
+                burst.className = 'burst';
+                
+                // Position at click point
+                burst.style.left = (x - 50) + 'px';
+                burst.style.top = (y - 50) + 'px';
+                
+                // Random color for each burst
+                const hue = Math.random() * 360;
+                const saturation = Math.random() * 30 + 70;
+                const lightness = Math.random() * 20 + 60;
+                burst.style.background = `radial-gradient(circle, 
+                    hsla(${hue}, ${saturation}%, ${lightness}%, 0.8) 0%,
+                    hsla(${hue}, ${saturation}%, ${lightness}%, 0.4) 50%,
+                    hsla(${hue}, ${saturation}%, ${lightness}%, 0) 100%)`;
+                
+                // Size and animation delay
+                const size = 100 + (i * 50);
+                burst.style.width = size + 'px';
+                burst.style.height = size + 'px';
+                burst.style.animationDelay = (i * 0.1) + 's';
+                
+                document.body.appendChild(burst);
+                
+                // Remove burst after animation
+                setTimeout(() => {
+                    burst.remove();
+                }, 800);
+            }
+
+            // Create extra sparkles on click
+            for (let i = 0; i < 20; i++) {
+                const angle = (Math.random() * Math.PI * 2);
+                const distance = Math.random() * 100;
+                const sparkleX = x + Math.cos(angle) * distance;
+                const sparkleY = y + Math.sin(angle) * distance;
+                createSparkle(sparkleX, sparkleY);
+            }
+        }
+
         let lastTime = 0;
         document.addEventListener('mousemove', (e) => {
             const currentTime = Date.now();
-            if (currentTime - lastTime > 16) { // Limit to ~60 sparkles per second
-                // Create multiple sparkles
+            if (currentTime - lastTime > 16) {
                 for (let i = 0; i < 4; i++) {
                     createSparkle(e.clientX, e.clientY);
                 }
                 lastTime = currentTime;
             }
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            createBurst(e.clientX, e.clientY);
         });
     </script>
 </body>
