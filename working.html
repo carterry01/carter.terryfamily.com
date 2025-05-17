@@ -8,7 +8,7 @@
         body {
             margin: 0;
             height: 100vh;
-            background: #1a1a1a;
+            background: #0a0a1a;
             cursor: none;
             overflow: hidden;
         }
@@ -22,44 +22,76 @@
             border-radius: 50%;
             animation: sparkle 1.5s ease-out forwards;
             mix-blend-mode: screen;
+            filter: blur(1px);
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .star {
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
+
+        .heart {
+            clip-path: path('M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402m5.726-20.583c-2.203 0-4.446 1.042-5.726 3.238-1.285-2.206-3.522-3.248-5.719-3.248-3.183 0-6.281 2.187-6.281 6.191 0 4.661 5.571 9.429 12 15.809 6.43-6.38 12-11.148 12-15.809 0-4.011-3.095-6.181-6.274-6.181');
         }
 
         @keyframes sparkle {
             0% {
-                transform: scale(1) rotate(0deg);
+                transform: scale(1) rotate(0deg) translateY(0);
                 opacity: 1;
             }
+            50% {
+                transform: scale(1.2) rotate(180deg) translateY(-10px);
+                opacity: 0.8;
+            }
             100% {
-                transform: scale(0) rotate(360deg);
+                transform: scale(0) rotate(360deg) translateY(20px);
                 opacity: 0;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
             }
         }
     </style>
 </head>
 <body>
     <script>
+        function getRandomShape() {
+            const shapes = ['sparkle', 'star', 'heart'];
+            return shapes[Math.floor(Math.random() * shapes.length)];
+        }
+
         function createSparkle(x, y) {
             const sparkle = document.createElement('div');
-            sparkle.className = 'sparkle';
+            const shape = getRandomShape();
+            sparkle.className = `sparkle ${shape}`;
             
             // Random offset for each sparkle
-            const offsetX = (Math.random() - 0.5) * 20;
-            const offsetY = (Math.random() - 0.5) * 20;
+            const offsetX = (Math.random() - 0.5) * 30;
+            const offsetY = (Math.random() - 0.5) * 30;
             
             sparkle.style.left = (x + offsetX) + 'px';
             sparkle.style.top = (y + offsetY) + 'px';
             
             // Random color for each sparkle
             const hue = Math.random() * 360;
-            sparkle.style.background = `hsl(${hue}, 100%, 70%)`;
+            const saturation = Math.random() * 30 + 70;
+            const lightness = Math.random() * 20 + 60;
+            sparkle.style.color = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            sparkle.style.background = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
             
             // Random size
-            const size = Math.random() * 4 + 4;
+            const size = Math.random() * 6 + 4;
             sparkle.style.width = size + 'px';
             sparkle.style.height = size + 'px';
             
             // Random animation duration
-            const duration = Math.random() * 0.5 + 1;
+            const duration = Math.random() * 0.8 + 1.2;
             sparkle.style.animationDuration = duration + 's';
             
             document.body.appendChild(sparkle);
@@ -73,9 +105,9 @@
         let lastTime = 0;
         document.addEventListener('mousemove', (e) => {
             const currentTime = Date.now();
-            if (currentTime - lastTime > 20) { // Limit to 50 sparkles per second
+            if (currentTime - lastTime > 16) { // Limit to ~60 sparkles per second
                 // Create multiple sparkles
-                for (let i = 0; i < 3; i++) {
+                for (let i = 0; i < 4; i++) {
                     createSparkle(e.clientX, e.clientY);
                 }
                 lastTime = currentTime;
