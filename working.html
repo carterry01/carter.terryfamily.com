@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magical Cursor</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #1a1a1a;
+            cursor: none;
+            overflow: hidden;
+        }
+
+        .sparkle {
+            position: fixed;
+            pointer-events: none;
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            animation: sparkle 1.5s ease-out forwards;
+            mix-blend-mode: screen;
+        }
+
+        @keyframes sparkle {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'sparkle';
+            
+            // Random offset for each sparkle
+            const offsetX = (Math.random() - 0.5) * 20;
+            const offsetY = (Math.random() - 0.5) * 20;
+            
+            sparkle.style.left = (x + offsetX) + 'px';
+            sparkle.style.top = (y + offsetY) + 'px';
+            
+            // Random color for each sparkle
+            const hue = Math.random() * 360;
+            sparkle.style.background = `hsl(${hue}, 100%, 70%)`;
+            
+            // Random size
+            const size = Math.random() * 4 + 4;
+            sparkle.style.width = size + 'px';
+            sparkle.style.height = size + 'px';
+            
+            // Random animation duration
+            const duration = Math.random() * 0.5 + 1;
+            sparkle.style.animationDuration = duration + 's';
+            
+            document.body.appendChild(sparkle);
+            
+            // Remove sparkle after animation
+            setTimeout(() => {
+                sparkle.remove();
+            }, duration * 1000);
+        }
+
+        let lastTime = 0;
+        document.addEventListener('mousemove', (e) => {
+            const currentTime = Date.now();
+            if (currentTime - lastTime > 20) { // Limit to 50 sparkles per second
+                // Create multiple sparkles
+                for (let i = 0; i < 3; i++) {
+                    createSparkle(e.clientX, e.clientY);
+                }
+                lastTime = currentTime;
+            }
+        });
+    </script>
+</body>
+</html> 
