@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Byte Quest</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', monospace;
+            cursor: none;
+            touch-action: none;
+        }
+        canvas {
+            border: 2px solid #0ff;
+            box-shadow: 0 0 20px #0ff;
+            max-width: 100%;
+            max-height: 100vh;
+        }
+        #score {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #0ff;
+            font-size: 24px;
+            text-shadow: 0 0 10px #0ff;
+        }
+        #health {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: #0ff;
+            font-size: 24px;
+            text-shadow: 0 0 10px #0ff;
+        }
+        #mobileControls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 20px;
+            z-index: 1000;
+        }
+        .control-button {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 255, 255, 0.3);
+            border: 2px solid #0ff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #0ff;
+            font-size: 24px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        #jumpButton {
+            width: 80px;
+            height: 80px;
+            background: rgba(0, 255, 255, 0.3);
+            border: 2px solid #0ff;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="health">❤️❤️❤️</div>
+    <div id="mobileControls">
+        <div class="control-button" id="leftButton">←</div>
+        <div class="control-button" id="rightButton">→</div>
+        <div class="control-button" id="jumpButton">↑</div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const healthElement = document.getElementById('health');
+        const mobileControls = document.getElementById('mobileControls');
+
+        // Set canvas size
+        function resizeCanvas() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight - 200;
+                mobileControls.style.display = 'flex';
+            } else {
+                canvas.width = 800;
+                canvas.height = 600;
+                mobileControls.style.display = 'none';
+            }
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Game state
+        let score = 0;
+        let gameOver = false;
+        let playerHealth = 3;
+
+        // Player
+        const player = {
+            x: 50,
+            y: canvas.height - 100,
+            width: 40,
+            height: 40,
+            speed: 5,
+            jumpForce: -15,
+            velocityY: 0,
+            isJumping: false,
+            color: '#0ff'
+        };
+
+        // Physics
+        const gravity = 0.8;
+        const platforms = [];
+        const bugs = [];
+        const particles = [];
+
+        // Create initial platforms
+        function createPlatforms() {
+            platforms.length = 0;
+            // Ground
+            platforms.push({
+                x: 0,
+                y: canvas.height - 40,
+                width: canvas.width,
+                height: 40
+            });
+            // Platforms
+            for (let i = 0; i < 5; i++) {
+                platforms.push({
+                    x: Math.random() * (canvas.width - 100),
+                    y: Math.random() * (canvas.height - 200) + 100,
+                    width: 100,
+                    height: 20
+                });
+            }
+        }
+
+        // Create bug
+        function createBug() {
+            bugs.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30,
+                width: 30,
+                height: 30,
+                speed: 2,
+                color: '#f00'
+            });
+        }
+
+        // Create particles
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x,
+                    y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    radius: Math.random() * 3,
+                    color,
+                    life: 1
+                });
+            }
+        }
+
+        // Controls
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false
+        };
+
+        // Mobile controls
+        document.getElementById('leftButton').addEventListener('touchstart', () => keys.ArrowLeft = true);
+        document.getElementById('leftButton').addEventListener('touchend', () => keys.ArrowLeft = false);
+        document.getElementById('rightButton').addEventListener('touchstart', () => keys.ArrowRight = true);
+        document.getElementById('rightButton').addEventListener('touchend', () => keys.ArrowRight = false);
+        document.getElementById('jumpButton').addEventListener('touchstart', () => keys.ArrowUp = true);
+        document.getElementById('jumpButton').addEventListener('touchend', () => keys.ArrowUp = false);
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = false;
+            }
+        });
+
+        // Check collision
+        function checkCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        // Update game state
+        function update() {
+            if (gameOver) return;
+
+            // Player movement
+            if (keys.ArrowLeft) player.x -= player.speed;
+            if (keys.ArrowRight) player.x += player.speed;
+            if (keys.ArrowUp && !player.isJumping) {
+                player.velocityY = player.jumpForce;
+                player.isJumping = true;
+            }
+
+            // Apply gravity
+            player.velocityY += gravity;
+            player.y += player.velocityY;
+
+            // Platform collisions
+            player.isJumping = true;
+            platforms.forEach(platform => {
+                if (checkCollision(player, platform)) {
+                    if (player.velocityY > 0 && player.y + player.height - player.velocityY <= platform.y) {
+                        player.y = platform.y - player.height;
+                        player.velocityY = 0;
+                        player.isJumping = false;
+                    }
+                }
+            });
+
+            // Keep player in bounds
+            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+            if (player.y > canvas.height) {
+                playerHealth--;
+                healthElement.textContent = '❤️'.repeat(playerHealth);
+                if (playerHealth <= 0) {
+                    gameOver = true;
+                } else {
+                    player.y = 50;
+                    player.velocityY = 0;
+                }
+            }
+
+            // Update bugs
+            if (Math.random() < 0.02) createBug();
+            bugs.forEach((bug, index) => {
+                bug.y += bug.speed;
+                
+                // Check collision with player
+                if (checkCollision(bug, player)) {
+                    if (player.velocityY > 0) { // Player is falling
+                        bugs.splice(index, 1);
+                        score += 10;
+                        scoreElement.textContent = `Score: ${score}`;
+                        createParticles(bug.x, bug.y, '#f00');
+                        player.velocityY = player.jumpForce / 2; // Small bounce
+                    } else {
+                        playerHealth--;
+                        healthElement.textContent = '❤️'.repeat(playerHealth);
+                        if (playerHealth <= 0) {
+                            gameOver = true;
+                        }
+                        bugs.splice(index, 1);
+                        createParticles(player.x, player.y, '#f00');
+                    }
+                }
+                
+                // Remove bugs that are off screen
+                if (bug.y > canvas.height) {
+                    bugs.splice(index, 1);
+                }
+            });
+
+            // Update particles
+            particles.forEach((particle, index) => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life -= 0.02;
+                if (particle.life <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+        }
+
+        // Draw game objects
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < canvas.width; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+
+            // Draw platforms
+            ctx.fillStyle = '#0ff';
+            platforms.forEach(platform => {
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            });
+
+            // Draw player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Draw bugs
+            bugs.forEach(bug => {
+                ctx.fillStyle = bug.color;
+                ctx.fillRect(bug.x, bug.y, bug.width, bug.height);
+            });
+
+            // Draw particles
+            particles.forEach(particle => {
+                ctx.globalAlpha = particle.life;
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            // Draw game over screen
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#f00';
+                ctx.font = '48px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+                ctx.font = '24px Courier New';
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText('Press R to Restart', canvas.width / 2, canvas.height / 2 + 80);
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Restart game
+        function restartGame() {
+            gameOver = false;
+            score = 0;
+            playerHealth = 3;
+            scoreElement.textContent = 'Score: 0';
+            healthElement.textContent = '❤️❤️❤️';
+            player.x = 50;
+            player.y = canvas.height - 100;
+            player.velocityY = 0;
+            bugs.length = 0;
+            particles.length = 0;
+            createPlatforms();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyR' && gameOver) {
+                restartGame();
+            }
+        });
+
+        // Mobile restart
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameOver) {
+                e.preventDefault();
+                restartGame();
+            }
+        });
+
+        // Prevent default touch behaviors
+        document.addEventListener('touchmove', (e) => {
+            if (e.target === canvas || e.target === mobileControls) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Initialize game
+        createPlatforms();
+        gameLoop();
+    </script>
+</body>
+</html>
