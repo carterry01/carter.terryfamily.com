@@ -637,17 +637,30 @@
         // Restart game
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyR' && gameOver) {
-                gameOver = false;
-                score = 0;
-                scoreElement.textContent = 'Score: 0';
-                player.x = canvas.width / 2;
-                player.y = canvas.height - 50;
-                lasers = [];
-                obstacles = [];
-                particles = [];
-                bossTimer = 0;
+                restartGame();
             }
         });
+
+        // Add touch restart for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameOver) {
+                e.preventDefault();
+                restartGame();
+            }
+        });
+
+        // Function to handle game restart
+        function restartGame() {
+            gameOver = false;
+            score = 0;
+            scoreElement.textContent = 'Score: 0';
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 50;
+            lasers = [];
+            obstacles = [];
+            particles = [];
+            bossTimer = 0;
+        }
 
         // Prevent default touch behaviors
         document.addEventListener('touchmove', (e) => {

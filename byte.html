@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Byte Quest: The Game Makers</title>
+  <style>
+    body { background: #111; color: #0ff; font-family: 'Courier New', monospace; }
+    #game { width: 600px; margin: 40px auto; background: #222; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px #0ff; }
+    #choices button { margin: 10px; background: #0ff; color: #111; border: none; padding: 10px 20px; border-radius: 5px; font-size: 1em; }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="scene"></div>
+    <div style="margin-top:20px;">
+      <button id="startBtn" style="background:#0ff; color:#111; border:none; padding:10px 20px; border-radius:5px; font-size:1em;">▶️ Start</button>
+      <button id="pauseBtn" style="background:#0ff; color:#111; border:none; padding:10px 20px; border-radius:5px; font-size:1em;">⏸️ Pause</button>
+      <button id="restartBtn" style="background:#0ff; color:#111; border:none; padding:10px 20px; border-radius:5px; font-size:1em;">🔄 Restart</button>
+      <button id="readBtn" style="background:#0ff; color:#111; border:none; padding:10px 20px; border-radius:5px; font-size:1em;">🔊 Read to Me</button>
+    </div>
+  </div>
+  <script>
+    // Split the user's story into paragraphs for scenes
+    const scenes = [
+      "Book One: Byte Games",
+      "One rainy afternoon, Carter and Arie were holed up in Carter's basement, surrounded by snacks, tangled cords, and half-drained energy drinks. The hum of the computer fans was the only soundtrack—until Arie said, 'We should just make our own game.'",
+      "Carter spun around in his chair. 'Seriously?'",
+      "'Why not? You've got the ideas. I've got the code. Let's build something awesome.'",
+      "And so it began.",
+      "The first week was chaos. Arie dove into setting up the game engine—Unity, of course, because Arie claimed it was 'flexible and fun, like pizza dough.' Carter started sketching characters on a whiteboard, each one more bizarre than the last: a breakdancing platypus, a ninja librarian, and a talking trash can named Binky.",
+      "They decided on the concept: 'Byte Quest'—a pixel-art platformer where a misfit band of code-characters had to fight bugs (literally, giant insect-like bugs) and fix the broken world of the Internet.",
+      "Arie coded for hours, fingers flying, mumbling things like, 'Why is this array undefined!?' and 'Carter, stop adding new enemies, I just fixed the AI!'",
+      "Carter handled level design, sound effects, and story. He narrated each plot twist with dramatic flair: 'The Bug King has corrupted the Kernel Tree! Only Binky can stop him!'",
+      "There were bugs. Real bugs. The game crashed. Characters walked off cliffs. At one point, the soundtrack randomly played a cow mooing during boss battles.",
+      "But after two months, Byte Quest was ready.",
+      "They uploaded it to an indie game site, expecting a few downloads. Overnight, it exploded. People loved the weird characters, the glitchy humor, the fact that you could win the game by convincing a boss to go to therapy instead of fighting him.",
+      "Within a week, a popular streamer played it live, shouting, 'WHO MADE THIS? I LOVE IT!'",
+      "Carter and Arie just stared at each other in disbelief.",
+      "'We… actually did it,' Carter said.",
+      "'We made a game,' Arie said, grinning. 'And it didn't crash during the stream.'",
+      "'Mostly.'",
+      "They high-fived, already dreaming up ideas for the sequel—this time, with flying pizza drones and a villain who only speaks in error codes.",
+      "And that was just the beginning.",
+      "Book Two: Glitch Masters – The Code Awakens",
+      "After the surprise success of Byte Quest, things moved fast.",
+      "Emails started rolling in—from fans, from indie game blogs, even from a small studio asking if Arie and Carter wanted to 'talk business.' But neither of them had time for that. They were already back in the basement, surrounded by empty pizza boxes and new concept sketches pinned to the walls.",
+      "'This is going to be bigger,' Arie said, tapping his pencil against the whiteboard. 'This time, Byte doesn't just fix the internet—he has to stop it from collapsing completely.'",
+      "Carter looked up from his laptop. 'So the Internet is like… alive now?'",
+      "'Yes,' Arie nodded. 'And angry.'",
+      "Carter sighed, cracked his knuckles, and started a new Unity project file. 'Alright. What's the title?'",
+      "Arie paused dramatically. 'Byte Quest 2: The Glitch Awakens.'",
+      "Carter groaned. 'That sounds like a lawsuit.'",
+      "'It's a tribute,' Arie said. 'We'll change it later.'",
+      "The plan was massive: new characters, upgraded mechanics, split-screen multiplayer, and boss fights that changed depending on the player's choices. Arie wanted Byte to gain powers from corrupted data—each one a little risky to use. 'Like a double-edged USB stick,' he explained.",
+      "Carter spent a full weekend figuring out how to code data corruption that didn't actually crash the game. He built a new inventory system, a glitch-based power tree, and a boss that adapted to how you played.",
+      "'Why is this boss getting harder every time I dodge?' Arie asked during a test.",
+      "'Because you told me to make him learn,' Carter replied.",
+      "'Oh. Right. He's too smart now. Tone him down. He just predicted my entire combo.'",
+      "They argued. They laughed. One night, Arie accidentally deleted an entire level folder trying to rename it 'Dumpster Dungeon.' Carter made a backup right before. Crisis averted.",
+      "Then, they decided to do something crazy: release a public beta.",
+      "They posted it online with a message:",
+      "'Still buggy. Still weird. But it's Byte, and he's back.'",
+      "Within 48 hours, thousands of players downloaded it.",
+      "Streamers started creating glitch-themed speedruns. A gaming forum started a fan theory thread about Byte being a fragment of an ancient antivirus. Someone even uploaded a fan-made rap called 'Byte Fight.'",
+      "Carter was quietly proud. Arie was not quiet. He printed out the comments and taped them to the basement walls like motivational posters.",
+      "Finally, they released the full version.",
+      "Byte Quest 2: Corrupt World dropped on a Friday night.",
+      "By Monday morning, it was the #1 indie game on the site.",
+      "An email came in—this time from a well-known publisher. The subject line just said:",
+      "'Let's talk.'",
+      "Arie looked at Carter. Carter looked back.",
+      "'You thinking what I'm thinking?' Carter asked.",
+      "Arie nodded slowly. 'Byte Quest 3: The Final Download.'",
+      "Carter grinned. 'I'll start the engine.'",
+      "And just like that, the glitch team was back at it—one insane idea at a time.",
+      "THE END."
+    ];
+    let current = 0;
+    let paused = true;
+    let selectedVoice = null;
+    let utter = null;
+
+    // Try to select a natural, person-like voice (no gender preference)
+    function pickVoice() {
+      const voices = window.speechSynthesis.getVoices();
+      // Pick the first available English voice, or the browser default
+      return voices.find(v => v.lang.startsWith('en')) || voices[0];
+    }
+
+    function speakScene(autoAdvance = true) {
+      window.speechSynthesis.cancel();
+      utter = new SpeechSynthesisUtterance(scenes[current]);
+      utter.rate = 1.05;
+      utter.pitch = 1.1;
+      utter.lang = 'en-US';
+      if (selectedVoice) utter.voice = selectedVoice;
+      if (autoAdvance) {
+        utter.onend = function() {
+          if (!paused && current < scenes.length - 1) {
+            current++;
+            render();
+            speakScene(true);
+          }
+        };
+      } else {
+        utter.onend = null;
+      }
+      window.speechSynthesis.speak(utter);
+    }
+
+    function render() {
+      document.getElementById('scene').innerText = scenes[current];
+    }
+
+    // Button handlers
+    document.getElementById('startBtn').onclick = () => {
+      paused = false;
+      window.speechSynthesis.cancel();
+      render();
+      speakScene(true);
+    };
+    document.getElementById('pauseBtn').onclick = () => {
+      paused = true;
+      window.speechSynthesis.cancel();
+    };
+    document.getElementById('restartBtn').onclick = () => {
+      paused = false;
+      window.speechSynthesis.cancel();
+      current = 0;
+      render();
+      speakScene(true);
+    };
+    document.getElementById('readBtn').onclick = () => {
+      window.speechSynthesis.cancel();
+      speakScene(false);
+    };
+    // Initial render and voice selection
+    function init() {
+      selectedVoice = pickVoice();
+      render();
+    }
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = init;
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>

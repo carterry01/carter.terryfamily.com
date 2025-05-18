@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=800, initial-scale=1.0">
+    <title>Ping Pong Game</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000;
+        }
+        #gameCanvas {
+            display: block;
+            border: 3px solid #0ff;
+            box-shadow: 0 0 20px #0ff;
+            background: #000;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-size: 28px;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px #0ff;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">0 : 0</div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <script src="pingpong.js"></script>
+</body>
+</html>
