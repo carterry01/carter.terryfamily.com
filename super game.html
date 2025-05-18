@@ -240,7 +240,7 @@
             y: canvas.height - 50,
             width: 40,
             height: 40,
-            speed: 5,
+            speed: 7,
             color: '#0ff'
         };
 
@@ -248,6 +248,7 @@
         let lasers = [];
         let obstacles = [];
         let particles = [];
+        let playerHealth = 3;
 
         // Controls
         const keys = {
@@ -273,6 +274,22 @@
         // Boss spawn system
         let bossTimer = 0;
         const BOSS_SPAWN_INTERVAL = 60; // 60 seconds
+
+        // Add health display
+        const healthDisplay = document.createElement('div');
+        healthDisplay.style.position = 'fixed';
+        healthDisplay.style.top = '20px';
+        healthDisplay.style.right = '20px';
+        healthDisplay.style.color = '#0ff';
+        healthDisplay.style.fontSize = '24px';
+        healthDisplay.style.textShadow = '0 0 10px #0ff';
+        document.body.appendChild(healthDisplay);
+
+        // Update health display
+        function updateHealthDisplay() {
+            healthDisplay.textContent = '❤️'.repeat(playerHealth);
+        }
+        updateHealthDisplay();
 
         // Add missile ammo display
         const ammoDisplay = document.createElement('div');
@@ -472,9 +489,9 @@
             lasers.push({
                 x: player.x + player.width / 2,
                 y: player.y,
-                width: 4,
-                height: 20,
-                speed: 10,
+                width: 6,
+                height: 25,
+                speed: 12,
                 color: '#f0f'
             });
         }
@@ -485,7 +502,7 @@
             const size = isBoss ? 90 : 30;
             
             if (isBoss) {
-                bossTimer = 0; // Reset boss timer
+                bossTimer = 0;
             }
 
             obstacles.push({
@@ -493,12 +510,12 @@
                 y: -size,
                 width: size,
                 height: size,
-                speed: isBoss ? 1.5 : 3,
+                speed: isBoss ? 1 : 2,
                 color: isBoss ? '#ff0' : '#0f0',
-                health: isBoss ? 300 : 100,
+                health: isBoss ? 200 : 50,
                 damageTimer: 0,
                 isBoss: isBoss,
-                points: isBoss ? 50 : 10
+                points: isBoss ? 100 : 20
             });
         }
 
@@ -508,7 +525,7 @@
 
             // Mobile controls
             if (isTouchingJoystick) {
-                const speed = 5;
+                const speed = 7;
                 player.x += joystickPosition.x * speed / 40;
                 player.y += joystickPosition.y * speed / 40;
             }
@@ -519,7 +536,7 @@
             }
 
             // Update boss timer
-            bossTimer += 1/60; // Assuming 60fps
+            bossTimer += 1/120;
 
             // Player movement
             if (keys.ArrowLeft) player.x -= player.speed;
@@ -539,14 +556,19 @@
             });
 
             // Update obstacles
-            if (Math.random() < 0.02) createObstacle();
+            if (Math.random() < 0.01) createObstacle();
             obstacles = obstacles.filter(obstacle => {
                 obstacle.y += obstacle.speed;
                 
                 // Check collision with player
                 if (checkCollision(obstacle, player)) {
-                    gameOver = true;
+                    playerHealth--;
+                    updateHealthDisplay();
                     createParticles(player.x, player.y, '#f00');
+                    if (playerHealth <= 0) {
+                        gameOver = true;
+                    }
+                    return false;
                 }
 
                 // Check collision with lasers
@@ -554,34 +576,15 @@
                 lasers.forEach(laser => {
                     if (checkCollision(laser, obstacle)) {
                         isHit = true;
-                        obstacle.damageTimer += 1/60;
+                        obstacle.damageTimer += 1/30;
+                        obstacle.health = Math.max(0, (obstacle.isBoss ? 200 : 50) - (obstacle.damageTimer * 50));
                         
-                        // Create damage particles while being hit
-                        if (Math.random() < 0.3) {
-                            createParticles(
-                                obstacle.x + Math.random() * obstacle.width,
-                                obstacle.y + Math.random() * obstacle.height,
-                                obstacle.isBoss ? '#ff0' : '#0f0'
-                            );
-                        }
-
-                        // Mobile devices take 1 second to destroy (60 frames)
-                        const destroyTime = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 60 : 2;
-                        obstacle.health = Math.max(0, (obstacle.isBoss ? 300 : 100) - (obstacle.damageTimer * (obstacle.isBoss ? 300 : 100) / destroyTime));
-                        
-                        if (obstacle.damageTimer >= destroyTime) {
-                            // Create final explosion effect
-                            for (let i = 0; i < (obstacle.isBoss ? 30 : 10); i++) {
-                                createParticles(
-                                    obstacle.x + obstacle.width/2,
-                                    obstacle.y + obstacle.height/2,
-                                    obstacle.isBoss ? '#ff0' : '#0f0'
-                                );
-                            }
+                        if (obstacle.damageTimer >= 1) {
+                            createParticles(obstacle.x, obstacle.y, obstacle.isBoss ? '#ff0' : '#0f0');
                             score += obstacle.points;
                             scoreElement.textContent = `Score: ${score}`;
 
-                            // If it's a boss, add a missile with enhanced visual feedback
+                            // If it's a boss, add a missile
                             if (obstacle.isBoss) {
                                 missileAmmo = Math.min(missileAmmo + 1, 5);
                                 isAimMode = true;
@@ -612,7 +615,7 @@
 
                 if (!isHit) {
                     obstacle.damageTimer = 0;
-                    obstacle.health = obstacle.isBoss ? 300 : 100;
+                    obstacle.health = obstacle.isBoss ? 200 : 50;
                 }
 
                 return obstacle.y < canvas.height && obstacle.health > 0;
@@ -677,7 +680,7 @@
                 // Draw health bar
                 ctx.fillStyle = '#333';
                 ctx.fillRect(obstacle.x, obstacle.y - 10, obstacle.width, 5);
-                const healthPercent = obstacle.health / (obstacle.isBoss ? 300 : 100);
+                const healthPercent = obstacle.health / (obstacle.isBoss ? 200 : 50);
                 ctx.fillStyle = `rgb(${255 - healthPercent * 255}, ${healthPercent * 255}, 0)`;
                 ctx.fillRect(obstacle.x, obstacle.y - 10, (obstacle.width * healthPercent), 5);
                 
@@ -747,6 +750,8 @@
         function restartGame() {
             gameOver = false;
             score = 0;
+            playerHealth = 3;
+            updateHealthDisplay();
             scoreElement.textContent = 'Score: 0';
             player.x = canvas.width / 2;
             player.y = canvas.height - 50;
