@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Space Runner</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+            cursor: none; /* Hide default cursor */
+        }
+        canvas {
+            border: 2px solid #0ff;
+            box-shadow: 0 0 20px #0ff;
+        }
+        #score {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #0ff;
+            font-size: 24px;
+            text-shadow: 0 0 10px #0ff;
+        }
+        #cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #0ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #0ff;
+        }
+        .cursor-dot:nth-child(1) { top: 50%; left: 0; transform: translateY(-50%); }
+        .cursor-dot:nth-child(2) { top: 50%; right: 0; transform: translateY(-50%); }
+        .cursor-dot:nth-child(3) { left: 50%; top: 0; transform: translateX(-50%); }
+        .cursor-dot:nth-child(4) { left: 50%; bottom: 0; transform: translateX(-50%); }
+        .cursor-dot:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="cursor">
+        <div class="cursor-dot"></div>
+        <div class="cursor-dot"></div>
+        <div class="cursor-dot"></div>
+        <div class="cursor-dot"></div>
+        <div class="cursor-dot"></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const cursor = document.getElementById('cursor');
+
+        canvas.width = 800;
+        canvas.height = 600;
+
+        let score = 0;
+        let gameOver = false;
+
+        // Player spaceship
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            width: 40,
+            height: 40,
+            speed: 5,
+            color: '#0ff'
+        };
+
+        // Arrays for game objects
+        let lasers = [];
+        let obstacles = [];
+        let particles = [];
+
+        // Controls
+        const keys = {
+            ArrowLeft: false,
+            ArrowRight: false,
+            ArrowUp: false,
+            ArrowDown: false,
+            Space: false
+        };
+
+        // Track mouse position
+        let mouseX = 0;
+        let mouseY = 0;
+
+        // AIM sequence and missile system
+        let aimSequence = '';
+        let missileAmmo = 0;
+        let isAimMode = false;
+        let isDisplayHidden = false;
+        let lastKeyPressTime = 0;
+        const SEQUENCE_TIMEOUT = 2000; // 2 seconds to complete sequence
+
+        // Boss spawn system
+        let bossTimer = 0;
+        const BOSS_SPAWN_INTERVAL = 60; // 60 seconds
+
+        // Add missile ammo display
+        const ammoDisplay = document.createElement('div');
+        ammoDisplay.style.position = 'fixed';
+        ammoDisplay.style.top = '60px';
+        ammoDisplay.style.left = '20px';
+        ammoDisplay.style.color = '#f00';
+        ammoDisplay.style.fontSize = '24px';
+        ammoDisplay.style.textShadow = '0 0 10px #f00';
+        ammoDisplay.style.display = 'none';
+        document.body.appendChild(ammoDisplay);
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) {
+                keys[e.code] = false;
+            }
+        });
+
+        // Update cursor position
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursor.style.left = mouseX + 'px';
+            cursor.style.top = mouseY + 'px';
+        });
+
+        // Update cursor visibility
+        function updateCursorVisibility() {
+            cursor.style.display = isAimMode ? 'block' : 'none';
+            if (!isDisplayHidden) {
+                ammoDisplay.style.display = isAimMode ? 'block' : 'none';
+            }
+            ammoDisplay.textContent = `Missiles: ${missileAmmo}`;
+        }
+
+        // Check for AIM sequence and hide/show commands
+        document.addEventListener('keydown', (e) => {
+            const currentTime = Date.now();
+            if (currentTime - lastKeyPressTime > SEQUENCE_TIMEOUT) {
+                aimSequence = '';
+            }
+            lastKeyPressTime = currentTime;
+
+            // Check for Ctrl+H
+            if (e.ctrlKey && e.key.toLowerCase() === 'h') {
+                isDisplayHidden = !isDisplayHidden; // Toggle display state
+                if (!isDisplayHidden && isAimMode) {
+                    ammoDisplay.style.display = 'block';
+                } else {
+                    ammoDisplay.style.display = 'none';
+                }
+                return;
+            }
+
+            const key = e.key.toLowerCase();
+            aimSequence += key;
+            
+            // Check if sequence ends with "aim"
+            if (aimSequence.endsWith('aim')) {
+                isAimMode = true;
+                missileAmmo = 5;
+                isDisplayHidden = false; // Reset hidden state when aim is typed
+                updateCursorVisibility();
+                aimSequence = '';
+            }
+        });
+
+        // Handle missile firing
+        document.addEventListener('mousedown', (e) => {
+            if (isAimMode && missileAmmo > 0) {
+                missileAmmo--;
+                updateCursorVisibility();
+
+                // Create explosion effect
+                createParticles(mouseX, mouseY, '#f00');
+                
+                // Destroy all obstacles
+                obstacles.forEach(obstacle => {
+                    createParticles(obstacle.x, obstacle.y, '#0f0');
+                    score += 10;
+                });
+                obstacles = [];
+                scoreElement.textContent = `Score: ${score}`;
+
+                // Disable aim mode if out of ammo
+                if (missileAmmo === 0) {
+                    isAimMode = false;
+                    updateCursorVisibility();
+                }
+            }
+        });
+
+        // Make cursor follow mouse with smooth animation
+        function updateCursor() {
+            if (isAimMode) {
+                const currentX = parseFloat(cursor.style.left) || mouseX;
+                const currentY = parseFloat(cursor.style.top) || mouseY;
+                
+                const newX = currentX + (mouseX - currentX) * 0.3;
+                const newY = currentY + (mouseY - currentY) * 0.3;
+                
+                cursor.style.left = newX + 'px';
+                cursor.style.top = newY + 'px';
+            }
+            requestAnimationFrame(updateCursor);
+        }
+        updateCursor();
+
+        // Create particles
+        function createParticles(x, y, color) {
+            const particleCount = isAimMode ? 30 : 10; // More particles for missile explosions
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x,
+                    y,
+                    vx: (Math.random() - 0.5) * (isAimMode ? 8 : 4),
+                    vy: (Math.random() - 0.5) * (isAimMode ? 8 : 4),
+                    radius: Math.random() * (isAimMode ? 6 : 3),
+                    color,
+                    life: 1
+                });
+            }
+        }
+
+        // Create laser
+        function shootLaser() {
+            lasers.push({
+                x: player.x + player.width / 2,
+                y: player.y,
+                width: 4,
+                height: 20,
+                speed: 10,
+                color: '#f0f'
+            });
+        }
+
+        // Create obstacle
+        function createObstacle() {
+            const isBoss = bossTimer >= BOSS_SPAWN_INTERVAL;
+            const size = isBoss ? 90 : 30;
+            
+            if (isBoss) {
+                bossTimer = 0; // Reset boss timer
+            }
+
+            obstacles.push({
+                x: Math.random() * (canvas.width - size),
+                y: -size,
+                width: size,
+                height: size,
+                speed: isBoss ? 1.5 : 3,
+                color: isBoss ? '#ff0' : '#0f0',
+                health: isBoss ? 300 : 100,
+                damageTimer: 0,
+                isBoss: isBoss,
+                points: isBoss ? 50 : 10
+            });
+        }
+
+        // Update game state
+        function update() {
+            if (gameOver) return;
+
+            // Update boss timer
+            bossTimer += 1/60; // Assuming 60fps
+
+            // Player movement
+            if (keys.ArrowLeft) player.x -= player.speed;
+            if (keys.ArrowRight) player.x += player.speed;
+            if (keys.ArrowUp) player.y -= player.speed;
+            if (keys.ArrowDown) player.y += player.speed;
+            if (keys.Space) shootLaser();
+
+            // Keep player in bounds
+            player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
+            player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
+
+            // Update lasers
+            lasers = lasers.filter(laser => {
+                laser.y -= laser.speed;
+                return laser.y > 0;
+            });
+
+            // Update obstacles
+            if (Math.random() < 0.02) createObstacle();
+            obstacles = obstacles.filter(obstacle => {
+                obstacle.y += obstacle.speed;
+                
+                // Check collision with player
+                if (checkCollision(obstacle, player)) {
+                    gameOver = true;
+                    createParticles(player.x, player.y, '#f00');
+                }
+
+                // Check collision with lasers
+                let isHit = false;
+                lasers.forEach(laser => {
+                    if (checkCollision(laser, obstacle)) {
+                        isHit = true;
+                        obstacle.damageTimer += 1/60;
+                        obstacle.health = Math.max(0, (obstacle.isBoss ? 300 : 100) - (obstacle.damageTimer * 50));
+                        
+                        if (obstacle.damageTimer >= 2) {
+                            createParticles(obstacle.x, obstacle.y, obstacle.isBoss ? '#ff0' : '#0f0');
+                            score += obstacle.points;
+                            scoreElement.textContent = `Score: ${score}`;
+
+                            // If it's a boss, add a missile with enhanced visual feedback
+                            if (obstacle.isBoss) {
+                                // Add exactly 1 missile
+                                missileAmmo = Math.min(missileAmmo + 1, 5); // Cap at 5 missiles
+                                isAimMode = true;
+                                updateCursorVisibility();
+                                
+                                // Create enhanced missile drop effect
+                                for (let i = 0; i < 30; i++) {
+                                    createParticles(obstacle.x, obstacle.y, '#f00');
+                                }
+                                
+                                // Create a special missile pickup effect
+                                for (let i = 0; i < 5; i++) {
+                                    particles.push({
+                                        x: obstacle.x + obstacle.width/2,
+                                        y: obstacle.y + obstacle.height/2,
+                                        vx: (Math.random() - 0.5) * 2,
+                                        vy: -Math.random() * 4,
+                                        radius: 4,
+                                        color: '#f00',
+                                        life: 1
+                                    });
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                });
+
+                if (!isHit) {
+                    obstacle.damageTimer = 0;
+                    obstacle.health = obstacle.isBoss ? 300 : 100;
+                }
+
+                return obstacle.y < canvas.height && obstacle.health > 0;
+            });
+
+            // Update particles
+            particles = particles.filter(particle => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life -= 0.02;
+                return particle.life > 0;
+            });
+        }
+
+        // Check collision between two objects
+        function checkCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        // Draw game objects
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < canvas.width; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 30) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+
+            // Draw player
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width / 2, player.y);
+            ctx.lineTo(player.x + player.width, player.y + player.height);
+            ctx.lineTo(player.x, player.y + player.height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Draw lasers
+            lasers.forEach(laser => {
+                ctx.fillStyle = laser.color;
+                ctx.fillRect(laser.x, laser.y, laser.width, laser.height);
+            });
+
+            // Draw obstacles
+            obstacles.forEach(obstacle => {
+                // Draw health bar
+                ctx.fillStyle = '#333';
+                ctx.fillRect(obstacle.x, obstacle.y - 10, obstacle.width, 5);
+                const healthPercent = obstacle.health / (obstacle.isBoss ? 300 : 100);
+                ctx.fillStyle = `rgb(${255 - healthPercent * 255}, ${healthPercent * 255}, 0)`;
+                ctx.fillRect(obstacle.x, obstacle.y - 10, (obstacle.width * healthPercent), 5);
+                
+                // Draw obstacle
+                ctx.fillStyle = obstacle.color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+
+                // Draw boss crown if it's a boss
+                if (obstacle.isBoss) {
+                    ctx.fillStyle = '#ff0';
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + obstacle.width/2, obstacle.y - 10);
+                    ctx.lineTo(obstacle.x + obstacle.width/2 - 15, obstacle.y - 25);
+                    ctx.lineTo(obstacle.x + obstacle.width/2 + 15, obstacle.y - 25);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            });
+
+            // Draw particles
+            particles.forEach(particle => {
+                ctx.globalAlpha = particle.life;
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            // Draw game over screen
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#f00';
+                ctx.font = '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+                ctx.font = '24px Arial';
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText('Press R to Restart', canvas.width / 2, canvas.height / 2 + 80);
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Restart game
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyR' && gameOver) {
+                gameOver = false;
+                score = 0;
+                scoreElement.textContent = 'Score: 0';
+                player.x = canvas.width / 2;
+                player.y = canvas.height - 50;
+                lasers = [];
+                obstacles = [];
+                particles = [];
+                bossTimer = 0;
+            }
+        });
+
+        // Start game
+        gameLoop();
+    </script>
+</body>
+</html>
