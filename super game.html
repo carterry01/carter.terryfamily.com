@@ -160,17 +160,10 @@
                 canvas.height = window.innerHeight - 200; // Space for controls
                 mobileControls.style.display = 'flex';
                 cursor.style.display = 'none';
-                // Make game easier on mobile
-                player.health = 3; // Player gets 3 hits on mobile
-                player.width = 50; // Larger player hitbox
-                player.height = 50;
             } else {
                 canvas.width = 800;
                 canvas.height = 600;
                 mobileControls.style.display = 'none';
-                player.health = 1; // Normal health on desktop
-                player.width = 40;
-                player.height = 40;
             }
         }
         resizeCanvas();
@@ -248,8 +241,7 @@
             width: 40,
             height: 40,
             speed: 5,
-            color: '#0ff',
-            health: 1
+            color: '#0ff'
         };
 
         // Arrays for game objects
@@ -490,8 +482,7 @@
         // Create obstacle
         function createObstacle() {
             const isBoss = bossTimer >= BOSS_SPAWN_INTERVAL;
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            const size = isBoss ? (isMobile ? 70 : 90) : (isMobile ? 25 : 30);
+            const size = isBoss ? 90 : 30;
             
             if (isBoss) {
                 bossTimer = 0; // Reset boss timer
@@ -502,9 +493,9 @@
                 y: -size,
                 width: size,
                 height: size,
-                speed: isBoss ? (isMobile ? 1 : 1.5) : (isMobile ? 2 : 3),
+                speed: isBoss ? 1.5 : 3,
                 color: isBoss ? '#ff0' : '#0f0',
-                health: isBoss ? (isMobile ? 200 : 300) : (isMobile ? 50 : 100),
+                health: isBoss ? 300 : 100,
                 damageTimer: 0,
                 isBoss: isBoss,
                 points: isBoss ? 50 : 10
@@ -528,7 +519,6 @@
             }
 
             // Update boss timer
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             bossTimer += 1/60; // Assuming 60fps
 
             // Player movement
@@ -549,22 +539,14 @@
             });
 
             // Update obstacles
-            if (Math.random() < (isMobile ? 0.015 : 0.02)) createObstacle();
+            if (Math.random() < 0.02) createObstacle();
             obstacles = obstacles.filter(obstacle => {
                 obstacle.y += obstacle.speed;
                 
                 // Check collision with player
                 if (checkCollision(obstacle, player)) {
-                    if (isMobile) {
-                        player.health--;
-                        if (player.health <= 0) {
-                            gameOver = true;
-                            createParticles(player.x, player.y, '#f00');
-                        }
-                    } else {
-                        gameOver = true;
-                        createParticles(player.x, player.y, '#f00');
-                    }
+                    gameOver = true;
+                    createParticles(player.x, player.y, '#f00');
                 }
 
                 // Check collision with lasers
@@ -573,18 +555,35 @@
                     if (checkCollision(laser, obstacle)) {
                         isHit = true;
                         obstacle.damageTimer += 1/60;
-                        const maxHealth = obstacle.isBoss ? (isMobile ? 200 : 300) : (isMobile ? 50 : 100);
-                        obstacle.health = Math.max(0, maxHealth - (obstacle.damageTimer * (isMobile ? 30 : 50)));
                         
-                        if (obstacle.damageTimer >= (isMobile ? 1.5 : 2)) {
-                            createParticles(obstacle.x, obstacle.y, obstacle.isBoss ? '#ff0' : '#0f0');
+                        // Create damage particles while being hit
+                        if (Math.random() < 0.3) {
+                            createParticles(
+                                obstacle.x + Math.random() * obstacle.width,
+                                obstacle.y + Math.random() * obstacle.height,
+                                obstacle.isBoss ? '#ff0' : '#0f0'
+                            );
+                        }
+
+                        // Mobile devices take 1 second to destroy (60 frames)
+                        const destroyTime = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? 60 : 2;
+                        obstacle.health = Math.max(0, (obstacle.isBoss ? 300 : 100) - (obstacle.damageTimer * (obstacle.isBoss ? 300 : 100) / destroyTime));
+                        
+                        if (obstacle.damageTimer >= destroyTime) {
+                            // Create final explosion effect
+                            for (let i = 0; i < (obstacle.isBoss ? 30 : 10); i++) {
+                                createParticles(
+                                    obstacle.x + obstacle.width/2,
+                                    obstacle.y + obstacle.height/2,
+                                    obstacle.isBoss ? '#ff0' : '#0f0'
+                                );
+                            }
                             score += obstacle.points;
                             scoreElement.textContent = `Score: ${score}`;
 
                             // If it's a boss, add a missile with enhanced visual feedback
                             if (obstacle.isBoss) {
-                                // Add exactly 1 missile
-                                missileAmmo = Math.min(missileAmmo + 1, 5); // Cap at 5 missiles
+                                missileAmmo = Math.min(missileAmmo + 1, 5);
                                 isAimMode = true;
                                 updateCursorVisibility();
                                 
@@ -613,7 +612,7 @@
 
                 if (!isHit) {
                     obstacle.damageTimer = 0;
-                    obstacle.health = obstacle.isBoss ? (isMobile ? 200 : 300) : (isMobile ? 50 : 100);
+                    obstacle.health = obstacle.isBoss ? 300 : 100;
                 }
 
                 return obstacle.y < canvas.height && obstacle.health > 0;
@@ -755,8 +754,6 @@
             obstacles = [];
             particles = [];
             bossTimer = 0;
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            player.health = isMobile ? 3 : 1;
         }
 
         // Prevent default touch behaviors
