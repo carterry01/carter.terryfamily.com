@@ -14,7 +14,7 @@
             align-items: center;
             height: 100vh;
             font-family: 'Courier New', monospace;
-            cursor: none;
+            /* cursor: none; */
             touch-action: none;
         }
         canvas {
@@ -73,6 +73,10 @@
     </style>
 </head>
 <body>
+    <div id="gameTitle" style="position:fixed;top:10px;left:0;width:100vw;text-align:center;z-index:10;pointer-events:none;">
+        <span style="font-size:2.5em;color:#0ff;font-family:'Courier New',monospace;text-shadow:0 0 10px #0ff;">Byte Quest</span><br>
+        <span id="levelSubtitle" style="font-size:1.2em;color:#0ff;font-family:'Courier New',monospace;text-shadow:0 0 6px #0ff;">Level 1</span>
+    </div>
     <div id="level">Level: 1</div>
     <div id="code">Code: 0/3</div>
     <div id="mobileControls">
@@ -82,6 +86,16 @@
         <div class="control-button" id="fixButton">FIX</div>
     </div>
     <canvas id="gameCanvas"></canvas>
+    <!--
+      Place your splash image in the 'images' folder (create it in the same directory as this HTML file).
+      The path should be: images/splash_twins.jpg
+    -->
+    <div id="splashScreen" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#111;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <img id="splashImg" src="images/splash_twins.jpg" alt="Byte Quest Start" style="max-width:90vw;max-height:60vh;border-radius:16px;box-shadow:0 0 40px #0ff;margin-bottom:32px;"
+            onerror="this.style.display='none';document.getElementById('splashFallback').style.display='block';">
+        <div id="splashFallback" style="display:none;color:#0ff;font-size:2em;text-align:center;margin-bottom:32px;">Splash image not found.<br>Please check the file name and location.</div>
+        <button id="startGameBtn" style="display:none;padding:24px 60px;font-size:2em;background:#0f0;color:#111;border:none;border-radius:12px;box-shadow:0 0 20px #0f0;cursor:pointer;">Start Game</button>
+    </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -111,6 +125,7 @@
         let codeFixed = 0;
         let codeRequired = 3;
         let gameOver = false;
+        let goal = { x: 0, y: 0, width: 50, height: 30 };
 
         // Player
         const player = {
@@ -133,6 +148,14 @@
         const codeBlocks = [];
         const particles = [];
 
+        // Helper: check overlap between two rectangles
+        function isOverlap(a, b) {
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+
         // Create level
         function createLevel() {
             platforms.length = 0;
@@ -140,48 +163,83 @@
             codeBlocks.length = 0;
             particles.length = 0;
             
-            // Ground
+            // Difficulty scaling
+            const numPlatforms = 9 - Math.min(currentLevel - 1, 4); // fewer platforms as level increases
+            const platWidth = 100;
+            const platHeight = 20;
+            const verticalGap = (canvas.height - 180) / (numPlatforms + 1) + (currentLevel - 1) * 10; // more gap each level
+            const horizontalMargin = 30;
             platforms.push({
                 x: 0,
                 y: canvas.height - 40,
                 width: canvas.width,
                 height: 40
             });
-
-            // Platforms
-            for (let i = 0; i < 5; i++) {
-                platforms.push({
-                    x: Math.random() * (canvas.width - 100),
-                    y: Math.random() * (canvas.height - 200) + 100,
-                    width: 100,
-                    height: 20
-                });
+            for (let i = 0; i < numPlatforms; i++) {
+                let tries = 0;
+                let plat;
+                do {
+                    const y = canvas.height - 60 - (i + 1) * verticalGap;
+                    const x = horizontalMargin + Math.random() * (canvas.width - platWidth - 2 * horizontalMargin);
+                    plat = { x, y, width: platWidth, height: platHeight };
+                    tries++;
+                } while ((platforms.some(p => isOverlap(p, plat))) && tries < 20);
+                platforms.push(plat);
             }
+            // Place goal at the top center
+            goal.x = canvas.width / 2 - goal.width / 2;
+            goal.y = 10;
 
-            // Code blocks
+            // Code blocks (no overlap with platforms or other code blocks)
             for (let i = 0; i < codeRequired; i++) {
-                codeBlocks.push({
-                    x: Math.random() * (canvas.width - 30),
-                    y: Math.random() * (canvas.height - 200),
-                    width: 30,
-                    height: 30,
-                    color: '#f00',
-                    isFixed: false
-                });
+                let tries = 0;
+                let block;
+                do {
+                    block = {
+                        x: Math.random() * (canvas.width - 30),
+                        y: Math.random() * (canvas.height - 200),
+                        width: 30,
+                        height: 30,
+                        color: '#f00',
+                        isFixed: false
+                    };
+                    tries++;
+                } while ((platforms.some(p => isOverlap(p, block)) || codeBlocks.some(c => isOverlap(c, block))) && tries < 20);
+                codeBlocks.push(block);
             }
 
-            // Bugs
-            for (let i = 0; i < currentLevel + 2; i++) {
-                bugs.push({
-                    x: Math.random() * (canvas.width - 30),
-                    y: Math.random() * (canvas.height - 200),
-                    width: 30,
-                    height: 30,
-                    speed: 2,
-                    color: '#f00',
-                    direction: Math.random() < 0.5 ? -1 : 1
-                });
+            // Bugs (no overlap with platforms, code blocks, or other bugs)
+            const minEnemyPlayerDist = 120;
+            const numEnemies = Math.min(currentLevel + 2 + Math.floor(currentLevel/2), 16); // more enemies each level
+            for (let i = 0; i < numEnemies; i++) {
+                let tries = 0;
+                let bug;
+                do {
+                    // Spawn enemies near the right edge, with a margin
+                    const bugX = canvas.width - 60 - Math.random() * 80;
+                    bug = {
+                        x: bugX,
+                        y: canvas.height - 40 - 30,
+                        width: 30,
+                        height: 30,
+                        speed: 0.5 + 0.15 * (currentLevel - 1), // faster each level
+                        color: '#f00',
+                        direction: Math.random() < 0.5 ? -1 : 1,
+                        vy: 0,
+                        canJump: false,
+                        jumpForce: player.jumpForce * (0.7 + 0.07 * (currentLevel - 1)), // higher each level
+                        lastDirUpdate: 0,
+                        lastJumpTime: 0,
+                        jumpIntentTime: 0,
+                        jumpIntentDelay: 0,
+                        jumpInterval: 1200 + Math.random() * 1000
+                    };
+                    tries++;
+                } while (((Math.abs(bug.x - player.x) < minEnemyPlayerDist) || platforms.some(p => isOverlap(p, bug)) || codeBlocks.some(c => isOverlap(c, bug)) || bugs.some(b => isOverlap(b, bug))) && tries < 30);
+                bugs.push(bug);
             }
+            // Update level subtitle
+            document.getElementById('levelSubtitle').textContent = `Level ${currentLevel}`;
         }
 
         // Create particles
@@ -274,14 +332,54 @@
             }
 
             // Update bugs
+            const now = performance.now();
             bugs.forEach((bug, index) => {
+                // Even less responsive: only update direction every 1.2s
+                if (now - (bug.lastDirUpdate || 0) > 1200) {
+                    if (Math.abs(player.x - bug.x) > 2) {
+                        if (player.x > bug.x) bug.direction = 1;
+                        else bug.direction = -1;
+                    }
+                    bug.lastDirUpdate = now;
+                }
                 bug.x += bug.speed * bug.direction;
-                
-                // Bounce off walls
+                // Bounce off screen edges
                 if (bug.x <= 0 || bug.x + bug.width >= canvas.width) {
                     bug.direction *= -1;
                 }
-
+                // Gravity
+                bug.vy += gravity;
+                bug.y += bug.vy;
+                // Platform collisions for bugs
+                let onPlatform = false;
+                platforms.forEach(platform => {
+                    if (
+                        bug.x + bug.width > platform.x &&
+                        bug.x < platform.x + platform.width &&
+                        bug.y + bug.height > platform.y &&
+                        bug.y + bug.height - bug.vy <= platform.y
+                    ) {
+                        bug.y = platform.y - bug.height;
+                        bug.vy = 0;
+                        onPlatform = true;
+                    }
+                });
+                // If on ground/platform, keep walking
+                if (onPlatform) {
+                    // Enemy jumps periodically, regardless of player
+                    if (
+                        now - (bug.lastJumpTime || 0) > bug.jumpInterval &&
+                        Math.abs(bug.vy) < 1
+                    ) {
+                        bug.vy = bug.jumpForce;
+                        bug.lastJumpTime = now;
+                        bug.jumpInterval = 1200 + Math.random() * 1000; // reset interval
+                    }
+                } else if (bug.y + bug.height > canvas.height) {
+                    // Land on ground
+                    bug.y = canvas.height - bug.height;
+                    bug.vy = 0;
+                }
                 // Check collision with player
                 if (checkCollision(bug, player)) {
                     gameOver = true;
@@ -322,6 +420,16 @@
                     particles.splice(index, 1);
                 }
             });
+
+            // Check for reaching the goal
+            if (checkCollision(player, goal)) {
+                currentLevel++;
+                createLevel();
+                // Reset player position
+                player.x = 50;
+                player.y = canvas.height - 100;
+                player.velocityY = 0;
+            }
         }
 
         // Draw game objects
@@ -394,6 +502,22 @@
                 ctx.globalAlpha = 1;
             });
 
+            // Draw goal
+            ctx.save();
+            ctx.globalAlpha = 0.92;
+            ctx.fillStyle = '#0f0';
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(goal.x + goal.width/2, goal.y + goal.height/2, goal.width/2, goal.height/2, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.font = 'bold 18px Courier New';
+            ctx.fillStyle = '#111';
+            ctx.textAlign = 'center';
+            ctx.fillText('GOAL', goal.x + goal.width/2, goal.y + goal.height/2 + 6);
+            ctx.restore();
+
             // Draw game over screen
             if (gameOver) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -408,10 +532,39 @@
             }
         }
 
-        // Game loop
+        // Splash screen logic
+        const splashScreen = document.getElementById('splashScreen');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const splashImg = document.getElementById('splashImg');
+        let gameStarted = false;
+        let splashStep = 0; // 0 = image, 1 = green button, 2 = game
+
+        // Automatically transition from image to button after 2 seconds
+        setTimeout(() => {
+            if (splashStep === 0) {
+                splashImg.style.display = 'none';
+                startGameBtn.style.display = 'block';
+                splashScreen.style.background = '#000';
+                splashStep = 1;
+            }
+        }, 2000);
+
+        function hideSplashAndStart() {
+            if (!gameStarted && splashStep === 1) {
+                splashScreen.style.display = 'none';
+                gameStarted = true;
+                splashStep = 2;
+            }
+        }
+        // Only click/tap on green button starts game
+        startGameBtn.addEventListener('click', hideSplashAndStart);
+        startGameBtn.addEventListener('touchstart', function(e){ e.preventDefault(); hideSplashAndStart(); });
+
         function gameLoop() {
-            update();
-            draw();
+            if (gameStarted) {
+                update();
+                draw();
+            }
             requestAnimationFrame(gameLoop);
         }
 
