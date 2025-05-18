@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Byte Quest</title>
+    <title>Byte Quest: Code Fixer</title>
     <style>
         body {
             margin: 0;
@@ -23,7 +23,7 @@
             max-width: 100%;
             max-height: 100vh;
         }
-        #score {
+        #level {
             position: fixed;
             top: 20px;
             left: 20px;
@@ -31,7 +31,7 @@
             font-size: 24px;
             text-shadow: 0 0 10px #0ff;
         }
-        #health {
+        #code {
             position: fixed;
             top: 20px;
             right: 20px;
@@ -63,29 +63,31 @@
             -webkit-user-select: none;
             touch-action: manipulation;
         }
-        #jumpButton {
+        #fixButton {
             width: 80px;
             height: 80px;
-            background: rgba(0, 255, 255, 0.3);
-            border: 2px solid #0ff;
+            background: rgba(0, 255, 0, 0.3);
+            border: 2px solid #0f0;
+            color: #0f0;
         }
     </style>
 </head>
 <body>
-    <div id="score">Score: 0</div>
-    <div id="health">❤️❤️❤️</div>
+    <div id="level">Level: 1</div>
+    <div id="code">Code: 0/3</div>
     <div id="mobileControls">
         <div class="control-button" id="leftButton">←</div>
         <div class="control-button" id="rightButton">→</div>
         <div class="control-button" id="jumpButton">↑</div>
+        <div class="control-button" id="fixButton">FIX</div>
     </div>
     <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-        const healthElement = document.getElementById('health');
+        const levelElement = document.getElementById('level');
+        const codeElement = document.getElementById('code');
         const mobileControls = document.getElementById('mobileControls');
 
         // Set canvas size
@@ -105,9 +107,10 @@
         window.addEventListener('resize', resizeCanvas);
 
         // Game state
-        let score = 0;
+        let currentLevel = 1;
+        let codeFixed = 0;
+        let codeRequired = 3;
         let gameOver = false;
-        let playerHealth = 3;
 
         // Player
         const player = {
@@ -119,18 +122,24 @@
             jumpForce: -15,
             velocityY: 0,
             isJumping: false,
-            color: '#0ff'
+            color: '#0ff',
+            canFix: false
         };
 
         // Physics
         const gravity = 0.8;
         const platforms = [];
         const bugs = [];
+        const codeBlocks = [];
         const particles = [];
 
-        // Create initial platforms
-        function createPlatforms() {
+        // Create level
+        function createLevel() {
             platforms.length = 0;
+            bugs.length = 0;
+            codeBlocks.length = 0;
+            particles.length = 0;
+            
             // Ground
             platforms.push({
                 x: 0,
@@ -138,6 +147,7 @@
                 width: canvas.width,
                 height: 40
             });
+
             // Platforms
             for (let i = 0; i < 5; i++) {
                 platforms.push({
@@ -147,18 +157,31 @@
                     height: 20
                 });
             }
-        }
 
-        // Create bug
-        function createBug() {
-            bugs.push({
-                x: Math.random() * (canvas.width - 30),
-                y: -30,
-                width: 30,
-                height: 30,
-                speed: 2,
-                color: '#f00'
-            });
+            // Code blocks
+            for (let i = 0; i < codeRequired; i++) {
+                codeBlocks.push({
+                    x: Math.random() * (canvas.width - 30),
+                    y: Math.random() * (canvas.height - 200),
+                    width: 30,
+                    height: 30,
+                    color: '#f00',
+                    isFixed: false
+                });
+            }
+
+            // Bugs
+            for (let i = 0; i < currentLevel + 2; i++) {
+                bugs.push({
+                    x: Math.random() * (canvas.width - 30),
+                    y: Math.random() * (canvas.height - 200),
+                    width: 30,
+                    height: 30,
+                    speed: 2,
+                    color: '#f00',
+                    direction: Math.random() < 0.5 ? -1 : 1
+                });
+            }
         }
 
         // Create particles
@@ -180,7 +203,8 @@
         const keys = {
             ArrowLeft: false,
             ArrowRight: false,
-            ArrowUp: false
+            ArrowUp: false,
+            Space: false
         };
 
         // Mobile controls
@@ -190,6 +214,8 @@
         document.getElementById('rightButton').addEventListener('touchend', () => keys.ArrowRight = false);
         document.getElementById('jumpButton').addEventListener('touchstart', () => keys.ArrowUp = true);
         document.getElementById('jumpButton').addEventListener('touchend', () => keys.ArrowUp = false);
+        document.getElementById('fixButton').addEventListener('touchstart', () => keys.Space = true);
+        document.getElementById('fixButton').addEventListener('touchend', () => keys.Space = false);
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
@@ -243,43 +269,47 @@
             // Keep player in bounds
             player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
             if (player.y > canvas.height) {
-                playerHealth--;
-                healthElement.textContent = '❤️'.repeat(playerHealth);
-                if (playerHealth <= 0) {
-                    gameOver = true;
-                } else {
-                    player.y = 50;
-                    player.velocityY = 0;
-                }
+                player.y = 50;
+                player.velocityY = 0;
             }
 
             // Update bugs
-            if (Math.random() < 0.02) createBug();
             bugs.forEach((bug, index) => {
-                bug.y += bug.speed;
+                bug.x += bug.speed * bug.direction;
                 
+                // Bounce off walls
+                if (bug.x <= 0 || bug.x + bug.width >= canvas.width) {
+                    bug.direction *= -1;
+                }
+
                 // Check collision with player
                 if (checkCollision(bug, player)) {
-                    if (player.velocityY > 0) { // Player is falling
-                        bugs.splice(index, 1);
-                        score += 10;
-                        scoreElement.textContent = `Score: ${score}`;
-                        createParticles(bug.x, bug.y, '#f00');
-                        player.velocityY = player.jumpForce / 2; // Small bounce
-                    } else {
-                        playerHealth--;
-                        healthElement.textContent = '❤️'.repeat(playerHealth);
-                        if (playerHealth <= 0) {
-                            gameOver = true;
-                        }
-                        bugs.splice(index, 1);
-                        createParticles(player.x, player.y, '#f00');
-                    }
+                    gameOver = true;
+                    createParticles(player.x, player.y, '#f00');
                 }
-                
-                // Remove bugs that are off screen
-                if (bug.y > canvas.height) {
-                    bugs.splice(index, 1);
+            });
+
+            // Update code blocks
+            player.canFix = false;
+            codeBlocks.forEach((block, index) => {
+                if (!block.isFixed && checkCollision(player, block)) {
+                    player.canFix = true;
+                    if (keys.Space) {
+                        block.isFixed = true;
+                        block.color = '#0f0';
+                        codeFixed++;
+                        codeElement.textContent = `Code: ${codeFixed}/${codeRequired}`;
+                        createParticles(block.x, block.y, '#0f0');
+
+                        if (codeFixed >= codeRequired) {
+                            currentLevel++;
+                            levelElement.textContent = `Level: ${currentLevel}`;
+                            codeFixed = 0;
+                            codeRequired = Math.min(codeRequired + 1, 5);
+                            codeElement.textContent = `Code: ${codeFixed}/${codeRequired}`;
+                            createLevel();
+                        }
+                    }
                 }
             });
 
@@ -322,15 +352,37 @@
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
             });
 
-            // Draw player
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
+            // Draw code blocks
+            codeBlocks.forEach(block => {
+                ctx.fillStyle = block.color;
+                ctx.fillRect(block.x, block.y, block.width, block.height);
+                if (!block.isFixed) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(block.x, block.y, block.width, block.height);
+                }
+            });
 
             // Draw bugs
             bugs.forEach(bug => {
                 ctx.fillStyle = bug.color;
                 ctx.fillRect(bug.x, bug.y, bug.width, bug.height);
+                // Draw bug eyes
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(bug.x + 5, bug.y + 5, 5, 5);
+                ctx.fillRect(bug.x + bug.width - 10, bug.y + 5, 5, 5);
             });
+
+            // Draw player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            
+            // Draw fix indicator
+            if (player.canFix) {
+                ctx.strokeStyle = '#0f0';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(player.x - 5, player.y - 5, player.width + 10, player.height + 10);
+            }
 
             // Draw particles
             particles.forEach(particle => {
@@ -351,7 +403,7 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
                 ctx.font = '24px Courier New';
-                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText(`Level Reached: ${currentLevel}`, canvas.width / 2, canvas.height / 2 + 40);
                 ctx.fillText('Press R to Restart', canvas.width / 2, canvas.height / 2 + 80);
             }
         }
@@ -366,16 +418,15 @@
         // Restart game
         function restartGame() {
             gameOver = false;
-            score = 0;
-            playerHealth = 3;
-            scoreElement.textContent = 'Score: 0';
-            healthElement.textContent = '❤️❤️❤️';
+            currentLevel = 1;
+            codeFixed = 0;
+            codeRequired = 3;
+            levelElement.textContent = `Level: ${currentLevel}`;
+            codeElement.textContent = `Code: ${codeFixed}/${codeRequired}`;
             player.x = 50;
             player.y = canvas.height - 100;
             player.velocityY = 0;
-            bugs.length = 0;
-            particles.length = 0;
-            createPlatforms();
+            createLevel();
         }
 
         document.addEventListener('keydown', (e) => {
@@ -400,7 +451,7 @@
         }, { passive: false });
 
         // Initialize game
-        createPlatforms();
+        createLevel();
         gameLoop();
     </script>
 </body>
