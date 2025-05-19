@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fruit Merge</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #2e7d32, #1b5e20);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+        }
+        .garden {
+            background: #4a8c4a;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            position: relative;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            overflow-x: auto;
+        }
+        .fruit {
+            width: 60px;
+            height: 60px;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .fruit:hover {
+            transform: scale(1.1);
+        }
+        .fruit.selected {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px #ffd700;
+        }
+        .fruit .earnings {
+            position: absolute;
+            bottom: -20px;
+            font-size: 12px;
+            color: #ffd700;
+            white-space: nowrap;
+        }
+        .shop {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .shop.hidden {
+            display: none;
+        }
+        .shop-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+        .shop-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .shop-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        .shop-button.active {
+            background: #FF9800;
+        }
+        .shop-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .shop-item:hover {
+            transform: scale(1.05);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .shop-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .shop-item.disabled:hover {
+            transform: none;
+        }
+        .shop-item.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .shop-item.locked:hover {
+            transform: none;
+        }
+        .locked-text {
+            color: #ff6b6b;
+            font-size: 12px;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        #money {
+            font-size: 24px;
+            margin: 20px 0;
+            color: #ffd700;
+        }
+        #startButton {
+            padding: 10px 20px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        #startButton:hover {
+            background: #45a049;
+        }
+        #mergeAllButton {
+            padding: 10px 20px;
+            font-size: 18px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        #mergeAllButton:hover {
+            background: #1976D2;
+        }
+        #shopButton {
+            padding: 10px 20px;
+            font-size: 18px;
+            background: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        #shopButton:hover {
+            background: #F57C00;
+        }
+        .message {
+            font-size: 18px;
+            margin: 10px 0;
+            height: 24px;
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fruit Merge</h1>
+    <div id="money">Money: $0</div>
+    <div class="message" id="message"></div>
+    <button id="startButton">New Game</button>
+    <button id="mergeAllButton">Merge All</button>
+    <button id="shopButton">Shop</button>
+    <div class="game-container">
+        <div class="garden" id="garden"></div>
+        <div class="shop-buttons" id="shopButtons"></div>
+        <div class="shop" id="shop"></div>
+    </div>
+
+    <script>
+        const fruits = [
+            // Basic Foods
+            { name: 'Bread', emoji: '🥖', cost: 10, earnings: 1, speed: 2000 },
+            { name: 'Waffle', emoji: '🧇', cost: 50, earnings: 5, speed: 1500 },
+            { name: 'Bagel', emoji: '🥯', cost: 100, earnings: 10, speed: 1000 },
+            { name: 'Croissant', emoji: '🥐', cost: 200, earnings: 20, speed: 800 },
+            { name: 'Toast', emoji: '🍞', cost: 300, earnings: 30, speed: 700 },
+            { name: 'Muffin', emoji: '🧁', cost: 400, earnings: 40, speed: 600 },
+            
+            // Fast Food
+            { name: 'Burger', emoji: '🍔', cost: 500, earnings: 50, speed: 600 },
+            { name: 'Hot Dog', emoji: '🌭', cost: 1000, earnings: 100, speed: 400 },
+            { name: 'Taco', emoji: '🌮', cost: 2000, earnings: 200, speed: 200 },
+            { name: 'Pizza', emoji: '🍕', cost: 5000, earnings: 500, speed: 100 },
+            { name: 'Burrito', emoji: '🌯', cost: 7500, earnings: 750, speed: 80 },
+            { name: 'Nachos', emoji: '🌮', cost: 10000, earnings: 1000, speed: 60 },
+            
+            // Snacks
+            { name: 'Fries', emoji: '🍟', cost: 15000, earnings: 1500, speed: 50 },
+            { name: 'Popcorn', emoji: '🍿', cost: 20000, earnings: 2000, speed: 25 },
+            { name: 'Pretzel', emoji: '🥨', cost: 50000, earnings: 5000, speed: 10 },
+            { name: 'Sandwich', emoji: '🥪', cost: 100000, earnings: 10000, speed: 5 },
+            { name: 'Chips', emoji: '🥔', cost: 150000, earnings: 15000, speed: 4 },
+            { name: 'Nuts', emoji: '🥜', cost: 200000, earnings: 20000, speed: 3 },
+            
+            // Desserts
+            { name: 'Donut', emoji: '🍩', cost: 300000, earnings: 30000, speed: 2 },
+            { name: 'Cookie', emoji: '🍪', cost: 500000, earnings: 50000, speed: 1 },
+            { name: 'Cake', emoji: '🍰', cost: 1000000, earnings: 100000, speed: 1 },
+            { name: 'Ice Cream', emoji: '🍦', cost: 2000000, earnings: 200000, speed: 1 },
+            { name: 'Candy', emoji: '🍬', cost: 3000000, earnings: 300000, speed: 1 },
+            { name: 'Chocolate', emoji: '🍫', cost: 4000000, earnings: 400000, speed: 1 },
+            
+            // Asian Food
+            { name: 'Sushi', emoji: '🍱', cost: 5000000, earnings: 500000, speed: 1 },
+            { name: 'Ramen', emoji: '🍜', cost: 10000000, earnings: 1000000, speed: 1 },
+            { name: 'Dumpling', emoji: '🥟', cost: 20000000, earnings: 2000000, speed: 1 },
+            { name: 'Fortune Cookie', emoji: '🥠', cost: 50000000, earnings: 5000000, speed: 1 },
+            { name: 'Bento Box', emoji: '🍱', cost: 75000000, earnings: 7500000, speed: 1 },
+            { name: 'Rice Ball', emoji: '🍙', cost: 100000000, earnings: 10000000, speed: 1 },
+            
+            // Gourmet
+            { name: 'Oyster', emoji: '🦪', cost: 150000000, earnings: 15000000, speed: 1 },
+            { name: 'Caviar', emoji: '🥄', cost: 200000000, earnings: 20000000, speed: 1 },
+            { name: 'Truffle', emoji: '🍄', cost: 500000000, earnings: 50000000, speed: 1 },
+            { name: 'Gold Leaf', emoji: '✨', cost: 1000000000, earnings: 100000000, speed: 1 },
+            { name: 'Lobster', emoji: '🦞', cost: 2000000000, earnings: 200000000, speed: 1 },
+            { name: 'Crab', emoji: '🦀', cost: 5000000000, earnings: 500000000, speed: 1 },
+            
+            // Exotic
+            { name: 'Shark Fin', emoji: '🦈', cost: 10000000000, earnings: 1000000000, speed: 1 },
+            { name: 'Bird Nest', emoji: '🐦🪺', cost: 20000000000, earnings: 2000000000, speed: 1 },
+            { name: 'Dragon Fruit', emoji: '🐉', cost: 50000000000, earnings: 5000000000, speed: 1 },
+            { name: 'Unicorn horn sprinkle cupcake', emoji: '🦄🧁', cost: 100000000000, earnings: 10000000000, speed: 1 }
+        ];
+
+        const garden = document.getElementById('garden');
+        const shop = document.getElementById('shop');
+        const moneyElement = document.getElementById('money');
+        const messageElement = document.getElementById('message');
+        const startButton = document.getElementById('startButton');
+        const mergeAllButton = document.getElementById('mergeAllButton');
+        const shopButton = document.getElementById('shopButton');
+
+        let money = 0;
+        let activeFruits = [];
+        let earningsInterval;
+        let selectedFruit = null;
+        let isMerging = false;
+        let cheatCodeUsed = false;
+        let typedKeys = '';
+        let highestFruitIndex = -1;  // Track the highest fruit index owned
+
+        function updateMoney(amount) {
+            money += amount;
+            moneyElement.textContent = `Money: $${money}`;
+            updateShop();
+        }
+
+        function checkCheatCode(key) {
+            typedKeys += key.toLowerCase();
+            if (typedKeys.length > 5) {
+                typedKeys = typedKeys.slice(-5);
+            }
+            
+            if (!cheatCodeUsed && typedKeys === 'money') {
+                updateMoney(100);
+                messageElement.textContent = 'Secret code activated! +$100';
+                setTimeout(() => {
+                    messageElement.textContent = '';
+                }, 2000);
+                cheatCodeUsed = true;
+            }
+        }
+
+        function createFruitElement(fruit) {
+            const div = document.createElement('div');
+            div.className = 'fruit';
+            div.textContent = fruit.emoji;
+            div.title = `${fruit.name} - $${fruit.earnings}/harvest`;
+            
+            const earnings = document.createElement('div');
+            earnings.className = 'earnings';
+            div.appendChild(earnings);
+
+            div.addEventListener('click', () => handleFruitClick(div, fruit));
+            
+            return div;
+        }
+
+        function mergeFruits(fruit1, fruit2) {
+            const currentIndex = fruits.findIndex(f => f.name === fruit1.fruit.name);
+            if (currentIndex < fruits.length - 1) {
+                const nextFruit = fruits[currentIndex + 1];
+                
+                // Remove both fruits
+                fruit1.element.remove();
+                fruit2.element.remove();
+                
+                // Remove from active fruits
+                activeFruits = activeFruits.filter(f => 
+                    f.element !== fruit1.element && f.element !== fruit2.element
+                );
+                
+                // Add the upgraded fruit
+                addFruit(nextFruit);
+                
+                // Update highest unlocked fruit if needed
+                if (currentIndex + 1 > highestFruitIndex) {
+                    highestFruitIndex = currentIndex + 1;
+                }
+                
+                // Show merge message
+                messageElement.textContent = `Merged into ${nextFruit.name}!`;
+                setTimeout(() => {
+                    messageElement.textContent = '';
+                }, 2000);
+
+                return true;
+            }
+            return false;
+        }
+
+        function handleFruitClick(element, fruit) {
+            if (isMerging) return;
+            
+            if (!selectedFruit) {
+                // First selection
+                selectedFruit = { element, fruit };
+                element.classList.add('selected');
+            } else if (selectedFruit.element === element) {
+                // Deselect
+                selectedFruit.element.classList.remove('selected');
+                selectedFruit = null;
+            } else if (selectedFruit.fruit.name === fruit.name) {
+                // Merge fruits
+                mergeFruits(selectedFruit, { element, fruit });
+                selectedFruit = null;
+            } else {
+                // Different fruit type, switch selection
+                selectedFruit.element.classList.remove('selected');
+                selectedFruit = { element, fruit };
+                element.classList.add('selected');
+            }
+        }
+
+        function addFruit(fruit) {
+            const fruitElement = createFruitElement(fruit);
+            garden.appendChild(fruitElement);
+            activeFruits.push({
+                element: fruitElement,
+                fruit: fruit,
+                lastEarning: Date.now()
+            });
+        }
+
+        function updateShop() {
+            const shopButtons = document.getElementById('shopButtons');
+            shopButtons.innerHTML = '';
+            
+            // Create shop categories
+            const categories = [
+                { name: 'Basic Foods', startIndex: 0, endIndex: 5, emoji: '🥖' },
+                { name: 'Fast Food', startIndex: 6, endIndex: 11, emoji: '🍔' },
+                { name: 'Snacks', startIndex: 12, endIndex: 17, emoji: '🍟' },
+                { name: 'Desserts', startIndex: 18, endIndex: 23, emoji: '🍰' },
+                { name: 'Asian Food', startIndex: 24, endIndex: 29, emoji: '🍱' },
+                { name: 'Gourmet', startIndex: 30, endIndex: 35, emoji: '🦪' },
+                { name: 'Exotic', startIndex: 36, endIndex: 39, emoji: '🦄' }
+            ];
+
+            // Find the highest fruit index owned
+            highestFruitIndex = -1;
+            activeFruits.forEach(fruit => {
+                const index = fruits.findIndex(f => f.name === fruit.fruit.name);
+                if (index > highestFruitIndex) {
+                    highestFruitIndex = index;
+                }
+            });
+
+            // Create buttons for each category
+            categories.forEach((category, index) => {
+                const button = document.createElement('button');
+                button.className = 'shop-button';
+                button.innerHTML = `${category.emoji} ${category.name}`;
+                if (index === 0) button.classList.add('active');
+                
+                button.addEventListener('click', () => {
+                    // Update active button
+                    document.querySelectorAll('.shop-button').forEach(b => b.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // Show items for this category
+                    updateShopItems(category.startIndex, category.endIndex);
+                });
+                
+                shopButtons.appendChild(button);
+            });
+
+            // Show initial category
+            updateShopItems(categories[0].startIndex, categories[0].endIndex);
+        }
+
+        function updateShopItems(startIndex, endIndex) {
+            shop.innerHTML = '';
+            
+            for (let i = startIndex; i <= endIndex; i++) {
+                const fruit = fruits[i];
+                const item = document.createElement('div');
+                item.className = 'shop-item';
+                
+                // Check if item is locked (more than one level above highest owned)
+                const isLocked = i > highestFruitIndex + 1;
+                if (isLocked) {
+                    item.classList.add('locked');
+                } else if (money < fruit.cost) {
+                    item.classList.add('disabled');
+                }
+                
+                item.innerHTML = `
+                    <div style="font-size: 24px;">${fruit.emoji}</div>
+                    <div>${fruit.name}</div>
+                    <div>Cost: $${fruit.cost}</div>
+                    <div>Earnings: $${fruit.earnings}/harvest</div>
+                    ${isLocked ? '<div class="locked-text">Locked - Merge more items to unlock!</div>' : ''}
+                `;
+                
+                if (!isLocked) {
+                    item.addEventListener('click', () => {
+                        if (money >= fruit.cost) {
+                            updateMoney(-fruit.cost);
+                            addFruit(fruit);
+                            messageElement.textContent = `Planted a ${fruit.name}!`;
+                            setTimeout(() => {
+                                messageElement.textContent = '';
+                            }, 2000);
+                        }
+                    });
+                }
+                
+                shop.appendChild(item);
+            }
+        }
+
+        function updateEarnings() {
+            const now = Date.now();
+            activeFruits.forEach(fruit => {
+                if (now - fruit.lastEarning >= fruit.fruit.speed) {
+                    updateMoney(fruit.fruit.earnings);
+                    fruit.lastEarning = now;
+                    
+                    // Animate earnings
+                    const earnings = fruit.element.querySelector('.earnings');
+                    earnings.textContent = `+$${fruit.fruit.earnings}`;
+                    earnings.style.opacity = '1';
+                    setTimeout(() => {
+                        earnings.style.opacity = '0';
+                    }, 1000);
+                }
+            });
+        }
+
+        function mergeAllFruits() {
+            if (isMerging) return;
+            isMerging = true;
+
+            // Group fruits by type
+            const fruitGroups = {};
+            activeFruits.forEach(fruit => {
+                const name = fruit.fruit.name;
+                if (!fruitGroups[name]) {
+                    fruitGroups[name] = [];
+                }
+                fruitGroups[name].push(fruit);
+            });
+
+            // Merge pairs of fruits
+            let merged = false;
+            Object.values(fruitGroups).forEach(group => {
+                while (group.length >= 2) {
+                    const fruit1 = group.shift();
+                    const fruit2 = group.shift();
+                    if (mergeFruits(fruit1, fruit2)) {
+                        merged = true;
+                    }
+                }
+            });
+
+            if (!merged) {
+                messageElement.textContent = 'No fruits to merge!';
+                setTimeout(() => {
+                    messageElement.textContent = '';
+                }, 2000);
+            }
+
+            isMerging = false;
+        }
+
+        function startGame() {
+            money = 10;  // Start with $10 to buy first apple
+            activeFruits = [];
+            garden.innerHTML = '';
+            updateMoney(0);
+            highestFruitIndex = -1;  // Reset highest fruit index
+            updateShop();
+            cheatCodeUsed = false;
+            typedKeys = '';
+            
+            if (earningsInterval) {
+                clearInterval(earningsInterval);
+            }
+            earningsInterval = setInterval(updateEarnings, 100);
+        }
+
+        startButton.addEventListener('click', startGame);
+        mergeAllButton.addEventListener('click', mergeAllFruits);
+        shopButton.addEventListener('click', () => {
+            shop.classList.toggle('hidden');
+            shopButton.textContent = shop.classList.contains('hidden') ? 'Show Shop' : 'Hide Shop';
+        });
+
+        // Add keyboard event listener
+        document.addEventListener('keydown', (event) => {
+            checkCheatCode(event.key);
+        });
+
+        // Initialize the game
+        startGame();
+    </script>
+</body>
+</html>
