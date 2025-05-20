@@ -96,10 +96,8 @@
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('userEmail', email);
                 
-                // Redirect to the original page
-                const urlParams = new URLSearchParams(window.location.search);
-                const redirectUrl = urlParams.get('redirect') || 'index.html';
-                window.location.href = redirectUrl;
+                // Always redirect to k.html
+                window.location.href = 'k.html';
             } else {
                 error.style.display = 'block';
             }
