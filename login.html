@@ -67,36 +67,31 @@
 </head>
 <body>
     <div class="login-container">
-        <h1>Login</h1>
+        <h1>Enter Your Email</h1>
         <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email:</label>
                 <input type="email" id="email" required>
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" required>
-            </div>
-            <button type="submit">Login</button>
+            <button type="submit">Continue</button>
         </form>
-        <div id="error" class="error">Invalid email or password</div>
+        <div id="error" class="error">This email is not authorized to view this page</div>
     </div>
 
     <script>
         const allowedEmails = [
             'katelgra05@gmail.com',
             'terryee1338@gmail.com',
-            'carter.terryfamily@gmail.com'
+            'carter.terryfamily@gmail.com',
+            'carterry01@gmail.com'
         ];
-        const password = 'birthday2024'; // You can change this password
 
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const email = document.getElementById('email').value.toLowerCase();
-            const enteredPassword = document.getElementById('password').value;
             const error = document.getElementById('error');
 
-            if (allowedEmails.includes(email) && enteredPassword === password) {
+            if (allowedEmails.includes(email)) {
                 // Store login state
                 localStorage.setItem('isLoggedIn', 'true');
                 localStorage.setItem('userEmail', email);
