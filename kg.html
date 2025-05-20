@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna's Adventure 🦊</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4);
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            position: relative;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        body::before {
+            content: '🎂';
+            position: absolute;
+            font-size: 2rem;
+            animation: float 3s infinite;
+            opacity: 0.3;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .game-container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 90%;
+            margin: 20px auto;
+            border: 3px solid #ff6b6b;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .game-container::before {
+            content: '🎈';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            font-size: 2rem;
+            animation: float 2s infinite;
+        }
+
+        .game-container::after {
+            content: '🎁';
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            font-size: 2rem;
+            animation: float 2.5s infinite;
+        }
+
+        .character {
+            font-size: 5rem;
+            margin: 1rem 0;
+            animation: bounce 2s infinite;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .fox-tail {
+            position: absolute;
+            font-size: 3rem;
+            animation: wag 1s infinite;
+            transform-origin: left center;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes wag {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(20deg); }
+        }
+
+        .story {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin: 2rem 0;
+        }
+
+        .quest-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+
+        .quest-button:hover {
+            transform: scale(1.05);
+        }
+
+        .quest-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .minigame {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .minigame.active {
+            display: block;
+        }
+
+        .progress {
+            font-size: 1.2rem;
+            margin: 1rem 0;
+            color: #666;
+        }
+
+        /* Memory Game Styles */
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            max-width: 500px;
+        }
+
+        .memory-card {
+            aspect-ratio: 1;
+            background: #4ecdc4;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        .memory-card.flipped {
+            transform: rotateY(180deg);
+            background: #ff6b6b;
+        }
+
+        .memory-card::before {
+            content: '🎁';
+            position: absolute;
+            font-size: 2rem;
+        }
+
+        .memory-card.flipped::before {
+            display: none;
+        }
+
+        .memory-card .hidden-item {
+            display: none;
+            font-size: 2rem;
+        }
+
+        .memory-card.flipped .hidden-item {
+            display: block;
+        }
+
+        .match-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            animation: popIn 0.5s;
+            text-align: center;
+        }
+
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* Jump Game Styles */
+        .jump-game {
+            width: 300px;
+            height: 200px;
+            border: 2px solid #333;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .jumper {
+            width: 30px;
+            height: 30px;
+            background: #ff6b6b;
+            position: absolute;
+            bottom: 0;
+            left: 50px;
+            border-radius: 50%;
+        }
+
+        .obstacle {
+            width: 20px;
+            height: 40px;
+            background: #333;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+        }
+
+        /* Collect Game Styles */
+        .collect-game {
+            width: 300px;
+            height: 200px;
+            border: 2px solid #333;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FA);
+            border-radius: 10px;
+        }
+
+        .collector {
+            width: 40px;
+            height: 40px;
+            background: transparent;
+            position: absolute;
+            bottom: 10px;
+            left: 50px;
+            font-size: 2.5rem;
+            transition: left 0.1s ease-out;
+            z-index: 2;
+        }
+
+        .item {
+            width: 30px;
+            height: 30px;
+            background: transparent;
+            position: absolute;
+            border-radius: 50%;
+            font-size: 2rem;
+            transition: top 0.1s linear;
+            z-index: 1;
+        }
+
+        .candle-count {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            z-index: 3;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 4;
+            display: none;
+        }
+
+        .game-overlay.active {
+            display: flex;
+        }
+
+        .game-message {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        .controls {
+            margin: 1rem 0;
+        }
+
+        .controls button {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+
+        .party-container {
+            width: 300px;
+            height: 200px;
+            border: 2px solid #333;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #FFB6C1, #FFC0CB);
+            border-radius: 10px;
+        }
+
+        .party-item {
+            position: absolute;
+            font-size: 2rem;
+            animation: float 3s infinite;
+            cursor: pointer;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        .party-message {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .party-message.active {
+            display: block;
+            animation: popIn 0.5s;
+        }
+
+        @media (max-height: 800px) {
+            .game-container {
+                margin: 10px auto;
+                padding: 1rem;
+            }
+
+            .character {
+                font-size: 4rem;
+                margin: 0.5rem 0;
+            }
+
+            .story {
+                font-size: 1rem;
+                margin: 1rem 0;
+            }
+
+            .quest-button {
+                padding: 10px 20px;
+                font-size: 1rem;
+                margin: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Luna's Birthday Adventure 🦊🎂</h1>
+        <div class="character">🦊<span class="fox-tail">🦊</span></div>
+        <div class="story">
+            <p>It's Luna's birthday, and she's planning the biggest party in the forest! Help her prepare by completing three special birthday quests:</p>
+            <ol>
+                <li>🎁 Find matching birthday presents hidden in the forest</li>
+                <li>🍰 Collect birthday candles to light up her cake</li>
+                <li>🎉 Celebrate at Luna's birthday party!</li>
+            </ol>
+            <p>Help Luna complete all quests to throw the best birthday party ever! 🎉</p>
+        </div>
+        <div class="progress">
+            Quests Completed: <span id="quest-count">0</span>/3
+        </div>
+        <button class="quest-button" id="quest1">Start Present Quest 🎁</button>
+        <button class="quest-button" id="quest2" disabled>Start Candle Quest 🎂</button>
+        <button class="quest-button" id="quest3" disabled>Start Party Quest 🎉</button>
+
+        <!-- Memory Game -->
+        <div class="minigame" id="memory-game">
+            <h2>Present Quest 🎁</h2>
+            <p>Help Luna find all the matching birthday presents hidden in the forest!</p>
+            <div class="memory-game" id="memory-board"></div>
+            <div class="controls">
+                <button id="memory-restart">Try Again</button>
+            </div>
+        </div>
+
+        <!-- Collect Game -->
+        <div class="minigame" id="collect-game">
+            <h2>Candle Quest 🎂</h2>
+            <p>Help Luna collect 13 birthday candles to light up her cake! Use arrow keys to move.</p>
+            <div class="collect-game">
+                <div class="collector" id="collector">🦊</div>
+                <div class="candle-count">Candles: <span id="candle-count">0</span>/13</div>
+                <div class="game-overlay" id="game-overlay">
+                    <div class="game-message">
+                        <div id="overlay-message"></div>
+                        <button id="overlay-button" style="margin-top: 10px; padding: 5px 15px;">Try Again</button>
+                    </div>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="collect-start">Start</button>
+                <button id="collect-restart">Try Again</button>
+            </div>
+        </div>
+
+        <!-- Party Game -->
+        <div class="minigame" id="party-game">
+            <h2>Party Quest 🎉</h2>
+            <p>Click on the party items to help Luna celebrate her birthday!</p>
+            <div class="party-container" id="party-container">
+                <div class="party-message" id="party-message"></div>
+            </div>
+            <div class="controls">
+                <button id="party-start">Start Party</button>
+                <button id="party-restart">Restart Party</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let completedQuests = 0;
+        const questButtons = {
+            1: document.getElementById('quest1'),
+            2: document.getElementById('quest2'),
+            3: document.getElementById('quest3')
+        };
+        const minigames = {
+            1: document.getElementById('memory-game'),
+            2: document.getElementById('collect-game'),
+            3: document.getElementById('party-game')
+        };
+
+        // Quest button handlers
+        Object.keys(questButtons).forEach(questNum => {
+            questButtons[questNum].addEventListener('click', () => {
+                // Hide all minigames
+                Object.values(minigames).forEach(game => game.classList.remove('active'));
+                // Show selected minigame
+                minigames[questNum].classList.add('active');
+            });
+        });
+
+        // Memory Game
+        const memoryBoard = document.getElementById('memory-board');
+        const items = [
+            { emoji: '🌿', text: 'A beautiful plant for Luna\'s den!' },
+            { emoji: '🌸', text: 'Pretty flowers for the forest!' },
+            { emoji: '🍓', text: 'Sweet berries for Luna!' },
+            { emoji: '🦊', text: 'A fox friend to play with!' },
+            { emoji: '🌳', text: 'A cozy tree to climb!' },
+            { emoji: '✨', text: 'Magical forest sparkles!' },
+            { emoji: '🍄', text: 'Cute mushrooms for decoration!' },
+            { emoji: '🌺', text: 'Tropical flowers for the party!' }
+        ];
+        let flippedCards = [];
+        let matchedPairs = 0;
+
+        function createMemoryBoard() {
+            const cards = [...items, ...items]
+                .sort(() => Math.random() - 0.5)
+                .map(item => {
+                    const card = document.createElement('div');
+                    card.className = 'memory-card';
+                    const hiddenItem = document.createElement('div');
+                    hiddenItem.className = 'hidden-item';
+                    hiddenItem.textContent = item.emoji;
+                    card.appendChild(hiddenItem);
+                    card.dataset.item = JSON.stringify(item);
+                    card.addEventListener('click', () => flipCard(card));
+                    return card;
+                });
+            memoryBoard.innerHTML = '';
+            cards.forEach(card => memoryBoard.appendChild(card));
+        }
+
+        function showMatchMessage(item) {
+            const message = document.createElement('div');
+            message.className = 'match-message';
+            message.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 10px;">${item.emoji}</div>
+                <div style="font-size: 1.2rem;">${item.text}</div>
+            `;
+            document.body.appendChild(message);
+            setTimeout(() => message.remove(), 2000);
+        }
+
+        function flipCard(card) {
+            if (flippedCards.length < 2 && !card.classList.contains('flipped')) {
+                card.classList.add('flipped');
+                flippedCards.push(card);
+
+                if (flippedCards.length === 2) {
+                    setTimeout(checkMatch, 1000);
+                }
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const item1 = JSON.parse(card1.dataset.item);
+            const item2 = JSON.parse(card2.dataset.item);
+            
+            if (item1.emoji === item2.emoji) {
+                matchedPairs++;
+                showMatchMessage(item1);
+                if (matchedPairs === items.length) {
+                    completeQuest(1);
+                }
+            } else {
+                card1.classList.remove('flipped');
+                card2.classList.remove('flipped');
+            }
+            flippedCards = [];
+        }
+
+        // Collect Game
+        const collector = document.getElementById('collector');
+        let collectInterval;
+        let starsCollected = 0;
+        let position = 0;
+        let isMoving = false;
+        let moveDirection = 0;
+        const moveSpeed = 4;
+        const gameArea = document.querySelector('.collect-game');
+        const candleCountDisplay = document.getElementById('candle-count');
+        const gameOverlay = document.getElementById('game-overlay');
+        const overlayMessage = document.getElementById('overlay-message');
+        const overlayButton = document.getElementById('overlay-button');
+
+        function showMessage(message) {
+            overlayMessage.textContent = message;
+            gameOverlay.classList.add('active');
+        }
+
+        function hideMessage() {
+            gameOverlay.classList.remove('active');
+        }
+
+        function updateCollectorPosition() {
+            if (isMoving) {
+                position += moveDirection * moveSpeed;
+                // Keep within bounds
+                position = Math.max(0, Math.min(position, 260));
+                collector.style.left = `${position}px`;
+            }
+            requestAnimationFrame(updateCollectorPosition);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!isMoving) {
+                isMoving = true;
+            }
+            if (e.code === 'ArrowLeft') {
+                moveDirection = -1;
+            } else if (e.code === 'ArrowRight') {
+                moveDirection = 1;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+                isMoving = false;
+                moveDirection = 0;
+            }
+        });
+
+        function startCollectGame() {
+            starsCollected = 0;
+            candleCountDisplay.textContent = '0';
+            position = 0;
+            collector.style.left = '50px';
+            hideMessage();
+            
+            // Clear any existing candles
+            const existingCandles = gameArea.querySelectorAll('.item');
+            existingCandles.forEach(candle => candle.remove());
+
+            collectInterval = setInterval(() => {
+                // Create new candle
+                if (Math.random() < 0.08) {
+                    const candle = document.createElement('div');
+                    candle.className = 'item';
+                    candle.textContent = '🕯️';
+                    candle.style.left = `${Math.random() * 260}px`;
+                    candle.style.top = '0px';
+                    gameArea.appendChild(candle);
+
+                    // Move candle down
+                    const candleInterval = setInterval(() => {
+                        const currentTop = parseInt(candle.style.top);
+                        if (currentTop < 200) {
+                            candle.style.top = `${currentTop + 1.5}px`;
+                            
+                            // Check collision
+                            if (currentTop > 140 && 
+                                Math.abs(parseInt(candle.style.left) - position) < 35) {
+                                candle.remove();
+                                clearInterval(candleInterval);
+                                starsCollected++;
+                                candleCountDisplay.textContent = starsCollected;
+                                if (starsCollected >= 13) {
+                                    clearInterval(collectInterval);
+                                    showMessage('Yay! You collected all 13 candles! 🎂✨');
+                                    setTimeout(() => {
+                                        completeQuest(2);
+                                    }, 2000);
+                                }
+                            }
+                        } else {
+                            candle.remove();
+                            clearInterval(candleInterval);
+                        }
+                    }, 50);
+                }
+            }, 1000);
+        }
+
+        // Start the position update loop
+        updateCollectorPosition();
+
+        document.getElementById('collect-start').addEventListener('click', startCollectGame);
+        document.getElementById('collect-restart').addEventListener('click', () => {
+            clearInterval(collectInterval);
+            starsCollected = 0;
+            candleCountDisplay.textContent = '0';
+            startCollectGame();
+        });
+
+        overlayButton.addEventListener('click', () => {
+            hideMessage();
+            startCollectGame();
+        });
+
+        // Game completion
+        function completeQuest(questNum) {
+            completedQuests++;
+            document.getElementById('quest-count').textContent = completedQuests;
+            questButtons[questNum].disabled = true;
+            questButtons[questNum].textContent = 'Completed! ✅';
+            
+            if (questNum < 3) {
+                questButtons[questNum + 1].disabled = false;
+            }
+
+            if (completedQuests === 3) {
+                setTimeout(() => {
+                    alert('Happy Birthday! Luna\'s party is ready! 🎂🎉🦊✨');
+                }, 500);
+            }
+        }
+
+        // Initialize games
+        createMemoryBoard();
+        document.getElementById('memory-restart').addEventListener('click', () => {
+            matchedPairs = 0;
+            createMemoryBoard();
+        });
+
+        // Party Game
+        const partyContainer = document.getElementById('party-container');
+        const partyMessage = document.getElementById('party-message');
+        let partyItems = [];
+        let clickedItems = 0;
+
+        const partyMessages = [
+            "Luna loves her new plant! 🌿",
+            "The flowers are so pretty! 🌸",
+            "Yummy berries! 🍓",
+            "New fox friend! 🦊",
+            "Time to climb the tree! 🌳",
+            "Magical sparkles everywhere! ✨",
+            "Cute mushrooms! 🍄",
+            "Beautiful tropical flowers! 🌺",
+            "The cake looks delicious! 🎂",
+            "Happy Birthday Luna! 🎉"
+        ];
+
+        function createPartyItem(emoji, x, y) {
+            const item = document.createElement('div');
+            item.className = 'party-item';
+            item.textContent = emoji;
+            item.style.left = `${x}px`;
+            item.style.top = `${y}px`;
+            item.style.animationDelay = `${Math.random() * 2}s`;
+            item.addEventListener('click', () => {
+                if (!item.classList.contains('clicked')) {
+                    item.classList.add('clicked');
+                    clickedItems++;
+                    showPartyMessage(partyMessages[clickedItems - 1]);
+                    if (clickedItems >= 10) {
+                        setTimeout(() => {
+                            completeQuest(3);
+                        }, 2000);
+                    }
+                }
+            });
+            return item;
+        }
+
+        function showPartyMessage(message) {
+            partyMessage.textContent = message;
+            partyMessage.classList.add('active');
+            setTimeout(() => {
+                partyMessage.classList.remove('active');
+            }, 2000);
+        }
+
+        function startParty() {
+            partyContainer.innerHTML = '';
+            partyMessage.textContent = '';
+            clickedItems = 0;
+            
+            const items = [
+                { emoji: '🌿', x: 50, y: 50 },
+                { emoji: '🌸', x: 200, y: 30 },
+                { emoji: '🍓', x: 100, y: 100 },
+                { emoji: '🦊', x: 150, y: 40 },
+                { emoji: '🌳', x: 250, y: 80 },
+                { emoji: '✨', x: 30, y: 120 },
+                { emoji: '🍄', x: 180, y: 150 },
+                { emoji: '🌺', x: 80, y: 160 },
+                { emoji: '🎂', x: 120, y: 30 },
+                { emoji: '🎉', x: 220, y: 120 }
+            ];
+
+            items.forEach(item => {
+                const partyItem = createPartyItem(item.emoji, item.x, item.y);
+                partyContainer.appendChild(partyItem);
+            });
+        }
+
+        document.getElementById('party-start').addEventListener('click', startParty);
+        document.getElementById('party-restart').addEventListener('click', startParty);
+    </script>
+</body>
+</html>

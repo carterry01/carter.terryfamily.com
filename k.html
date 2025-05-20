@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy 13th Birthday Katelyn! 🎉</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fad0c4, #a1c4fd);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            font-family: 'Arial', sans-serif;
+            color: #333;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ff6b6b;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .message {
+            font-size: 1.5rem;
+            margin: 2rem 0;
+            line-height: 1.6;
+        }
+
+        .from {
+            font-style: italic;
+            color: #666;
+            margin-top: 2rem;
+        }
+
+        .balloons {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .balloon {
+            position: absolute;
+            width: 40px;
+            height: 50px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .balloon:nth-child(2) {
+            background: #4ecdc4;
+            left: 20%;
+            animation-delay: 1s;
+        }
+
+        .balloon:nth-child(3) {
+            background: #ffd93d;
+            left: 40%;
+            animation-delay: 2s;
+        }
+
+        .balloon:nth-child(4) {
+            background: #95e1d3;
+            left: 60%;
+            animation-delay: 3s;
+        }
+
+        .balloon:nth-child(5) {
+            background: #ff8b94;
+            left: 80%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .cake {
+            font-size: 5rem;
+            margin: 1rem 0;
+            animation: spin 3s linear infinite;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .cake:hover {
+            transform: scale(1.1);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .click-message {
+            font-size: 1.2rem;
+            color: #ff6b6b;
+            margin-top: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .game-container {
+            display: none;
+            text-align: center;
+        }
+
+        .clicker-cake {
+            font-size: 8rem;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.1s;
+        }
+
+        .clicker-cake:active {
+            transform: scale(0.9);
+        }
+
+        .counter {
+            font-size: 2rem;
+            margin: 1rem 0;
+            color: #ff6b6b;
+        }
+
+        .click-effect {
+            position: absolute;
+            pointer-events: none;
+            font-size: 2rem;
+            animation: float-up 1s ease-out;
+            opacity: 0;
+        }
+
+        @keyframes float-up {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+
+        .shop-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+
+        .shop-button:hover {
+            transform: scale(1.05);
+        }
+
+        .shop {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            max-width: 400px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .shop-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .shop-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1.1rem;
+            color: #666;
+        }
+
+        .shop-tab.active {
+            color: #ff6b6b;
+            border-bottom: 2px solid #ff6b6b;
+            margin-bottom: -2px;
+        }
+
+        .achievement {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .achievement.locked {
+            opacity: 0.5;
+        }
+
+        .achievement-icon {
+            font-size: 2rem;
+        }
+
+        .achievement-info {
+            flex-grow: 1;
+        }
+
+        .achievement-progress {
+            height: 5px;
+            background: #eee;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .achievement-progress-bar {
+            height: 100%;
+            background: #4ecdc4;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .special-upgrade {
+            background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .special-upgrade button {
+            background: white;
+            color: #ff6b6b;
+        }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            margin: 5px 0;
+        }
+
+        .shop-item button {
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .shop-item button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .close-shop {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .stats {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            color: #666;
+        }
+
+        .music-player {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .music-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .music-button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: transform 0.2s;
+        }
+
+        .music-button:hover {
+            transform: scale(1.1);
+        }
+
+        .music-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 5px;
+            -webkit-appearance: none;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="balloons">
+        <div class="balloon"></div>
+        <div class="balloon"></div>
+        <div class="balloon"></div>
+        <div class="balloon"></div>
+        <div class="balloon"></div>
+    </div>
+    
+    <div class="container" id="birthday-container">
+        <h1>Happy 13th Birthday Katelyn! 🎂</h1>
+        <div class="cake" id="cake">🎂</div>
+        <div class="click-message">Click the cake for a surprise! 🎮</div>
+        <div class="message">
+            <p>Welcome to your teenage years! 🎉</p>
+            <p>May your 13th birthday be filled with joy, laughter, and all the things that make you happy!</p>
+            <p>You're growing up to be an amazing person, and I'm so proud to be your brother!</p>
+        </div>
+        <div class="from">
+            <p>With love,</p>
+            <p>Carter ❤️</p>
+        </div>
+    </div>
+
+    <div class="container game-container" id="game-container">
+        <h1>Cake Clicker! 🎮</h1>
+        <div class="clicker-cake" id="clicker-cake">🎂</div>
+        <div class="counter">Cakes: <span id="click-count">0</span></div>
+        <div class="stats">
+            <div>Cakes per click: <span id="cakes-per-click">1</span></div>
+            <div>Cakes per second: <span id="cakes-per-second">0</span></div>
+        </div>
+        <button class="shop-button" id="shop-button">Shop 🛍️</button>
+    </div>
+
+    <div class="shop" id="shop">
+        <button class="close-shop" id="close-shop">×</button>
+        <h2>Shop 🛍️</h2>
+        <div class="shop-tabs">
+            <button class="shop-tab active" data-tab="upgrades">Upgrades</button>
+            <button class="shop-tab" data-tab="special">Special</button>
+            <button class="shop-tab" data-tab="achievements">Achievements</button>
+        </div>
+        <div class="shop-content" id="upgrades-tab">
+            <div class="shop-item">
+                <div>
+                    <h3>Better Cakes 🍰</h3>
+                    <p>Doubles your cakes per click!</p>
+                    <p>Cost: <span id="upgrade1-cost">10</span> cakes</p>
+                </div>
+                <button id="upgrade1">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Auto Baker 👨‍🍳</h3>
+                    <p>Automatically makes 1 cake per second!</p>
+                    <p>Cost: <span id="upgrade2-cost">50</span> cakes</p>
+                </div>
+                <button id="upgrade2">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Super Baker 🦸‍♂️</h3>
+                    <p>Doubles all cake production!</p>
+                    <p>Cost: <span id="upgrade3-cost">200</span> cakes</p>
+                </div>
+                <button id="upgrade3">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Golden Cakes ✨</h3>
+                    <p>Chance to get 5x cakes when clicking!</p>
+                    <p>Cost: <span id="upgrade4-cost">500</span> cakes</p>
+                </div>
+                <button id="upgrade4">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Cake Factory 🏭</h3>
+                    <p>Produces 5 cakes per second!</p>
+                    <p>Cost: <span id="upgrade5-cost">1000</span> cakes</p>
+                </div>
+                <button id="upgrade5">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Magic Oven 🔮</h3>
+                    <p>Triples your cakes per click!</p>
+                    <p>Cost: <span id="upgrade6-cost">2000</span> cakes</p>
+                </div>
+                <button id="upgrade6">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Cake Empire 👑</h3>
+                    <p>Produces 10 cakes per second!</p>
+                    <p>Cost: <span id="upgrade7-cost">5000</span> cakes</p>
+                </div>
+                <button id="upgrade7">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Lucky Baker 🍀</h3>
+                    <p>25% chance for 10x cakes!</p>
+                    <p>Cost: <span id="upgrade8-cost">10000</span> cakes</p>
+                </div>
+                <button id="upgrade8">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Cake Universe 🌌</h3>
+                    <p>Quadruples all production!</p>
+                    <p>Cost: <span id="upgrade9-cost">20000</span> cakes</p>
+                </div>
+                <button id="upgrade9">Buy</button>
+            </div>
+            <div class="shop-item">
+                <div>
+                    <h3>Time Machine ⏰</h3>
+                    <p>Doubles your auto-production speed!</p>
+                    <p>Cost: <span id="upgrade10-cost">50000</span> cakes</p>
+                </div>
+                <button id="upgrade10">Buy</button>
+            </div>
+        </div>
+        <div class="shop-content" id="special-tab" style="display: none;">
+            <div class="special-upgrade">
+                <h3>Birthday Bonus 🎁</h3>
+                <p>Special 13th birthday upgrade! Triples all production!</p>
+                <p>Cost: <span id="special1-cost">1300</span> cakes</p>
+                <button id="special1">Buy</button>
+            </div>
+            <div class="special-upgrade">
+                <h3>Rainbow Cakes 🌈</h3>
+                <p>Makes your cakes colorful and worth 2x more!</p>
+                <p>Cost: <span id="special2-cost">2000</span> cakes</p>
+                <button id="special2">Buy</button>
+            </div>
+            <div class="special-upgrade">
+                <h3>Diamond Cakes 💎</h3>
+                <p>Permanent 5x multiplier for all cakes!</p>
+                <p>Cost: <span id="special3-cost">10000</span> cakes</p>
+                <button id="special3">Buy</button>
+            </div>
+            <div class="special-upgrade">
+                <h3>Time Warp ⚡</h3>
+                <p>Makes all auto-production 3x faster!</p>
+                <p>Cost: <span id="special4-cost">25000</span> cakes</p>
+                <button id="special4">Buy</button>
+            </div>
+            <div class="special-upgrade">
+                <h3>Infinity Cakes ∞</h3>
+                <p>Doubles all multipliers permanently!</p>
+                <p>Cost: <span id="special5-cost">100000</span> cakes</p>
+                <button id="special5">Buy</button>
+            </div>
+        </div>
+        <div class="shop-content" id="achievements-tab" style="display: none;">
+            <div class="achievement" id="achievement1">
+                <div class="achievement-icon">🎂</div>
+                <div class="achievement-info">
+                    <h4>First Steps</h4>
+                    <p>Click 100 times</p>
+                    <div class="achievement-progress">
+                        <div class="achievement-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="achievement" id="achievement2">
+                <div class="achievement-icon">🏭</div>
+                <div class="achievement-info">
+                    <h4>Factory Owner</h4>
+                    <p>Own 5 Auto Bakers</p>
+                    <div class="achievement-progress">
+                        <div class="achievement-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="achievement" id="achievement3">
+                <div class="achievement-icon">🌟</div>
+                <div class="achievement-info">
+                    <h4>Cake Master</h4>
+                    <p>Reach 10,000 cakes</p>
+                    <div class="achievement-progress">
+                        <div class="achievement-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="music-player">
+        <div class="music-controls">
+            <button class="music-button" id="playPause">▶️</button>
+            <input type="range" class="volume-slider" id="volume" min="0" max="100" value="50">
+        </div>
+        <div class="music-info">
+            <div id="time">0:00 / 0:00</div>
+        </div>
+    </div>
+
+    <audio id="background-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script>
+        const cake = document.getElementById('cake');
+        const birthdayContainer = document.getElementById('birthday-container');
+        const gameContainer = document.getElementById('game-container');
+        const clickerCake = document.getElementById('clicker-cake');
+        const clickCount = document.getElementById('click-count');
+        const shopButton = document.getElementById('shop-button');
+        const shop = document.getElementById('shop');
+        const closeShop = document.getElementById('close-shop');
+        const cakesPerClick = document.getElementById('cakes-per-click');
+        const cakesPerSecond = document.getElementById('cakes-per-second');
+
+        let count = 0;
+        let clickPower = 1;
+        let autoCakes = 0;
+        let multiplier = 1;
+        let goldenChance = 0;
+        let achievements = {
+            clicks: 0,
+            autoBakers: 0,
+            totalCakes: 0
+        };
+
+        // Shop items
+        const upgrade1 = document.getElementById('upgrade1');
+        const upgrade2 = document.getElementById('upgrade2');
+        const upgrade3 = document.getElementById('upgrade3');
+        const upgrade4 = document.getElementById('upgrade4');
+        const upgrade5 = document.getElementById('upgrade5');
+        const upgrade6 = document.getElementById('upgrade6');
+        const upgrade7 = document.getElementById('upgrade7');
+        const upgrade8 = document.getElementById('upgrade8');
+        const upgrade9 = document.getElementById('upgrade9');
+        const upgrade10 = document.getElementById('upgrade10');
+        const upgrade1Cost = document.getElementById('upgrade1-cost');
+        const upgrade2Cost = document.getElementById('upgrade2-cost');
+        const upgrade3Cost = document.getElementById('upgrade3-cost');
+        const upgrade4Cost = document.getElementById('upgrade4-cost');
+        const upgrade5Cost = document.getElementById('upgrade5-cost');
+        const upgrade6Cost = document.getElementById('upgrade6-cost');
+        const upgrade7Cost = document.getElementById('upgrade7-cost');
+        const upgrade8Cost = document.getElementById('upgrade8-cost');
+        const upgrade9Cost = document.getElementById('upgrade9-cost');
+        const upgrade10Cost = document.getElementById('upgrade10-cost');
+
+        let upgrade1Level = 0;
+        let upgrade2Level = 0;
+        let upgrade3Level = 0;
+        let upgrade4Level = 0;
+        let upgrade5Level = 0;
+        let upgrade6Level = 0;
+        let upgrade7Level = 0;
+        let upgrade8Level = 0;
+        let upgrade9Level = 0;
+        let upgrade10Level = 0;
+        let special1Bought = false;
+        let special2Bought = false;
+        let special3Bought = false;
+        let special4Bought = false;
+        let special5Bought = false;
+        let timeWarpMultiplier = 1;
+
+        // Shop tabs
+        const tabs = document.querySelectorAll('.shop-tab');
+        const contents = document.querySelectorAll('.shop-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                contents.forEach(content => content.style.display = 'none');
+                document.getElementById(`${tab.dataset.tab}-tab`).style.display = 'block';
+            });
+        });
+
+        cake.addEventListener('click', () => {
+            birthdayContainer.style.display = 'none';
+            gameContainer.style.display = 'block';
+            try {
+                audio.play();
+                playPauseButton.textContent = '⏸️';
+            } catch (error) {
+                console.error('Error starting audio:', error);
+            }
+        });
+
+        clickerCake.addEventListener('click', (e) => {
+            achievements.clicks++;
+            let clickValue = clickPower * multiplier;
+            
+            // Golden cake chance
+            if (Math.random() < goldenChance) {
+                clickValue *= 5;
+                const effect = document.createElement('div');
+                effect.className = 'click-effect';
+                effect.textContent = '✨ GOLDEN! ✨';
+                effect.style.color = '#ffd700';
+                effect.style.left = `${e.clientX}px`;
+                effect.style.top = `${e.clientY}px`;
+                document.body.appendChild(effect);
+                setTimeout(() => effect.remove(), 1000);
+            }
+
+            count += clickValue;
+            achievements.totalCakes += clickValue;
+            clickCount.textContent = Math.floor(count);
+            
+            const effect = document.createElement('div');
+            effect.className = 'click-effect';
+            effect.textContent = `+${clickValue}`;
+            effect.style.left = `${e.clientX}px`;
+            effect.style.top = `${e.clientY}px`;
+            document.body.appendChild(effect);
+            
+            setTimeout(() => {
+                effect.remove();
+            }, 1000);
+
+            updateAchievements();
+        });
+
+        shopButton.addEventListener('click', () => {
+            shop.style.display = 'block';
+        });
+
+        closeShop.addEventListener('click', () => {
+            shop.style.display = 'none';
+        });
+
+        // Auto cake production
+        setInterval(() => {
+            const autoValue = (autoCakes * multiplier * timeWarpMultiplier) / 10;
+            count += autoValue;
+            achievements.totalCakes += autoValue;
+            clickCount.textContent = Math.floor(count);
+            updateAchievements();
+        }, 100);
+
+        // Update stats display
+        setInterval(() => {
+            cakesPerClick.textContent = clickPower * multiplier;
+            cakesPerSecond.textContent = (autoCakes * multiplier).toFixed(1);
+        }, 100);
+
+        // Upgrade handlers
+        upgrade1.addEventListener('click', () => {
+            const cost = 10 * Math.pow(2, upgrade1Level);
+            if (count >= cost) {
+                count -= cost;
+                clickPower *= 2;
+                upgrade1Level++;
+                upgrade1Cost.textContent = 10 * Math.pow(2, upgrade1Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade2.addEventListener('click', () => {
+            const cost = 50 * Math.pow(2, upgrade2Level);
+            if (count >= cost) {
+                count -= cost;
+                autoCakes += 1;
+                upgrade2Level++;
+                upgrade2Cost.textContent = 50 * Math.pow(2, upgrade2Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade3.addEventListener('click', () => {
+            const cost = 200 * Math.pow(2, upgrade3Level);
+            if (count >= cost) {
+                count -= cost;
+                multiplier *= 2;
+                upgrade3Level++;
+                upgrade3Cost.textContent = 200 * Math.pow(2, upgrade3Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade4.addEventListener('click', () => {
+            const cost = 500 * Math.pow(2, upgrade4Level);
+            if (count >= cost) {
+                count -= cost;
+                goldenChance += 0.1;
+                upgrade4Level++;
+                upgrade4Cost.textContent = 500 * Math.pow(2, upgrade4Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade5.addEventListener('click', () => {
+            const cost = 1000 * Math.pow(2, upgrade5Level);
+            if (count >= cost) {
+                count -= cost;
+                autoCakes += 5;
+                achievements.autoBakers++;
+                upgrade5Level++;
+                upgrade5Cost.textContent = 1000 * Math.pow(2, upgrade5Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade6.addEventListener('click', () => {
+            const cost = 2000 * Math.pow(2, upgrade6Level);
+            if (count >= cost) {
+                count -= cost;
+                clickPower *= 3;
+                upgrade6Level++;
+                upgrade6Cost.textContent = 2000 * Math.pow(2, upgrade6Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade7.addEventListener('click', () => {
+            const cost = 5000 * Math.pow(2, upgrade7Level);
+            if (count >= cost) {
+                count -= cost;
+                autoCakes += 10;
+                upgrade7Level++;
+                upgrade7Cost.textContent = 5000 * Math.pow(2, upgrade7Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade8.addEventListener('click', () => {
+            const cost = 10000 * Math.pow(2, upgrade8Level);
+            if (count >= cost) {
+                count -= cost;
+                goldenChance += 0.25;
+                upgrade8Level++;
+                upgrade8Cost.textContent = 10000 * Math.pow(2, upgrade8Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade9.addEventListener('click', () => {
+            const cost = 20000 * Math.pow(2, upgrade9Level);
+            if (count >= cost) {
+                count -= cost;
+                multiplier *= 4;
+                upgrade9Level++;
+                upgrade9Cost.textContent = 20000 * Math.pow(2, upgrade9Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        upgrade10.addEventListener('click', () => {
+            const cost = 50000 * Math.pow(2, upgrade10Level);
+            if (count >= cost) {
+                count -= cost;
+                timeWarpMultiplier *= 2;
+                upgrade10Level++;
+                upgrade10Cost.textContent = 50000 * Math.pow(2, upgrade10Level);
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        special1.addEventListener('click', () => {
+            const cost = 1300;
+            if (count >= cost && !special1Bought) {
+                count -= cost;
+                multiplier *= 3;
+                special1Bought = true;
+                special1.disabled = true;
+                special1.textContent = 'Bought!';
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        special2.addEventListener('click', () => {
+            const cost = 2000;
+            if (count >= cost && !special2Bought) {
+                count -= cost;
+                multiplier *= 2;
+                special2Bought = true;
+                special2.disabled = true;
+                special2.textContent = 'Bought!';
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        special3.addEventListener('click', () => {
+            const cost = 10000;
+            if (count >= cost && !special3Bought) {
+                count -= cost;
+                multiplier *= 5;
+                special3Bought = true;
+                special3.disabled = true;
+                special3.textContent = 'Bought!';
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        special4.addEventListener('click', () => {
+            const cost = 25000;
+            if (count >= cost && !special4Bought) {
+                count -= cost;
+                timeWarpMultiplier *= 3;
+                special4Bought = true;
+                special4.disabled = true;
+                special4.textContent = 'Bought!';
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        special5.addEventListener('click', () => {
+            const cost = 100000;
+            if (count >= cost && !special5Bought) {
+                count -= cost;
+                multiplier *= 2;
+                clickPower *= 2;
+                timeWarpMultiplier *= 2;
+                special5Bought = true;
+                special5.disabled = true;
+                special5.textContent = 'Bought!';
+                clickCount.textContent = Math.floor(count);
+            }
+        });
+
+        // Update button states
+        setInterval(() => {
+            upgrade1.disabled = count < (10 * Math.pow(2, upgrade1Level));
+            upgrade2.disabled = count < (50 * Math.pow(2, upgrade2Level));
+            upgrade3.disabled = count < (200 * Math.pow(2, upgrade3Level));
+            upgrade4.disabled = count < (500 * Math.pow(2, upgrade4Level));
+            upgrade5.disabled = count < (1000 * Math.pow(2, upgrade5Level));
+            upgrade6.disabled = count < (2000 * Math.pow(2, upgrade6Level));
+            upgrade7.disabled = count < (5000 * Math.pow(2, upgrade7Level));
+            upgrade8.disabled = count < (10000 * Math.pow(2, upgrade8Level));
+            upgrade9.disabled = count < (20000 * Math.pow(2, upgrade9Level));
+            upgrade10.disabled = count < (50000 * Math.pow(2, upgrade10Level));
+            special1.disabled = count < 1300 || special1Bought;
+            special2.disabled = count < 2000 || special2Bought;
+            special3.disabled = count < 10000 || special3Bought;
+            special4.disabled = count < 25000 || special4Bought;
+            special5.disabled = count < 100000 || special5Bought;
+        }, 100);
+
+        // Update achievements
+        function updateAchievements() {
+            // Click achievement
+            const clickProgress = Math.min(100, (achievements.clicks / 100) * 100);
+            document.querySelector('#achievement1 .achievement-progress-bar').style.width = `${clickProgress}%`;
+            if (achievements.clicks >= 100) {
+                document.getElementById('achievement1').classList.remove('locked');
+            }
+
+            // Auto Baker achievement
+            const bakerProgress = Math.min(100, (achievements.autoBakers / 5) * 100);
+            document.querySelector('#achievement2 .achievement-progress-bar').style.width = `${bakerProgress}%`;
+            if (achievements.autoBakers >= 5) {
+                document.getElementById('achievement2').classList.remove('locked');
+            }
+
+            // Total cakes achievement
+            const cakeProgress = Math.min(100, (achievements.totalCakes / 10000) * 100);
+            document.querySelector('#achievement3 .achievement-progress-bar').style.width = `${cakeProgress}%`;
+            if (achievements.totalCakes >= 10000) {
+                document.getElementById('achievement3').classList.remove('locked');
+            }
+        }
+
+        // Music player functionality
+        const audio = document.getElementById('background-music');
+        const playPauseButton = document.getElementById('playPause');
+        const volumeSlider = document.getElementById('volume');
+        const timeDisplay = document.getElementById('time');
+
+        // Set initial volume
+        audio.volume = 0.5;
+
+        // Handle audio loading
+        audio.addEventListener('canplaythrough', () => {
+            console.log('Audio is ready to play');
+        });
+
+        audio.addEventListener('error', (e) => {
+            console.error('Error loading audio:', e);
+            playPauseButton.disabled = true;
+            playPauseButton.style.opacity = '0.5';
+        });
+
+        playPauseButton.addEventListener('click', async () => {
+            try {
+                if (audio.paused) {
+                    await audio.play();
+                    playPauseButton.textContent = '⏸️';
+                } else {
+                    audio.pause();
+                    playPauseButton.textContent = '▶️';
+                }
+            } catch (error) {
+                console.error('Error playing audio:', error);
+            }
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            audio.volume = e.target.value / 100;
+        });
+
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const currentMinutes = Math.floor(audio.currentTime / 60);
+                const currentSeconds = Math.floor(audio.currentTime % 60);
+                const durationMinutes = Math.floor(audio.duration / 60);
+                const durationSeconds = Math.floor(audio.duration % 60);
+
+                timeDisplay.textContent = `${currentMinutes}:${currentSeconds.toString().padStart(2, '0')} / ${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}`;
+            }
+        });
+    </script>
+</body>
+</html>
