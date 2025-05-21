@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Master</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            font-family: 'Arial', sans-serif;
+            animation: gradientBG 15s ease infinite;
+            background-size: 400% 400%;
+        }
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        #gradeSelection {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 80%;
+        }
+        .grade-btn {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .grade-btn:hover {
+            transform: translateY(-3px);
+            background: #2980b9;
+        }
+        .grade-btn.k {
+            background: #e74c3c;
+        }
+        .grade-btn.k:hover {
+            background: #c0392b;
+        }
+        .grade-btn.first {
+            background: #2ecc71;
+        }
+        .grade-btn.first:hover {
+            background: #27ae60;
+        }
+        .grade-btn.second {
+            background: #f1c40f;
+        }
+        .grade-btn.second:hover {
+            background: #f39c12;
+        }
+        .grade-btn.third {
+            background: #9b59b6;
+        }
+        .grade-btn.third:hover {
+            background: #8e44ad;
+        }
+        .grade-btn.fourth {
+            background: #1abc9c;
+        }
+        .grade-btn.fourth:hover {
+            background: #16a085;
+        }
+        .grade-btn.fifth {
+            background: #e67e22;
+        }
+        .grade-btn.fifth:hover {
+            background: #d35400;
+        }
+        .grade-btn.sixth {
+            background: #c0392b;
+        }
+        .grade-btn.sixth:hover {
+            background: #a93226;
+        }
+        #timeSelection {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+        }
+        .time-btn {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #34495e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .time-btn:hover {
+            background: #2c3e50;
+        }
+        .time-btn.active {
+            background: #e74c3c;
+        }
+        #question {
+            position: absolute;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 48px;
+            color: #2c3e50;
+            text-align: center;
+            width: 100%;
+        }
+        #options {
+            position: absolute;
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            width: 80%;
+        }
+        .option {
+            background: #3498db;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .option:hover {
+            transform: translateY(-5px);
+            background: #2980b9;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: #2c3e50;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        #level {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: #2c3e50;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        #timer {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: #2c3e50;
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 18px;
+            background: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 10px;
+        }
+        button:hover {
+            background: #27ae60;
+        }
+        .correct {
+            background: #2ecc71 !important;
+            animation: correct 0.5s;
+        }
+        .incorrect {
+            background: #e74c3c !important;
+            animation: incorrect 0.5s;
+        }
+        @keyframes correct {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        @keyframes incorrect {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+            100% { transform: translateX(0); }
+        }
+        #difficulty {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        .difficulty-btn {
+            padding: 8px 16px;
+            font-size: 16px;
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .difficulty-btn.active {
+            background: #2c3e50;
+        }
+        .streak {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="gradeSelection">
+            <h1>Choose Your Grade Level</h1>
+            <button class="grade-btn k" onclick="startGame('k')">Kindergarten (Super Easy)</button>
+            <button class="grade-btn first" onclick="startGame('first')">1st Grade (Easy)</button>
+            <button class="grade-btn second" onclick="startGame('second')">2nd Grade (Medium)</button>
+            <button class="grade-btn third" onclick="startGame('third')">3rd Grade (Super Medium)</button>
+            <button class="grade-btn fourth" onclick="startGame('fourth')">4th Grade (Hard)</button>
+            <button class="grade-btn fifth" onclick="startGame('fifth')">5th Grade (Super Hard)</button>
+            <button class="grade-btn sixth" onclick="startGame('sixth')">6th Grade (Extreme)</button>
+            <div id="timeSelection">
+                <h3>Choose Time Limit (for all questions)</h3>
+                <button class="time-btn" onclick="setTimeLimit(30)">30s</button>
+                <button class="time-btn" onclick="setTimeLimit(60)">1m</button>
+                <button class="time-btn" onclick="setTimeLimit(120)">2m</button>
+                <button class="time-btn" onclick="setTimeLimit(300)">5m</button>
+                <button class="time-btn" onclick="setTimeLimit(600)">10m</button>
+            </div>
+        </div>
+        <div id="score">Score: 0</div>
+        <div id="level">Level: 1</div>
+        <div id="timer">Time: 30</div>
+        <div id="question"></div>
+        <div id="options"></div>
+        <div id="gameOver">
+            <h2>Game Over!</h2>
+            <p>Your score: <span id="finalScore">0</span></p>
+            <p>Highest streak: <span id="highestStreak">0</span></p>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const gameContainer = document.getElementById('gameContainer');
+        const questionElement = document.getElementById('question');
+        const optionsElement = document.getElementById('options');
+        const scoreElement = document.getElementById('score');
+        const levelElement = document.getElementById('level');
+        const timerElement = document.getElementById('timer');
+        const gameOverElement = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const highestStreakElement = document.getElementById('highestStreak');
+        const gradeSelection = document.getElementById('gradeSelection');
+
+        let score = 0;
+        let level = 1;
+        let timeLeft = 30;
+        let streak = 0;
+        let highestStreak = 0;
+        let gameActive = false;
+        let selectedTimeLimit = 30;
+        let currentGrade = '';
+        let timer;
+
+        const GRADE_LEVELS = {
+            k: {
+                operations: ['+', '-'],
+                maxNumber: 10,
+                timeLimit: 30,
+                difficulty: 'Super Easy'
+            },
+            first: {
+                operations: ['+', '-'],
+                maxNumber: 20,
+                timeLimit: 30,
+                difficulty: 'Easy'
+            },
+            second: {
+                operations: ['+', '-', '*'],
+                maxNumber: 30,
+                timeLimit: 30,
+                difficulty: 'Medium'
+            },
+            third: {
+                operations: ['+', '-', '*', '/'],
+                maxNumber: 40,
+                timeLimit: 30,
+                difficulty: 'Super Medium'
+            },
+            fourth: {
+                operations: ['+', '-', '*', '/'],
+                maxNumber: 60,
+                timeLimit: 30,
+                difficulty: 'Hard'
+            },
+            fifth: {
+                operations: ['+', '-', '*', '/', '%'],
+                maxNumber: 100,
+                timeLimit: 30,
+                difficulty: 'Super Hard'
+            },
+            sixth: {
+                operations: ['+', '-', '*', '/', '%', '^'],
+                maxNumber: 150,
+                timeLimit: 30,
+                difficulty: 'Extreme'
+            }
+        };
+
+        function setTimeLimit(seconds) {
+            selectedTimeLimit = seconds;
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.classList.toggle('active', parseInt(btn.textContent) === seconds);
+            });
+        }
+
+        function startGame(grade) {
+            currentGrade = grade;
+            timeLeft = selectedTimeLimit;
+            gradeSelection.style.display = 'none';
+            gameActive = true;
+            showNewQuestion();
+            timer = setInterval(updateTimer, 1000);
+        }
+
+        function generateQuestion() {
+            const gradeLevel = GRADE_LEVELS[currentGrade];
+            let num1, num2, operation, answer;
+            
+            num1 = Math.floor(Math.random() * gradeLevel.maxNumber) + 1;
+            num2 = Math.floor(Math.random() * gradeLevel.maxNumber) + 1;
+            operation = gradeLevel.operations[Math.floor(Math.random() * gradeLevel.operations.length)];
+
+            switch(operation) {
+                case '+': answer = num1 + num2; break;
+                case '-': 
+                    answer = num1 - num2;
+                    if (answer < 0) {
+                        [num1, num2] = [num2, num1];
+                        answer = num1 - num2;
+                    }
+                    break;
+                case '*': answer = num1 * num2; break;
+                case '/': 
+                    answer = num1 * num2;
+                    num1 = answer;
+                    answer = num2;
+                    break;
+                case '%': 
+                    answer = num1 % num2;
+                    if (answer === 0) {
+                        return generateQuestion();
+                    }
+                    break;
+                case '^':
+                    if (num2 > 3) num2 = 3; // Limit exponents for reasonable numbers
+                    answer = Math.pow(num1, num2);
+                    break;
+            }
+
+            questionElement.textContent = `${num1} ${operation} ${num2} = ?`;
+            return answer;
+        }
+
+        function generateOptions(correctAnswer) {
+            const gradeLevel = GRADE_LEVELS[currentGrade];
+            const options = [correctAnswer];
+            const maxDiff = Math.max(5, Math.floor(gradeLevel.maxNumber / 4));
+            
+            while (options.length < 4) {
+                let option;
+                if (Math.random() < 0.5) {
+                    option = correctAnswer + (Math.floor(Math.random() * maxDiff) + 1);
+                } else {
+                    option = correctAnswer - (Math.floor(Math.random() * maxDiff) + 1);
+                }
+                if (!options.includes(option) && option > 0) {
+                    options.push(option);
+                }
+            }
+            return options.sort(() => Math.random() - 0.5);
+        }
+
+        function updateTimer() {
+            if (!gameActive) return;
+            
+            timeLeft--;
+            timerElement.textContent = `Time: ${timeLeft}`;
+            
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        function checkAnswer(selectedAnswer, correctAnswer) {
+            if (!gameActive) return;
+            
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => {
+                if (parseInt(option.textContent) === correctAnswer) {
+                    option.classList.add('correct');
+                }
+                if (parseInt(option.textContent) === selectedAnswer && selectedAnswer !== correctAnswer) {
+                    option.classList.add('incorrect');
+                }
+            });
+
+            if (selectedAnswer === correctAnswer) {
+                score += level * 10;
+                streak++;
+                if (streak > highestStreak) {
+                    highestStreak = streak;
+                }
+                timeLeft = Math.min(timeLeft + 2, selectedTimeLimit);
+                if (streak % 5 === 0) {
+                    level++;
+                    levelElement.textContent = `Level: ${level}`;
+                }
+            } else {
+                streak = 0;
+                timeLeft = Math.max(timeLeft - 5, 0);
+            }
+
+            scoreElement.textContent = `Score: ${score}`;
+            
+            setTimeout(() => {
+                options.forEach(option => {
+                    option.classList.remove('correct', 'incorrect');
+                });
+                if (gameActive) {
+                    showNewQuestion();
+                }
+            }, 1000);
+        }
+
+        function showNewQuestion() {
+            const correctAnswer = generateQuestion();
+            const options = generateOptions(correctAnswer);
+            
+            optionsElement.innerHTML = '';
+            options.forEach(option => {
+                const button = document.createElement('div');
+                button.className = 'option';
+                button.textContent = option;
+                button.onclick = () => checkAnswer(option, correctAnswer);
+                optionsElement.appendChild(button);
+            });
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timer);
+            finalScoreElement.textContent = score;
+            highestStreakElement.textContent = highestStreak;
+            gameOverElement.style.display = 'block';
+        }
+
+        function restartGame() {
+            score = 0;
+            level = 1;
+            timeLeft = selectedTimeLimit;
+            streak = 0;
+            gameActive = true;
+            scoreElement.textContent = `Score: ${score}`;
+            levelElement.textContent = `Level: ${level}`;
+            timerElement.textContent = `Time: ${timeLeft}`;
+            gameOverElement.style.display = 'none';
+            
+            clearInterval(timer);
+            timer = setInterval(updateTimer, 1000);
+            
+            showNewQuestion();
+        }
+
+        // Initialize time selection
+        setTimeLimit(30);
+    </script>
+</body>
+</html>
