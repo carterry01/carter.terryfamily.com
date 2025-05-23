@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HACKER TYPER</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        :root {
+            --primary-color: #0f0;
+            --primary-glow: 0 0 10px #0f0;
+            --primary-glow-strong: 0 0 20px #0f0;
+            --background-dark: #000;
+            --background-light: #001100;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--background-dark);
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            color: var(--primary-color);
+            background: radial-gradient(circle at center, var(--background-light) 0%, var(--background-dark) 100%);
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.03) 0px,
+                rgba(0, 255, 0, 0.03) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 2px solid var(--primary-color);
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+            box-shadow: var(--primary-glow-strong), inset var(--primary-glow);
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(5px);
+        }
+
+        #game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 255, 0, 0.1) 0px,
+                rgba(0, 255, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+        }
+
+        .code-line {
+            position: absolute;
+            color: var(--primary-color);
+            font-size: 16px;
+            white-space: nowrap;
+            text-shadow: var(--primary-glow);
+            transition: all 0.3s ease;
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 1px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #score {
+            color: var(--primary-color);
+            font-size: 24px;
+            margin: 20px 0;
+            text-shadow: var(--primary-glow);
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 2;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { text-shadow: var(--primary-glow); }
+            50% { text-shadow: var(--primary-glow-strong); }
+            100% { text-shadow: var(--primary-glow); }
+        }
+
+        #score::before {
+            content: '> ';
+            color: var(--primary-color);
+        }
+
+        #input-field {
+            margin-top: 20px;
+            padding: 10px 10px 10px 25px;
+            font-size: 18px;
+            width: 300px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 1px;
+            position: relative;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        #input-field::before {
+            content: '> ';
+            position: absolute;
+            left: 10px;
+            color: var(--primary-color);
+        }
+
+        #input-field:focus {
+            outline: none;
+            box-shadow: var(--primary-glow-strong);
+            transform: scale(1.02);
+        }
+
+        #game-over {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary-color);
+            font-size: 48px;
+            text-align: center;
+            text-shadow: var(--primary-glow-strong);
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 2px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border: 2px solid var(--primary-color);
+            box-shadow: var(--primary-glow-strong);
+            z-index: 3;
+            animation: glitch 0.5s infinite;
+        }
+
+        #restart-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #restart-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(0, 255, 0, 0.2),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        #restart-button:hover::before {
+            left: 100%;
+        }
+
+        #restart-button:hover {
+            background-color: var(--primary-color);
+            color: var(--background-dark);
+            box-shadow: var(--primary-glow-strong);
+            transform: scale(1.05);
+        }
+
+        .matrix-rain {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.5;
+            z-index: 1;
+        }
+
+        #terminal-header {
+            color: var(--primary-color);
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-shadow: var(--primary-glow);
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 2;
+        }
+
+        #terminal-header::before {
+            content: "> ";
+        }
+
+        .glitch {
+            animation: glitch 1s linear infinite;
+        }
+
+        @keyframes glitch {
+            2%, 64% {
+                transform: translate(2px,0) skew(0deg);
+            }
+            4%, 60% {
+                transform: translate(-2px,0) skew(0deg);
+            }
+            62% {
+                transform: translate(0,0) skew(5deg);
+            }
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 50%,
+                rgba(0, 255, 0, 0.1) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            animation: scan 8s linear infinite;
+            z-index: 2;
+        }
+
+        @keyframes scan {
+            from {
+                background-position: 0 0;
+            }
+            to {
+                background-position: 0 100%;
+            }
+        }
+
+        .noise {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/png;base64,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');
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .success-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 0, 0.2);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 3;
+        }
+
+        @keyframes flash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal-header" class="glitch">INITIALIZING HACKER TERMINAL...</div>
+    <div id="score">SCORE: 0</div>
+    <div id="game-container">
+        <canvas class="matrix-rain"></canvas>
+        <div class="scan-line"></div>
+        <div class="noise"></div>
+        <div class="success-flash"></div>
+        <div id="game-over">
+            SYSTEM BREACH DETECTED<br>
+            <button id="restart-button">RESTART SYSTEM</button>
+        </div>
+    </div>
+    <input type="text" id="input-field" placeholder="ENTER CODE..." autocomplete="off">
+
+    <script>
+        // Matrix rain effect
+        const canvas = document.querySelector('.matrix-rain');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 600;
+
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=[]{}|;:,.<>?/';
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+        const drops = [];
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = Math.floor(Math.random() * -canvas.height);
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0F0';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters.charAt(Math.floor(Math.random() * characters.length));
+                ctx.fillStyle = `rgba(0, 255, 0, ${Math.random() * 0.5 + 0.5})`;
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }
+
+        setInterval(drawMatrix, 33);
+
+        // Game logic
+        const codeSnippets = [
+            'function hackSystem() {',
+            'const security = new Firewall();',
+            'while (true) {',
+            'try {',
+            'await bypassSecurity();',
+            '} catch (error) {',
+            'console.log("Access denied");',
+            '}',
+            'if (isVulnerable()) {',
+            'exploitVulnerability();',
+            '}',
+            'const data = await fetchData();',
+            'for (let i = 0; i < data.length; i++) {',
+            'processData(data[i]);',
+            '}',
+            'class SecurityProtocol {',
+            'constructor() {',
+            'this.encryption = new AES();',
+            '}',
+            'async decrypt(data) {',
+            'return await this.encryption.decrypt(data);',
+            '}',
+            '}',
+            'const protocol = new SecurityProtocol();',
+            'const result = await protocol.decrypt(payload);',
+            'if (result.isValid) {',
+            'grantAccess();',
+            '} else {',
+            'triggerAlarm();',
+            '}',
+            'function injectPayload() {',
+            'const buffer = new ArrayBuffer(1024);',
+            'const view = new DataView(buffer);',
+            'for (let i = 0; i < 1024; i++) {',
+            'view.setUint8(i, Math.random() * 256);',
+            '}',
+            'return buffer;',
+            '}',
+            'function crackPassword() {',
+            'const hash = generateHash();',
+            'return bruteForce(hash);',
+            '}',
+            'async function infiltrate() {',
+            'const backdoor = createBackdoor();',
+            'await deployPayload(backdoor);',
+            '}',
+            'function bypassFirewall() {',
+            'const exploit = findVulnerability();',
+            'return executeExploit(exploit);',
+            '}'
+        ];
+
+        let score = 0;
+        let gameActive = true;
+        let activeLines = [];
+        const gameContainer = document.getElementById('game-container');
+        const inputField = document.getElementById('input-field');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over');
+        const restartButton = document.getElementById('restart-button');
+        const terminalHeader = document.getElementById('terminal-header');
+        const successFlash = document.querySelector('.success-flash');
+
+        // Terminal header animation
+        let headerText = "INITIALIZING HACKER TERMINAL...";
+        let headerIndex = 0;
+        setInterval(() => {
+            if (headerIndex < headerText.length) {
+                terminalHeader.textContent = "> " + headerText.substring(0, headerIndex + 1);
+                headerIndex++;
+            }
+        }, 100);
+
+        function createCodeLine() {
+            if (!gameActive) return;
+
+            const code = codeSnippets[Math.floor(Math.random() * codeSnippets.length)];
+            const lineElement = document.createElement('div');
+            lineElement.className = 'code-line';
+            lineElement.textContent = code;
+            lineElement.style.left = `${Math.random() * (gameContainer.offsetWidth - 400)}px`;
+            lineElement.style.top = '0px';
+            gameContainer.appendChild(lineElement);
+
+            activeLines.push({
+                element: lineElement,
+                text: code,
+                position: 0
+            });
+        }
+
+        function updateLines() {
+            if (!gameActive) return;
+
+            activeLines.forEach((line, index) => {
+                line.position += 1;
+                line.element.style.top = `${line.position}px`;
+
+                if (line.position > gameContainer.offsetHeight) {
+                    gameOver();
+                }
+            });
+        }
+
+        function removeLine(line) {
+            const index = activeLines.indexOf(line);
+            if (index > -1) {
+                activeLines.splice(index, 1);
+                line.element.remove();
+            }
+        }
+
+        function gameOver() {
+            gameActive = false;
+            gameOverScreen.style.display = 'block';
+            inputField.disabled = true;
+        }
+
+        function restartGame() {
+            score = 0;
+            scoreDisplay.textContent = `SCORE: ${score}`;
+            activeLines.forEach(line => line.element.remove());
+            activeLines = [];
+            gameActive = true;
+            gameOverScreen.style.display = 'none';
+            inputField.disabled = false;
+            inputField.value = '';
+        }
+
+        function flashSuccess() {
+            successFlash.style.animation = 'none';
+            successFlash.offsetHeight; // Trigger reflow
+            successFlash.style.animation = 'flash 0.3s ease';
+        }
+
+        inputField.addEventListener('input', () => {
+            const input = inputField.value;
+            const matchingLine = activeLines.find(line => line.text === input);
+
+            if (matchingLine) {
+                score += matchingLine.text.length;
+                scoreDisplay.textContent = `SCORE: ${score}`;
+                removeLine(matchingLine);
+                inputField.value = '';
+                flashSuccess();
+            }
+        });
+
+        restartButton.addEventListener('click', restartGame);
+
+        setInterval(createCodeLine, 2000);
+        setInterval(updateLines, 50);
+    </script>
+</body>
+</html>

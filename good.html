@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Dev Studio Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background-color: #2d2d2d;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 280px;
+            background-color: #252525;
+            border-right: 1px solid #3d3d3d;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3d3d3d;
+        }
+
+        .preview-container {
+            flex: 1;
+            background-color: #2d2d2d;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .CodeMirror {
+            height: 100%;
+            font-size: 16px;
+        }
+
+        .toolbar {
+            background-color: #2d2d2d;
+            padding: 0.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #gameCanvas {
+            background-color: #000000;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .templates {
+            padding: 1rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .template-button {
+            width: 100%;
+            margin-bottom: 0.5rem;
+            background-color: #3d3d3d;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .template-button:hover {
+            background-color: #4d4d4d;
+        }
+
+        .template-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.3s;
+        }
+
+        .template-button:hover::after {
+            transform: translateX(100%);
+        }
+
+        .status-bar {
+            background-color: #2d2d2d;
+            padding: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .template-category {
+            margin-bottom: 1.5rem;
+            background-color: #2d2d2d;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .template-category h3 {
+            margin-bottom: 0.8rem;
+            color: #4CAF50;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .template-category h3 i {
+            font-size: 1.2em;
+        }
+
+        .dev-tools {
+            background-color: #2d2d2d;
+            padding: 1rem;
+            border-top: 1px solid #3d3d3d;
+        }
+
+        .dev-tools h3 {
+            margin-bottom: 0.8rem;
+            color: #4CAF50;
+        }
+
+        .tool-button {
+            background-color: #3d3d3d;
+            margin-bottom: 0.5rem;
+        }
+
+        .tool-button i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .game-controls {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0,0,0,0.7);
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .game-controls.visible {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .control-key {
+            background-color: #4d4d4d;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .preview-container {
+            position: relative;
+        }
+
+        .fullscreen-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .fullscreen-button.visible {
+            display: block;
+        }
+
+        .template-description {
+            font-size: 12px;
+            color: #888;
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .search-box {
+            margin: 1rem;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.5rem;
+            padding-left: 2rem;
+            background-color: #1e1e1e;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+            color: white;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-gamepad"></i> Game Dev Studio Pro</h1>
+        <div>
+            <button onclick="saveGame()"><i class="fas fa-save"></i> Save Game</button>
+            <button onclick="loadGame()"><i class="fas fa-folder-open"></i> Load Game</button>
+            <button onclick="exportGame()"><i class="fas fa-file-export"></i> Export</button>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search templates..." onkeyup="searchTemplates(this.value)">
+            </div>
+            <div class="templates">
+                <div class="template-category">
+                    <h3><i class="fas fa-running"></i> Action Games</h3>
+                    <button class="template-button" onclick="loadTemplate('platformer')">
+                        <i class="fas fa-running"></i> Platformer
+                        <div class="template-description">Jump and run through platforms with physics</div>
+                    </button>
+                    <button class="template-button" onclick="loadTemplate('shooter')">
+                        <i class="fas fa-crosshairs"></i> Shooter
+                        <div class="template-description">Top-down shooter with mouse aiming</div>
+                    </button>
+                </div>
+                <div class="template-category">
+                    <h3><i class="fas fa-chess"></i> Strategy Games</h3>
+                    <button class="template-button" onclick="loadTemplate('baseDefense')">
+                        <i class="fas fa-shield-alt"></i> Base Defense
+                        <div class="template-description">Tower defense with wave-based enemies</div>
+                    </button>
+                </div>
+                <div class="template-category">
+                    <h3><i class="fas fa-puzzle-piece"></i> Puzzle Games</h3>
+                    <button class="template-button" onclick="loadTemplate('puzzle')">
+                        <i class="fas fa-puzzle-piece"></i> Sliding Puzzle
+                        <div class="template-description">Classic sliding tile puzzle game</div>
+                    </button>
+                </div>
+                <div class="template-category">
+                    <h3><i class="fas fa-car"></i> Racing Games</h3>
+                    <button class="template-button" onclick="loadTemplate('racing')">
+                        <i class="fas fa-car"></i> Top-Down Racing
+                        <div class="template-description">Arcade-style racing with drifting</div>
+                    </button>
+                </div>
+            </div>
+            <div class="dev-tools">
+                <h3>Development Tools</h3>
+                <button class="tool-button" onclick="toggleGrid()">
+                    <i class="fas fa-th"></i> Toggle Grid
+                </button>
+                <button class="tool-button" onclick="toggleDebug()">
+                    <i class="fas fa-bug"></i> Toggle Debug
+                </button>
+                <button class="tool-button" onclick="toggleFPS()">
+                    <i class="fas fa-tachometer-alt"></i> Toggle FPS
+                </button>
+            </div>
+        </div>
+        <div class="editor-container">
+            <div class="toolbar">
+                <button onclick="runGame()"><i class="fas fa-play"></i> Run Game</button>
+                <button onclick="resetGame()"><i class="fas fa-undo"></i> Reset</button>
+                <button onclick="formatCode()"><i class="fas fa-code"></i> Format Code</button>
+                <button onclick="minifyCode()"><i class="fas fa-compress-alt"></i> Minify</button>
+                <button onclick="toggleFullscreen()"><i class="fas fa-expand"></i> Fullscreen</button>
+            </div>
+            <textarea id="codeEditor"></textarea>
+        </div>
+        <div class="preview-container">
+            <canvas id="gameCanvas"></canvas>
+            <button class="fullscreen-button" onclick="toggleFullscreen()">
+                <i class="fas fa-expand"></i>
+            </button>
+            <div class="game-controls">
+                <div><span class="control-key">←</span> <span class="control-key">→</span> Move</div>
+                <div><span class="control-key">Space</span> Jump/Shoot</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="status">Ready</span>
+        <span id="fps">FPS: 0</span>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/formatting/formatting.min.js"></script>
+    <script>
+        // Initialize CodeMirror with additional features
+        const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+            mode: 'javascript',
+            theme: 'monokai',
+            lineNumbers: true,
+            autoCloseBrackets: true,
+            matchBrackets: true,
+            indentUnit: 4,
+            tabSize: 4,
+            lineWrapping: true,
+            extraKeys: {
+                "Ctrl-Space": "autocomplete",
+                "Ctrl-F": "findPersistent",
+                "Ctrl-H": "replace",
+                "Ctrl-/": "toggleComment"
+            }
+        });
+
+        // Game templates
+        const templates = {
+            platformer: `// Platformer Game Template
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game state
+const game = {
+    player: {
+        x: 100,
+        y: 100,
+        width: 30,
+        height: 30,
+        speed: 5,
+        jumpForce: -15,
+        velocityY: 0,
+        isJumping: false
+    },
+    gravity: 0.8,
+    platforms: [
+        { x: 0, y: 400, width: 800, height: 20 },
+        { x: 300, y: 300, width: 200, height: 20 },
+        { x: 100, y: 200, width: 200, height: 20 }
+    ]
+};
+
+// Input handling
+const keys = {};
+window.addEventListener('keydown', (e) => keys[e.key] = true);
+window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+// Game loop
+function gameLoop() {
+    // Clear canvas
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Update player
+    if (keys['ArrowLeft']) game.player.x -= game.player.speed;
+    if (keys['ArrowRight']) game.player.x += game.player.speed;
+    if (keys['ArrowUp'] && !game.player.isJumping) {
+        game.player.velocityY = game.player.jumpForce;
+        game.player.isJumping = true;
+    }
+    
+    // Apply gravity
+    game.player.velocityY += game.gravity;
+    game.player.y += game.player.velocityY;
+    
+    // Check platform collisions
+    game.player.isJumping = true;
+    for (const platform of game.platforms) {
+        if (game.player.x + game.player.width > platform.x &&
+            game.player.x < platform.x + platform.width &&
+            game.player.y + game.player.height > platform.y &&
+            game.player.y + game.player.height < platform.y + platform.height + game.player.velocityY) {
+            game.player.y = platform.y - game.player.height;
+            game.player.velocityY = 0;
+            game.player.isJumping = false;
+        }
+    }
+    
+    // Draw platforms
+    ctx.fillStyle = '#4CAF50';
+    for (const platform of game.platforms) {
+        ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+    }
+    
+    // Draw player
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(game.player.x, game.player.y, game.player.width, game.player.height);
+    
+    // Request next frame
+    requestAnimationFrame(gameLoop);
+}
+
+// Start the game
+gameLoop();`,
+
+            shooter: `// Shooter Game Template
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game state
+const game = {
+    player: {
+        x: 400,
+        y: 300,
+        width: 30,
+        height: 30,
+        speed: 5
+    },
+    bullets: [],
+    enemies: [],
+    score: 0
+};
+
+// Input handling
+const keys = {};
+window.addEventListener('keydown', (e) => keys[e.key] = true);
+window.addEventListener('keyup', (e) => keys[e.key] = false);
+window.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    const angle = Math.atan2(mouseY - game.player.y, mouseX - game.player.x);
+    game.bullets.push({
+        x: game.player.x,
+        y: game.player.y,
+        speed: 10,
+        dx: Math.cos(angle) * 10,
+        dy: Math.sin(angle) * 10
+    });
+});
+
+// Spawn enemies
+setInterval(() => {
+    game.enemies.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        width: 20,
+        height: 20,
+        speed: 2
+    });
+}, 2000);
+
+// Game loop
+function gameLoop() {
+    // Clear canvas
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Update player
+    if (keys['ArrowLeft']) game.player.x -= game.player.speed;
+    if (keys['ArrowRight']) game.player.x += game.player.speed;
+    if (keys['ArrowUp']) game.player.y -= game.player.speed;
+    if (keys['ArrowDown']) game.player.y += game.player.speed;
+    
+    // Update bullets
+    for (let i = game.bullets.length - 1; i >= 0; i--) {
+        const bullet = game.bullets[i];
+        bullet.x += bullet.dx;
+        bullet.y += bullet.dy;
+        
+        // Remove bullets that are off screen
+        if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+            game.bullets.splice(i, 1);
+        }
+    }
+    
+    // Update enemies
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+        const enemy = game.enemies[i];
+        
+        // Move towards player
+        const dx = game.player.x - enemy.x;
+        const dy = game.player.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        enemy.x += (dx / distance) * enemy.speed;
+        enemy.y += (dy / distance) * enemy.speed;
+        
+        // Check bullet collisions
+        for (let j = game.bullets.length - 1; j >= 0; j--) {
+            const bullet = game.bullets[j];
+            if (bullet.x > enemy.x && bullet.x < enemy.x + enemy.width &&
+                bullet.y > enemy.y && bullet.y < enemy.y + enemy.height) {
+                game.enemies.splice(i, 1);
+                game.bullets.splice(j, 1);
+                game.score += 100;
+                break;
+            }
+        }
+    }
+    
+    // Draw everything
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(game.player.x, game.player.y, game.player.width, game.player.height);
+    
+    ctx.fillStyle = '#ffff00';
+    for (const bullet of game.bullets) {
+        ctx.beginPath();
+        ctx.arc(bullet.x, bullet.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    ctx.fillStyle = '#00ff00';
+    for (const enemy of game.enemies) {
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+    }
+    
+    // Draw score
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '20px Arial';
+    ctx.fillText('Score: ' + game.score, 10, 30);
+    
+    // Request next frame
+    requestAnimationFrame(gameLoop);
+}
+
+// Start the game
+gameLoop();`,
+
+            baseDefense: `// Base Defense Game Template
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game state
+const game = {
+    base: {
+        x: 50,
+        y: 300,
+        width: 60,
+        height: 100,
+        health: 100
+    },
+    towers: [],
+    enemies: [],
+    resources: 100,
+    wave: 1,
+    score: 0
+};
+
+// Input handling
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Place tower if enough resources
+    if (game.resources >= 50) {
+        game.towers.push({
+            x: x - 25,
+            y: y - 25,
+            width: 50,
+            height: 50,
+            range: 150,
+            damage: 10,
+            cooldown: 0
+        });
+        game.resources -= 50;
+    }
+});
+
+// Spawn enemies
+function spawnWave() {
+    const numEnemies = game.wave * 3;
+    for (let i = 0; i < numEnemies; i++) {
+        setTimeout(() => {
+            game.enemies.push({
+                x: canvas.width,
+                y: Math.random() * (canvas.height - 100) + 50,
+                width: 30,
+                height: 30,
+                speed: 1 + game.wave * 0.2,
+                health: 50 + game.wave * 10
+            });
+        }, i * 1000);
+    }
+}
+
+// Game loop
+function gameLoop() {
+    // Clear canvas
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw base
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(game.base.x, game.base.y, game.base.width, game.base.height);
+    
+    // Draw health bar
+    ctx.fillStyle = '#ff0000';
+    ctx.fillRect(game.base.x, game.base.y - 20, game.base.width, 10);
+    ctx.fillStyle = '#00ff00';
+    ctx.fillRect(game.base.x, game.base.y - 20, game.base.width * (game.base.health / 100), 10);
+    
+    // Update and draw towers
+    for (const tower of game.towers) {
+        // Draw tower
+        ctx.fillStyle = '#4169E1';
+        ctx.fillRect(tower.x, tower.y, tower.width, tower.height);
+        
+        // Draw range (for debugging)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.beginPath();
+        ctx.arc(tower.x + tower.width/2, tower.y + tower.height/2, tower.range, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Find and attack nearest enemy
+        if (tower.cooldown <= 0) {
+            let nearestEnemy = null;
+            let minDist = Infinity;
+            
+            for (const enemy of game.enemies) {
+                const dx = (enemy.x + enemy.width/2) - (tower.x + tower.width/2);
+                const dy = (enemy.y + enemy.height/2) - (tower.y + tower.height/2);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < tower.range && dist < minDist) {
+                    minDist = dist;
+                    nearestEnemy = enemy;
+                }
+            }
+            
+            if (nearestEnemy) {
+                // Draw laser
+                ctx.strokeStyle = '#ff0000';
+                ctx.beginPath();
+                ctx.moveTo(tower.x + tower.width/2, tower.y + tower.height/2);
+                ctx.lineTo(nearestEnemy.x + nearestEnemy.width/2, nearestEnemy.y + nearestEnemy.height/2);
+                ctx.stroke();
+                
+                // Damage enemy
+                nearestEnemy.health -= tower.damage;
+                tower.cooldown = 30;
+            }
+        } else {
+            tower.cooldown--;
+        }
+    }
+    
+    // Update and draw enemies
+    for (let i = game.enemies.length - 1; i >= 0; i--) {
+        const enemy = game.enemies[i];
+        
+        // Move towards base
+        const dx = game.base.x - enemy.x;
+        const dy = game.base.y - enemy.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        enemy.x += (dx / dist) * enemy.speed;
+        enemy.y += (dy / dist) * enemy.speed;
+        
+        // Draw enemy
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        
+        // Draw health bar
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(enemy.x, enemy.y - 10, enemy.width, 5);
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(enemy.x, enemy.y - 10, enemy.width * (enemy.health / (50 + game.wave * 10)), 5);
+        
+        // Check if enemy reached base
+        if (enemy.x < game.base.x + game.base.width) {
+            game.base.health -= 10;
+            game.enemies.splice(i, 1);
+            
+            if (game.base.health <= 0) {
+                alert('Game Over! Score: ' + game.score);
+                resetGame();
+                return;
+            }
+        }
+        
+        // Remove dead enemies
+        if (enemy.health <= 0) {
+            game.enemies.splice(i, 1);
+            game.resources += 10;
+            game.score += 100;
+        }
+    }
+    
+    // Draw UI
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '20px Arial';
+    ctx.fillText('Resources: ' + game.resources, 10, 30);
+    ctx.fillText('Wave: ' + game.wave, 10, 60);
+    ctx.fillText('Score: ' + game.score, 10, 90);
+    
+    // Check if wave is complete
+    if (game.enemies.length === 0) {
+        game.wave++;
+        spawnWave();
+    }
+    
+    // Request next frame
+    requestAnimationFrame(gameLoop);
+}
+
+// Start the game
+spawnWave();
+gameLoop();`,
+
+            puzzle: `// Puzzle Game Template
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game state
+const game = {
+    grid: [],
+    gridSize: 4,
+    tileSize: 100,
+    emptyPos: { x: 3, y: 3 },
+    moves: 0
+};
+
+// Initialize grid
+function initGrid() {
+    let numbers = Array.from({length: 15}, (_, i) => i + 1);
+    numbers.push(null); // Empty space
+    
+    for (let y = 0; y < game.gridSize; y++) {
+        game.grid[y] = [];
+        for (let x = 0; x < game.gridSize; x++) {
+            game.grid[y][x] = numbers[y * game.gridSize + x];
+        }
+    }
+}
+
+// Draw the game
+function draw() {
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    for (let y = 0; y < game.gridSize; y++) {
+        for (let x = 0; x < game.gridSize; x++) {
+            const tile = game.grid[y][x];
+            if (tile !== null) {
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(x * game.tileSize, y * game.tileSize, 
+                           game.tileSize - 2, game.tileSize - 2);
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '30px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(tile.toString(), 
+                           x * game.tileSize + game.tileSize/2,
+                           y * game.tileSize + game.tileSize/2);
+            }
+        }
+    }
+    
+    // Draw moves counter
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '20px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText('Moves: ' + game.moves, 10, game.gridSize * game.tileSize + 30);
+}
+
+// Handle clicks
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / game.tileSize);
+    const y = Math.floor((e.clientY - rect.top) / game.tileSize);
+    
+    if (x === game.emptyPos.x && Math.abs(y - game.emptyPos.y) === 1 ||
+        y === game.emptyPos.y && Math.abs(x - game.emptyPos.x) === 1) {
+        // Swap tiles
+        game.grid[game.emptyPos.y][game.emptyPos.x] = game.grid[y][x];
+        game.grid[y][x] = null;
+        game.emptyPos = { x, y };
+        game.moves++;
+        draw();
+    }
+});
+
+// Initialize and start the game
+initGrid();
+draw();`,
+
+            racing: `// Racing Game Template
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game state
+const game = {
+    player: {
+        x: 400,
+        y: 300,
+        width: 40,
+        height: 60,
+        speed: 0,
+        maxSpeed: 10,
+        acceleration: 0.2,
+        deceleration: 0.1,
+        handling: 0.05,
+        angle: 0,
+        drift: 0
+    },
+    track: {
+        width: 800,
+        height: 600,
+        checkpoints: [],
+        obstacles: []
+    },
+    lap: 0,
+    bestTime: Infinity,
+    currentTime: 0
+};
+
+// Initialize track
+function initTrack() {
+    // Create checkpoints
+    game.track.checkpoints = [
+        { x: 100, y: 100, width: 20, height: 100 },
+        { x: 700, y: 100, width: 20, height: 100 },
+        { x: 700, y: 500, width: 20, height: 100 },
+        { x: 100, y: 500, width: 20, height: 100 }
+    ];
+    
+    // Create obstacles
+    game.track.obstacles = [
+        { x: 300, y: 200, width: 50, height: 50 },
+        { x: 500, y: 400, width: 50, height: 50 }
+    ];
+}
+
+// Input handling
+const keys = {};
+window.addEventListener('keydown', (e) => keys[e.key] = true);
+window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+// Game loop
+function gameLoop() {
+    // Clear canvas
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw track
+    ctx.fillStyle = '#333333';
+    ctx.fillRect(0, 0, game.track.width, game.track.height);
+    
+    // Draw checkpoints
+    ctx.fillStyle = '#4CAF50';
+    for (const checkpoint of game.track.checkpoints) {
+        ctx.fillRect(checkpoint.x, checkpoint.y, checkpoint.width, checkpoint.height);
+    }
+    
+    // Draw obstacles
+    ctx.fillStyle = '#ff0000';
+    for (const obstacle of game.track.obstacles) {
+        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+    }
+    
+    // Update player
+    if (keys['ArrowUp']) {
+        game.player.speed = Math.min(game.player.speed + game.player.acceleration, game.player.maxSpeed);
+    } else if (keys['ArrowDown']) {
+        game.player.speed = Math.max(game.player.speed - game.player.acceleration, -game.player.maxSpeed/2);
+    } else {
+        game.player.speed *= (1 - game.player.deceleration);
+    }
+    
+    if (keys['ArrowLeft']) {
+        game.player.angle -= game.player.handling * (game.player.speed / game.player.maxSpeed);
+        if (keys['ArrowDown']) game.player.drift = Math.min(game.player.drift + 0.1, 1);
+    }
+    if (keys['ArrowRight']) {
+        game.player.angle += game.player.handling * (game.player.speed / game.player.maxSpeed);
+        if (keys['ArrowDown']) game.player.drift = Math.min(game.player.drift + 0.1, 1);
+    }
+    
+    // Apply drift
+    if (game.player.drift > 0) {
+        game.player.drift *= 0.95;
+    }
+    
+    // Update position
+    game.player.x += Math.cos(game.player.angle) * game.player.speed;
+    game.player.y += Math.sin(game.player.angle) * game.player.speed;
+    
+    // Keep player on track
+    game.player.x = Math.max(0, Math.min(game.player.x, game.track.width - game.player.width));
+    game.player.y = Math.max(0, Math.min(game.player.y, game.track.height - game.player.height));
+    
+    // Draw player
+    ctx.save();
+    ctx.translate(game.player.x + game.player.width/2, game.player.y + game.player.height/2);
+    ctx.rotate(game.player.angle);
+    ctx.fillStyle = '#4169E1';
+    ctx.fillRect(-game.player.width/2, -game.player.height/2, game.player.width, game.player.height);
+    
+    // Draw drift effect
+    if (game.player.drift > 0.1) {
+        ctx.fillStyle = 'rgba(255, 255, 255, ' + game.player.drift + ')';
+        ctx.fillRect(-game.player.width/2, -game.player.height/2, game.player.width, game.player.height);
+    }
+    ctx.restore();
+    
+    // Update time
+    game.currentTime += 1/60;
+    
+    // Draw UI
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '20px Arial';
+    ctx.fillText('Speed: ' + Math.abs(game.player.speed).toFixed(1), 10, 30);
+    ctx.fillText('Lap: ' + game.lap, 10, 60);
+    ctx.fillText('Time: ' + game.currentTime.toFixed(1), 10, 90);
+    if (game.bestTime < Infinity) {
+        ctx.fillText('Best: ' + game.bestTime.toFixed(1), 10, 120);
+    }
+    
+    // Request next frame
+    requestAnimationFrame(gameLoop);
+}
+
+// Start the game
+initTrack();
+gameLoop();`
+        };
+
+        // Set default game code
+        editor.setValue(templates.platformer);
+
+        // Development tools
+        let showGrid = false;
+        let showDebug = false;
+        let showFPS = true;
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            updateStatus(showGrid ? 'Grid enabled' : 'Grid disabled');
+        }
+
+        function toggleDebug() {
+            showDebug = !showDebug;
+            updateStatus(showDebug ? 'Debug mode enabled' : 'Debug mode disabled');
+        }
+
+        function toggleFPS() {
+            showFPS = !showFPS;
+            document.getElementById('fps').style.display = showFPS ? 'block' : 'none';
+            updateStatus(showFPS ? 'FPS counter enabled' : 'FPS counter disabled');
+        }
+
+        function formatCode() {
+            editor.autoFormatRange(0, editor.lastLine());
+            updateStatus('Code formatted');
+        }
+
+        function minifyCode() {
+            const code = editor.getValue();
+            const minified = code.replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '')
+                               .replace(/\s+/g, ' ')
+                               .trim();
+            editor.setValue(minified);
+            updateStatus('Code minified');
+        }
+
+        function toggleFullscreen() {
+            const preview = document.querySelector('.preview-container');
+            if (!document.fullscreenElement) {
+                preview.requestFullscreen();
+                document.querySelector('.fullscreen-button').classList.add('visible');
+                document.querySelector('.game-controls').classList.add('visible');
+            } else {
+                document.exitFullscreen();
+                document.querySelector('.fullscreen-button').classList.remove('visible');
+                document.querySelector('.game-controls').classList.remove('visible');
+            }
+        }
+
+        function searchTemplates(query) {
+            const buttons = document.querySelectorAll('.template-button');
+            query = query.toLowerCase();
+            
+            buttons.forEach(button => {
+                const text = button.textContent.toLowerCase();
+                const parent = button.closest('.template-category');
+                if (text.includes(query)) {
+                    button.style.display = 'block';
+                    parent.style.display = 'block';
+                } else {
+                    button.style.display = 'none';
+                    // Hide category if all buttons are hidden
+                    const visibleButtons = parent.querySelectorAll('.template-button[style="display: block"]');
+                    parent.style.display = visibleButtons.length ? 'block' : 'none';
+                }
+            });
+        }
+
+        function exportGame() {
+            const code = editor.getValue();
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'game.js';
+            a.click();
+            URL.revokeObjectURL(url);
+            updateStatus('Game exported');
+        }
+
+        // Game functions
+        function runGame() {
+            try {
+                const code = editor.getValue();
+                const gameFunction = new Function(code);
+                gameFunction();
+                updateStatus('Game running');
+                document.querySelector('.game-controls').classList.add('visible');
+            } catch (error) {
+                console.error('Error running game:', error);
+                alert('Error running game: ' + error.message);
+                updateStatus('Error: ' + error.message);
+            }
+        }
+
+        function resetGame() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            updateStatus('Game reset');
+        }
+
+        function saveGame() {
+            const code = editor.getValue();
+            localStorage.setItem('savedGame', code);
+            alert('Game saved successfully!');
+            updateStatus('Game saved');
+        }
+
+        function loadGame() {
+            const savedCode = localStorage.getItem('savedGame');
+            if (savedCode) {
+                editor.setValue(savedCode);
+                alert('Game loaded successfully!');
+                updateStatus('Game loaded');
+            } else {
+                alert('No saved game found!');
+                updateStatus('No saved game found');
+            }
+        }
+
+        function loadTemplate(templateName) {
+            if (templates[templateName]) {
+                editor.setValue(templates[templateName]);
+                updateStatus('Loaded ' + templateName + ' template');
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // Set initial canvas size
+        const canvas = document.getElementById('gameCanvas');
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // Initialize FPS counter
+        let frameCount = 0;
+        let lastTime = performance.now();
+        function updateFPS() {
+            frameCount++;
+            const currentTime = performance.now();
+            if (currentTime - lastTime >= 1000) {
+                document.getElementById('fps').textContent = 'FPS: ' + frameCount;
+                frameCount = 0;
+                lastTime = currentTime;
+            }
+            requestAnimationFrame(updateFPS);
+        }
+        updateFPS();
+    </script>
+</body>
+</html>
