@@ -6,78 +6,99 @@
     <title>Game Dev Studio Pro</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #1e1e1e;
-            color: #ffffff;
+            font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+            background-color: #181818;
+            color: #e0e0e0;
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
-
         .header {
-            background-color: #2d2d2d;
+            background-color: #232323;
             padding: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-
+        .pro-badge {
+            background: #222;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.9em;
+            margin-left: 1rem;
+            letter-spacing: 1px;
+        }
         .main-container {
             display: flex;
             flex: 1;
             overflow: hidden;
         }
-
         .sidebar {
             width: 280px;
-            background-color: #252525;
-            border-right: 1px solid #3d3d3d;
+            background-color: #202124;
+            border-right: 1px solid #333;
             display: flex;
             flex-direction: column;
+            transition: width 0.2s;
         }
-
+        .sidebar.collapsed {
+            width: 0;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .sidebar-toggle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 10;
+            background: #232323;
+            color: #4CAF50;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            padding: 0.5rem 0.7rem;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
         .editor-container {
             flex: 1;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid #3d3d3d;
+            border-right: 1px solid #333;
+            background: #181818;
         }
-
         .preview-container {
             flex: 1;
-            background-color: #2d2d2d;
+            background-color: #181818;
             padding: 1rem;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
-
         .CodeMirror {
             height: 100%;
             font-size: 16px;
+            background: #181818;
         }
-
         .toolbar {
-            background-color: #2d2d2d;
+            background-color: #232323;
             padding: 0.5rem;
             display: flex;
             gap: 1rem;
             flex-wrap: wrap;
+            border-bottom: 1px solid #333;
         }
-
         button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
+            background-color: #232323;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
             padding: 0.5rem 1rem;
             border-radius: 4px;
             cursor: pointer;
@@ -87,16 +108,11 @@
             gap: 0.5rem;
             transition: all 0.2s;
         }
-
         button:hover {
-            background-color: #45a049;
-            transform: translateY(-1px);
+            background-color: #333;
+            color: #fff;
+            border-color: #fff;
         }
-
-        button:active {
-            transform: translateY(1px);
-        }
-
         #gameCanvas {
             background-color: #000000;
             width: 100%;
@@ -104,58 +120,31 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
         .templates {
             padding: 1rem;
             overflow-y: auto;
             flex: 1;
         }
-
         .template-button {
             width: 100%;
             margin-bottom: 0.5rem;
-            background-color: #3d3d3d;
+            background-color: #232323;
             text-align: left;
             position: relative;
             overflow: hidden;
+            color: #4CAF50;
+            border: 1px solid #333;
         }
-
         .template-button:hover {
-            background-color: #4d4d4d;
+            background-color: #333;
+            color: #fff;
         }
-
-        .template-button::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.3s;
-        }
-
-        .template-button:hover::after {
-            transform: translateX(100%);
-        }
-
-        .status-bar {
-            background-color: #2d2d2d;
-            padding: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #888;
-        }
-
         .template-category {
             margin-bottom: 1.5rem;
-            background-color: #2d2d2d;
+            background-color: #202124;
             border-radius: 8px;
             padding: 1rem;
         }
-
         .template-category h3 {
             margin-bottom: 0.8rem;
             color: #4CAF50;
@@ -163,159 +152,188 @@
             align-items: center;
             gap: 0.5rem;
         }
-
         .template-category h3 i {
             font-size: 1.2em;
         }
-
         .dev-tools {
-            background-color: #2d2d2d;
+            background-color: #202124;
             padding: 1rem;
-            border-top: 1px solid #3d3d3d;
+            border-top: 1px solid #333;
         }
-
         .dev-tools h3 {
             margin-bottom: 0.8rem;
             color: #4CAF50;
         }
-
         .tool-button {
-            background-color: #3d3d3d;
+            background-color: #232323;
             margin-bottom: 0.5rem;
+            color: #4CAF50;
+            border: 1px solid #333;
         }
-
         .tool-button i {
             width: 20px;
             text-align: center;
         }
-
-        .game-controls {
-            position: absolute;
-            bottom: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(0,0,0,0.7);
+        .status-bar {
+            background-color: #232323;
             padding: 0.5rem;
-            border-radius: 4px;
-            display: none;
-        }
-
-        .game-controls.visible {
             display: flex;
-            gap: 1rem;
-        }
-
-        .control-key {
-            background-color: #4d4d4d;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
-        .preview-container {
-            position: relative;
-        }
-
-        .fullscreen-button {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background-color: rgba(0,0,0,0.7);
-            color: white;
-            border: none;
-            padding: 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            display: none;
-        }
-
-        .fullscreen-button.visible {
-            display: block;
-        }
-
-        .template-description {
+            justify-content: space-between;
             font-size: 12px;
             color: #888;
-            margin-top: 0.5rem;
-            line-height: 1.4;
+            border-top: 1px solid #333;
         }
-
-        .search-box {
-            margin: 1rem;
-            position: relative;
+        .console-panel {
+            background: #111;
+            color: #4CAF50;
+            font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+            font-size: 13px;
+            padding: 0.5rem 1rem;
+            border-top: 1px solid #333;
+            height: 120px;
+            overflow-y: auto;
         }
-
-        .search-box input {
+        .console-error { color: #ff5555; }
+        .console-warn { color: #ffb86c; }
+        .console-info { color: #8be9fd; }
+        .console-log { color: #4CAF50; }
+        .login-overlay, .birthdate-overlay, .locked-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(24,24,24,0.98);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-box, .birthdate-box, .locked-box {
+            background: #232323;
+            border-radius: 8px;
+            box-shadow: 0 4px 24px #000a;
+            padding: 2.5rem 2rem 2rem 2rem;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .login-box h2, .birthdate-box h2, .locked-box h2 {
+            color: #4CAF50;
+            margin-bottom: 1.5rem;
+        }
+        .login-box input, .birthdate-box input {
             width: 100%;
-            padding: 0.5rem;
-            padding-left: 2rem;
-            background-color: #1e1e1e;
-            border: 1px solid #3d3d3d;
+            padding: 0.7rem;
+            margin-bottom: 1rem;
             border-radius: 4px;
-            color: white;
+            border: 1px solid #333;
+            background: #181818;
+            color: #e0e0e0;
+            font-size: 1rem;
         }
-
-        .search-box i {
-            position: absolute;
-            left: 0.5rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #888;
+        .login-box button, .birthdate-box button {
+            width: 100%;
+            padding: 0.7rem;
+            background: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+        .login-box button:hover, .birthdate-box button:hover {
+            background: #388e3c;
+        }
+        .locked-box {
+            color: #ff5555;
+            text-align: center;
+        }
+        .locked-box button {
+            margin-top: 2rem;
+            background: #232323;
+            color: #fff;
+            border: 1px solid #ff5555;
+        }
+        .locked-box button:hover {
+            background: #ff5555;
+            color: #fff;
+        }
+        .error-message {
+            color: #ff5555;
+            margin-bottom: 1rem;
+            font-size: 0.95em;
         }
     </style>
 </head>
 <body>
+    <div id="loginOverlay" class="login-overlay">
+        <form class="login-box" onsubmit="return handleLogin(event)">
+            <h2>Login Required</h2>
+            <input type="email" id="loginEmail" placeholder="Email" required autocomplete="username">
+            <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+            <div id="loginError" class="error-message" style="display:none;"></div>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <div id="birthdateOverlay" class="birthdate-overlay" style="display:none;">
+        <form class="birthdate-box" onsubmit="return handleBirthdate(event)">
+            <h2>Enter Your Birth Date</h2>
+            <input type="date" id="birthdateInput" required>
+            <div id="birthdateError" class="error-message" style="display:none;"></div>
+            <button type="submit">Continue</button>
+        </form>
+    </div>
+    <div id="lockedOverlay" class="locked-overlay" style="display:none;">
+        <div class="locked-box">
+            <h2>Access Denied</h2>
+            <p>Sorry, you must be at least 20 years old to use this app.</p>
+            <button onclick="location.reload()">Try Again</button>
+        </div>
+    </div>
     <div class="header">
-        <h1><i class="fas fa-gamepad"></i> Game Dev Studio Pro</h1>
+        <div style="display: flex; align-items: center;">
+            <h1><i class="fas fa-gamepad"></i> Game Dev Studio <span class="pro-badge">PRO MODE</span></h1>
+        </div>
         <div>
-            <button onclick="saveGame()"><i class="fas fa-save"></i> Save Game</button>
-            <button onclick="loadGame()"><i class="fas fa-folder-open"></i> Load Game</button>
+            <button onclick="saveGame()" title="Ctrl+S"><i class="fas fa-save"></i> Save</button>
+            <button onclick="loadGame()" title="Ctrl+O"><i class="fas fa-folder-open"></i> Load</button>
             <button onclick="exportGame()"><i class="fas fa-file-export"></i> Export</button>
         </div>
     </div>
-    
     <div class="main-container">
-        <div class="sidebar">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search templates..." onkeyup="searchTemplates(this.value)">
-            </div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" title="Toggle Sidebar"><i class="fas fa-bars"></i></button>
+        <div class="sidebar" id="sidebar">
             <div class="templates">
                 <div class="template-category">
                     <h3><i class="fas fa-running"></i> Action Games</h3>
                     <button class="template-button" onclick="loadTemplate('platformer')">
                         <i class="fas fa-running"></i> Platformer
-                        <div class="template-description">Jump and run through platforms with physics</div>
                     </button>
                     <button class="template-button" onclick="loadTemplate('shooter')">
                         <i class="fas fa-crosshairs"></i> Shooter
-                        <div class="template-description">Top-down shooter with mouse aiming</div>
                     </button>
                 </div>
                 <div class="template-category">
                     <h3><i class="fas fa-chess"></i> Strategy Games</h3>
                     <button class="template-button" onclick="loadTemplate('baseDefense')">
                         <i class="fas fa-shield-alt"></i> Base Defense
-                        <div class="template-description">Tower defense with wave-based enemies</div>
                     </button>
                 </div>
                 <div class="template-category">
                     <h3><i class="fas fa-puzzle-piece"></i> Puzzle Games</h3>
                     <button class="template-button" onclick="loadTemplate('puzzle')">
                         <i class="fas fa-puzzle-piece"></i> Sliding Puzzle
-                        <div class="template-description">Classic sliding tile puzzle game</div>
                     </button>
                 </div>
                 <div class="template-category">
                     <h3><i class="fas fa-car"></i> Racing Games</h3>
                     <button class="template-button" onclick="loadTemplate('racing')">
                         <i class="fas fa-car"></i> Top-Down Racing
-                        <div class="template-description">Arcade-style racing with drifting</div>
                     </button>
                 </div>
             </div>
             <div class="dev-tools">
-                <h3>Development Tools</h3>
+                <h3>Dev Tools</h3>
                 <button class="tool-button" onclick="toggleGrid()">
                     <i class="fas fa-th"></i> Toggle Grid
                 </button>
@@ -329,42 +347,48 @@
         </div>
         <div class="editor-container">
             <div class="toolbar">
-                <button onclick="runGame()"><i class="fas fa-play"></i> Run Game</button>
+                <button onclick="runGame()" title="Ctrl+Enter"><i class="fas fa-play"></i> Run</button>
                 <button onclick="resetGame()"><i class="fas fa-undo"></i> Reset</button>
-                <button onclick="formatCode()"><i class="fas fa-code"></i> Format Code</button>
+                <button onclick="formatCode()"><i class="fas fa-code"></i> Format</button>
                 <button onclick="minifyCode()"><i class="fas fa-compress-alt"></i> Minify</button>
-                <button onclick="toggleFullscreen()"><i class="fas fa-expand"></i> Fullscreen</button>
             </div>
             <textarea id="codeEditor"></textarea>
         </div>
         <div class="preview-container">
             <canvas id="gameCanvas"></canvas>
-            <button class="fullscreen-button" onclick="toggleFullscreen()">
-                <i class="fas fa-expand"></i>
-            </button>
-            <div class="game-controls">
-                <div><span class="control-key">←</span> <span class="control-key">→</span> Move</div>
-                <div><span class="control-key">Space</span> Jump/Shoot</div>
-            </div>
         </div>
     </div>
-
+    <div class="console-panel" id="consolePanel"></div>
     <div class="status-bar">
         <span id="status">Ready</span>
         <span id="fps">FPS: 0</span>
     </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/lint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/javascript-lint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/comment/comment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/formatting/formatting.min.js"></script>
     <script>
-        // Initialize CodeMirror with additional features
+        // Advanced CodeMirror setup
         const editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
             mode: 'javascript',
             theme: 'monokai',
             lineNumbers: true,
             autoCloseBrackets: true,
             matchBrackets: true,
+            styleActiveLine: true,
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+            lint: true,
             indentUnit: 4,
             tabSize: 4,
             lineWrapping: true,
@@ -372,10 +396,35 @@
                 "Ctrl-Space": "autocomplete",
                 "Ctrl-F": "findPersistent",
                 "Ctrl-H": "replace",
-                "Ctrl-/": "toggleComment"
+                "Ctrl-/": "toggleComment",
+                "Ctrl-Enter": runGame,
+                "Ctrl-S": function() { saveGame(); return false; },
+                "Ctrl-O": function() { loadGame(); return false; }
             }
         });
-
+        // Console panel logic
+        const consolePanel = document.getElementById('consolePanel');
+        function clearConsole() { consolePanel.innerHTML = ''; }
+        function printToConsole(msg, type = 'log') {
+            const div = document.createElement('div');
+            div.className = 'console-' + type;
+            div.textContent = msg;
+            consolePanel.appendChild(div);
+            consolePanel.scrollTop = consolePanel.scrollHeight;
+        }
+        // Patch console
+        (function() {
+            const origLog = console.log, origWarn = console.warn, origError = console.error, origInfo = console.info;
+            console.log = function(...args) { printToConsole(args.join(' '), 'log'); origLog.apply(console, args); };
+            console.warn = function(...args) { printToConsole(args.join(' '), 'warn'); origWarn.apply(console, args); };
+            console.error = function(...args) { printToConsole(args.join(' '), 'error'); origError.apply(console, args); };
+            console.info = function(...args) { printToConsole(args.join(' '), 'info'); origInfo.apply(console, args); };
+        })();
+        // Sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
         // Game templates
         const templates = {
             platformer: `// Platformer Game Template
@@ -1132,6 +1181,77 @@ gameLoop();`
             requestAnimationFrame(updateFPS);
         }
         updateFPS();
+
+        // --- Login and Age Check Logic ---
+        const loginOverlay = document.getElementById('loginOverlay');
+        const birthdateOverlay = document.getElementById('birthdateOverlay');
+        const lockedOverlay = document.getElementById('lockedOverlay');
+        const mainApp = document.getElementById('mainApp');
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.style.display = 'none';
+            if (!email || !password) {
+                errorDiv.textContent = 'Email and password are required.';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            if (password !== '1234') {
+                errorDiv.textContent = 'Incorrect password.';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+            // Hide login, show birthdate
+            loginOverlay.style.display = 'none';
+            birthdateOverlay.style.display = 'flex';
+            return false;
+        }
+
+        function handleBirthdate(e) {
+            e.preventDefault();
+            const birthdate = document.getElementById('birthdateInput').value;
+            const email = document.getElementById('loginEmail').value.trim();
+            const errorDiv = document.getElementById('birthdateError');
+            errorDiv.style.display = 'none';
+            
+            if (!birthdate) {
+                errorDiv.textContent = 'Birth date is required.';
+                errorDiv.style.display = 'block';
+                return false;
+            }
+
+            // Special case for carterry01@gmail.com
+            if (email === 'carterry01@gmail.com') {
+                birthdateOverlay.style.display = 'none';
+                mainApp.style.display = '';
+                return false;
+            }
+
+            // Calculate age for all other users
+            const today = new Date();
+            const dob = new Date(birthdate);
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            
+            if (age < 20) {
+                birthdateOverlay.style.display = 'none';
+                lockedOverlay.style.display = 'flex';
+                return false;
+            }
+            
+            // Success: show app
+            birthdateOverlay.style.display = 'none';
+            mainApp.style.display = '';
+            return false;
+        }
+        // Hide app until login is complete
+        mainApp.style.display = 'none';
     </script>
 </body>
 </html>
