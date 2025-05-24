@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penguin Clicker</title>
+    <link rel="icon" type="image/png" href="pen coin.png">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #00b4db 100%);
+            background-attachment: fixed;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .click-area {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+            user-select: none;
+            background: none;
+            perspective: 1000px;
+        }
+
+        .click-area img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.1s;
+            animation: rock 2s ease-in-out infinite;
+            transform-origin: center bottom;
+        }
+
+        @keyframes rock {
+            0% {
+                transform: rotate(-5deg);
+            }
+            50% {
+                transform: rotate(5deg);
+            }
+            100% {
+                transform: rotate(-5deg);
+            }
+        }
+
+        .click-area:active img {
+            animation: none;
+            transform: scale(0.95) rotate(0deg);
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        .shop-button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            margin: 20px auto;
+            display: block;
+            transition: background 0.3s, transform 0.1s;
+            position: relative;
+        }
+
+        .shop-button:hover {
+            background: #45a049;
+        }
+
+        .shop-button:active {
+            transform: scale(0.95);
+        }
+
+        .shop-popup {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+            width: 300px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .shop-popup.visible {
+            display: block;
+        }
+
+        .shop-popup::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid #2a2a2a;
+        }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .shop-item button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .shop-item button:hover {
+            background: #45a049;
+        }
+
+        .shop-item button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            background: #45a049;
+        }
+
+        /* Close button for shop popup */
+        .close-shop {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .close-shop:hover {
+            color: #4CAF50;
+        }
+
+        /* Secret code button (replaces back button) */
+        .code-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .code-button:hover {
+            background: #45a049;
+        }
+
+        /* Code pad overlay */
+        .code-pad-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+
+        .code-pad-overlay.visible {
+            display: flex;
+        }
+
+        .code-pad {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            width: 260px;
+            text-align: center;
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .code-display {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 24px;
+            letter-spacing: 8px;
+            color: #4CAF50;
+            border-radius: 5px;
+            min-height: 38px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .code-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .code-buttons button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .code-buttons button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .close-code {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .close-code:hover {
+            color: #4CAF50;
+        }
+
+        /* Prestige button */
+        .prestige-button {
+            background: #ffd700;
+            border: none;
+            color: #000;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            margin: 20px auto;
+            display: block;
+            transition: all 0.3s;
+        }
+
+        .prestige-button:hover {
+            background: #ffed4a;
+            transform: scale(1.05);
+        }
+
+        /* Click effect */
+        .click-effect {
+            position: absolute;
+            pointer-events: none;
+            animation: float-up 1s ease-out forwards;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-50px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* Multiplier display */
+        .multiplier {
+            color: #ffd700;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <button class="code-button" onclick="toggleCodePad()">🔒 Secret Code</button>
+    <div class="container">
+        <div class="header">
+            <h1>Penguin Clicker</h1>
+        </div>
+
+        <div class="click-area" id="clickArea">
+            <img src="pen coin.png" alt="Penguin Coin">
+        </div>
+
+        <div class="stats">
+            <div class="stat">Penguins: <span id="penguins">0</span></div>
+            <div class="stat">Per Click: <span id="perClick">1</span> <span class="multiplier">(x<span id="multiplier">1</span>)</span></div>
+            <div class="stat">Per Second: <span id="perSecond">0</span></div>
+            <div class="stat">Prestige Level: <span id="prestigeLevel">0</span></div>
+        </div>
+
+        <button class="prestige-button" onclick="prestige()" id="prestigeButton" style="display: none;">🌟 Prestige</button>
+
+        <div style="position: relative;">
+            <button class="shop-button" onclick="toggleShop()">🛒 Shop</button>
+            <div class="shop-popup" id="shop">
+                <button class="close-shop" onclick="toggleShop()">×</button>
+                <div class="shop-item">
+                    <span>+1 Click Power</span>
+                    <button onclick="buyUpgrade('clickPower', 25)">Buy (25 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+1 Per Second</span>
+                    <button onclick="buyUpgrade('perSecond', 100)">Buy (100 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+10 Per Second</span>
+                    <button onclick="buyUpgrade('perSecond10', 500)">Buy (500 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+100 Per Second</span>
+                    <button onclick="buyUpgrade('perSecond100', 6500)">Buy (6,500 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+2000 Click Power</span>
+                    <button onclick="buyUpgrade('clickPower2000', 150000)">Buy (150,000 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+250,000 Per Second</span>
+                    <button onclick="buyUpgrade('perSecond250k', 20000000)">Buy (20,000,000 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+5,000,000 Per Second</span>
+                    <button onclick="buyUpgrade('perSecond5m', 125000000)">Buy (125,000,000 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+2,000,000 Click Power</span>
+                    <button onclick="buyUpgrade('clickPower2m', 400000000)">Buy (400,000,000 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+100,000,000 Per Second</span>
+                    <button onclick="buyUpgrade('perSecond100m', 5000000000)">Buy (5,000,000,000 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>+5,000,000,000 Per Second</span>
+                    <button onclick="buyUpgrade('perSecond5b', 100000000000)">Buy (100,000,000,000 Penguins)</button>
+                </div>
+                <div class="shop-item">
+                    <span>Auto Clicker</span>
+                    <button onclick="buyUpgrade('autoClicker', 1000000000000)">Buy (1,000,000,000,000 Penguins)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secret code pad overlay -->
+    <div class="code-pad-overlay" id="codePadOverlay">
+        <div class="code-pad">
+            <button class="close-code" onclick="toggleCodePad()">×</button>
+            <div class="code-display" id="codeDisplay"></div>
+            <div class="code-buttons">
+                <button onclick="pressDigit(1)">1</button>
+                <button onclick="pressDigit(2)">2</button>
+                <button onclick="pressDigit(3)">3</button>
+                <button onclick="pressDigit(4)">4</button>
+                <button onclick="pressDigit(5)">5</button>
+                <button onclick="pressDigit(6)">6</button>
+                <button onclick="pressDigit(7)">7</button>
+                <button onclick="pressDigit(8)">8</button>
+                <button onclick="pressDigit(9)">9</button>
+                <button onclick="clearCode()">C</button>
+                <button onclick="pressDigit(0)">0</button>
+                <button onclick="submitCode()">↵</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            penguins: 0,
+            perClick: 1,
+            perSecond: 0,
+            multiplier: 1,
+            prestigeLevel: 0,
+            upgrades: {
+                clickPower: 0,
+                perSecond: 0,
+                perSecond10: 0,
+                perSecond100: 0,
+                clickPower2000: 0,
+                perSecond250k: 0,
+                perSecond5m: 0,
+                clickPower2m: 0,
+                perSecond100m: 0,
+                perSecond5b: 0,
+                autoClicker: 0
+            }
+        };
+
+        // Toggle shop visibility
+        function toggleShop() {
+            const shop = document.getElementById('shop');
+            shop.classList.toggle('visible');
+        }
+
+        // Close shop when clicking outside
+        document.addEventListener('click', (e) => {
+            const shop = document.getElementById('shop');
+            const shopButton = document.querySelector('.shop-button');
+            if (!shop.contains(e.target) && !shopButton.contains(e.target)) {
+                shop.classList.remove('visible');
+            }
+        });
+
+        // Update display
+        function updateDisplay() {
+            document.getElementById('penguins').textContent = Math.floor(gameState.penguins);
+            document.getElementById('perClick').textContent = gameState.perClick;
+            document.getElementById('perSecond').textContent = gameState.perSecond;
+            document.getElementById('multiplier').textContent = gameState.multiplier.toFixed(1);
+            document.getElementById('prestigeLevel').textContent = gameState.prestigeLevel;
+            
+            // Show/hide prestige button
+            document.getElementById('prestigeButton').style.display = 
+                gameState.penguins >= 1000000000 ? 'block' : 'none';
+        }
+
+        // Create click effect
+        function createClickEffect(x, y, amount) {
+            const effect = document.createElement('div');
+            effect.className = 'click-effect';
+            effect.textContent = `+${amount}`;
+            effect.style.left = `${x}px`;
+            effect.style.top = `${y}px`;
+            document.body.appendChild(effect);
+            
+            // Remove effect after animation
+            setTimeout(() => effect.remove(), 1000);
+        }
+
+        // Prestige system
+        function prestige() {
+            if (gameState.penguins >= 1000000000) { // 1 billion penguins required
+                gameState.prestigeLevel++;
+                gameState.multiplier = 1 + (gameState.prestigeLevel * 0.5); // 50% increase per prestige
+                gameState.penguins = 0;
+                gameState.perClick = 1;
+                gameState.perSecond = 0;
+                gameState.upgrades = {
+                    clickPower: 0,
+                    perSecond: 0,
+                    perSecond10: 0,
+                    perSecond100: 0,
+                    clickPower2000: 0,
+                    perSecond250k: 0,
+                    perSecond5m: 0,
+                    clickPower2m: 0,
+                    perSecond100m: 0,
+                    perSecond5b: 0,
+                    autoClicker: 0
+                };
+                updateDisplay();
+                alert(`Prestige ${gameState.prestigeLevel} achieved! Your multiplier is now x${gameState.multiplier}!`);
+            }
+        }
+
+        // Click handler
+        document.getElementById('clickArea').addEventListener('click', (e) => {
+            const clickAmount = Math.floor(gameState.perClick * gameState.multiplier);
+            gameState.penguins += clickAmount;
+            createClickEffect(e.clientX, e.clientY, clickAmount);
+            updateDisplay();
+        });
+
+        // Buy upgrade
+        function buyUpgrade(type, cost) {
+            if (gameState.penguins >= cost) {
+                gameState.penguins -= cost;
+                
+                switch(type) {
+                    case 'clickPower':
+                        gameState.perClick += 1;
+                        break;
+                    case 'perSecond':
+                        gameState.perSecond += 1;
+                        break;
+                    case 'perSecond10':
+                        gameState.perSecond += 10;
+                        break;
+                    case 'perSecond100':
+                        gameState.perSecond += 100;
+                        break;
+                    case 'clickPower2000':
+                        gameState.perClick += 2000;
+                        break;
+                    case 'perSecond250k':
+                        gameState.perSecond += 250000;
+                        break;
+                    case 'perSecond5m':
+                        gameState.perSecond += 5000000;
+                        break;
+                    case 'clickPower2m':
+                        gameState.perClick += 2000000;
+                        break;
+                    case 'perSecond100m':
+                        gameState.perSecond += 100000000;
+                        break;
+                    case 'perSecond5b':
+                        gameState.perSecond += 5000000000;
+                        break;
+                    case 'autoClicker':
+                        gameState.perSecond += 5000000;
+                        break;
+                }
+                
+                updateDisplay();
+            }
+        }
+
+        // Passive income
+        setInterval(() => {
+            gameState.penguins += gameState.perSecond * gameState.multiplier;
+            updateDisplay();
+        }, 1000);
+
+        /* ---------------- Secret Code Pad Logic ---------------- */
+        const secretCode = '3695';
+        let enteredCode = '';
+
+        function toggleCodePad() {
+            const overlay = document.getElementById('codePadOverlay');
+            overlay.classList.toggle('visible');
+            clearCode();
+        }
+
+        function pressDigit(d) {
+            if (enteredCode.length >= 4) return;
+            enteredCode += d.toString();
+            updateCodeDisplay();
+        }
+
+        function clearCode() {
+            enteredCode = '';
+            updateCodeDisplay();
+        }
+
+        function updateCodeDisplay() {
+            document.getElementById('codeDisplay').textContent = enteredCode.split('').join(' ');
+        }
+
+        function submitCode() {
+            if (enteredCode === secretCode) {
+                gameState.penguins += 1000000;
+                updateDisplay();
+                alert('Correct! You received 1,000,000 penguins!');
+                toggleCodePad();
+            } else {
+                alert('Incorrect code!');
+                clearCode();
+            }
+        }
+
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html> 
