@@ -59,6 +59,11 @@
     <div id="upgrades">
         <button id="upgradeTower" onclick="upgradeTower()">Upgrade Tower (Cost: <span id="upgradeCost">10</span> gold)</button>
     </div>
+    <div id="shop" style="margin: 10px;">
+        <button id="buyClick" onclick="buyClickUpgrade()">+1 Per Click (Cost: <span id="clickUpgradeCost">25</span> gold)</button>
+        <button id="buyAuto" onclick="buyAutoIncome()">+1 Per Second (Cost: <span id="autoUpgradeCost">50</span> gold)</button>
+        <button id="buyAutoClicker" onclick="buyAutoClicker()">Auto Clicker (Cost: <span id="autoClickerCost">100</span> gold)</button>
+    </div>
     <audio id="towerSound" src="Untitled.mp3" preload="auto"></audio>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
     <script>
@@ -88,6 +93,12 @@
             bgImageLoaded = true;
             draw();
         };
+        let glowLevel = 20; // Initial glow
+        let perSecond = 0;
+        let autoClicker = false;
+        let clickUpgradeCost = 25;
+        let autoUpgradeCost = 50;
+        let autoClickerCost = 100;
 
         // Update display
         function updateDisplay() {
@@ -95,6 +106,12 @@
             document.getElementById('level').textContent = level;
             document.getElementById('upgradeCost').textContent = upgradeCost;
             document.getElementById('upgradeTower').disabled = gold < upgradeCost;
+            document.getElementById('clickUpgradeCost').textContent = clickUpgradeCost;
+            document.getElementById('autoUpgradeCost').textContent = autoUpgradeCost;
+            document.getElementById('autoClickerCost').textContent = autoClickerCost;
+            document.getElementById('buyClick').disabled = gold < clickUpgradeCost;
+            document.getElementById('buyAuto').disabled = gold < autoUpgradeCost;
+            document.getElementById('buyAutoClicker').disabled = gold < autoClickerCost || autoClicker;
         }
 
         function draw() {
@@ -106,14 +123,18 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Optionally, draw tower regions for debugging
-            // ctx.save();
-            // ctx.globalAlpha = 0.2;
-            // ctx.fillStyle = '#00FF00';
-            // towers.forEach(tower => {
-            //     ctx.fillRect(tower.x, tower.y, tower.width, tower.height);
-            // });
-            // ctx.restore();
+            // Draw subtle glow around the main tower
+            const tower = towers[0];
+            ctx.save();
+            ctx.shadowColor = '#00fff7';
+            ctx.shadowBlur = Math.min(glowLevel, 20); // Cap the blur for subtlety
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.3;
+            ctx.strokeStyle = '#00fff7';
+            ctx.strokeRect(tower.x, tower.y, tower.width, tower.height);
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+            ctx.restore();
 
             // Draw click effects
             clickEffects.forEach((effect, index) => {
@@ -175,9 +196,58 @@
                 level++;
                 clickPower = Math.floor(level * 1.5);
                 upgradeCost = Math.floor(upgradeCost * 1.5);
+                glowLevel = Math.min(glowLevel + 3, 20); // Subtle increase, capped
                 updateDisplay();
             }
         }
+
+        function buyClickUpgrade() {
+            if (gold >= clickUpgradeCost) {
+                gold -= clickUpgradeCost;
+                clickPower++;
+                clickUpgradeCost = Math.floor(clickUpgradeCost * 1.5);
+                updateDisplay();
+            }
+        }
+
+        function buyAutoIncome() {
+            if (gold >= autoUpgradeCost) {
+                gold -= autoUpgradeCost;
+                perSecond++;
+                autoUpgradeCost = Math.floor(autoUpgradeCost * 1.7);
+                updateDisplay();
+            }
+        }
+
+        function buyAutoClicker() {
+            if (gold >= autoClickerCost && !autoClicker) {
+                gold -= autoClickerCost;
+                autoClicker = true;
+                document.getElementById('buyAutoClicker').disabled = true;
+                updateDisplay();
+            }
+        }
+
+        // Auto income
+        setInterval(() => {
+            if (perSecond > 0) {
+                gold += perSecond;
+                updateDisplay();
+            }
+            if (autoClicker) {
+                // Simulate a click on the tower
+                const tower = towers[0];
+                const clickX = tower.x + tower.width / 2;
+                const clickY = tower.y + tower.height / 2;
+                gold += clickPower;
+                addClickEffect(clickX, clickY);
+                // Play sound
+                const audio = document.getElementById('towerSound');
+                audio.currentTime = 0;
+                audio.play();
+                updateDisplay();
+            }
+        }, 1000);
 
         canvas.addEventListener('click', handleClick);
         updateDisplay();
