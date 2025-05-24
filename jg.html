@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mario Style Game</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #333;
+        }
+        canvas {
+            border: 2px solid #fff;
+            background: #6b8cff;
+        }
+    </style>
+</head>
+<body>
+    <audio id="bgm" src="poo.mp4" loop autoplay></audio>
+    <audio id="pipeSound" src="poo.mp3"></audio>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        /***********************************
+         * Generate Mario sprite sheet    *
+         * --------------------------------*
+         * We create an offscreen canvas   *
+         * and draw 4 simple frames that   *
+         * simulate a walking animation.   *
+         ***********************************/
+
+        const FRAME_WIDTH = 32;
+        const FRAME_HEIGHT = 48;
+        const FRAME_COUNT = 4; // Standing, left step, standing, right step
+
+        function drawMarioFrame(ctx, originX, originY, frameIndex) {
+            const unit = FRAME_HEIGHT / 16; // Basic unit for proportions
+
+            // Clear frame first
+            ctx.clearRect(originX, originY, FRAME_WIDTH, FRAME_HEIGHT);
+
+            // Colors
+            const skin = '#F8D9B8';
+            const hat  = '#E02929';
+            const shirt = '#0070FF';
+            const shoe = '#643200';
+
+            // Helper to convert percentage to absolute X within the frame
+            function px(pcentX) {
+                return originX + (pcentX / 100) * FRAME_WIDTH;
+            }
+
+            // Draw hat (two rectangles: brim + top)
+            ctx.fillStyle = hat;
+            ctx.fillRect(px(20), originY + unit * 0.5, FRAME_WIDTH * 0.6, unit * 1.2); // brim
+            ctx.fillRect(px(30), originY,            FRAME_WIDTH * 0.4, unit * 0.9); // top
+
+            // Draw head
+            ctx.fillStyle = skin;
+            ctx.fillRect(px(25), originY + unit * 1.7, FRAME_WIDTH * 0.5, unit * 3);
+
+            // Draw body/shirt
+            ctx.fillStyle = shirt;
+            ctx.fillRect(px(20), originY + unit * 5, FRAME_WIDTH * 0.6, unit * 5);
+
+            // Draw arms
+            ctx.fillStyle = skin;
+            // Left arm
+            ctx.fillRect(px(10), originY + unit * 5, FRAME_WIDTH * 0.1, unit * 4);
+            // Right arm
+            ctx.fillRect(px(80), originY + unit * 5, FRAME_WIDTH * 0.1, unit * 4);
+
+            // Draw legs and shoes with simple walking pose variations
+            ctx.fillStyle = shoe;
+            const leftForward = frameIndex % 2 === 1; // Alternate frames
+            if (leftForward) {
+                // Left leg forward
+                ctx.fillRect(px(25), originY + unit * 10, FRAME_WIDTH * 0.25, unit * 4);
+                ctx.fillRect(px(55), originY + unit * 10, FRAME_WIDTH * 0.25, unit * 3);
+            } else {
+                // Right leg forward or standing
+                ctx.fillRect(px(55), originY + unit * 10, FRAME_WIDTH * 0.25, unit * 4);
+                ctx.fillRect(px(25), originY + unit * 10, FRAME_WIDTH * 0.25, unit * 3);
+            }
+        }
+
+        function generateMarioSpriteSheet() {
+            const off = document.createElement('canvas');
+            off.width = FRAME_WIDTH * FRAME_COUNT;
+            off.height = FRAME_HEIGHT;
+            const offCtx = off.getContext('2d');
+
+            for (let i = 0; i < FRAME_COUNT; i++) {
+                drawMarioFrame(offCtx, i * FRAME_WIDTH, 0, i);
+            }
+
+            const img = new Image();
+            img.src = off.toDataURL();
+            return img;
+        }
+
+        const marioImage = generateMarioSpriteSheet();
+
+        // Game objects
+        const mario = {
+            x: 50,
+            y: 200,
+            width: FRAME_WIDTH,
+            height: FRAME_HEIGHT,
+            speed: 3, // Slightly reduced speed for better animation feel
+            jumpForce: 12,
+            gravity: 0.5,
+            velocityY: 0,
+            isJumping: false,
+            spriteSheet: marioImage,
+            frameWidth: FRAME_WIDTH,
+            frameHeight: FRAME_HEIGHT,
+            currentFrame: 0,   // Current frame index for animation
+            frameCount: FRAME_COUNT,     // Total number of frames in the walking animation
+            animationTimer: 0,
+            animationSpeed: 10, // Lower is faster. Frames to wait before switching sprite frame.
+            direction: 1, // 1 for right, -1 for left
+            isMoving: false
+        };
+
+        // Pipe constants
+        const PIPE_WIDTH = 40;
+        const PIPE_HEIGHT = 60;
+
+        // Mini-map constants
+        const MINIMAP_W = 150;
+        const MINIMAP_H = 45;
+
+        // Level data
+        const levels = [
+            { length: 3000, flagX: 3100, bg: '#6b8cff' },
+            { length: 4500, flagX: 4600, bg: '#87ceeb' },
+        ];
+        let currentLevel = 0;
+        let showWin = false;
+
+        /******************** WORLD CONTAINERS ********************/
+        let cameraX = 0;   // How far we have scrolled to the right
+        let score = 0;
+
+        const clouds = [];
+        const platforms = [];
+        const coins = [];
+        const spikes = [];
+        const pipes = [];
+
+        const GROUND_Y = 350;
+
+        const rand = (min, max) => Math.random() * (max - min) + min;
+
+        // Pipe pair spawner
+        function spawnPipePair(x1, x2) {
+            const idxA = pipes.length;
+            pipes.push({ x: x1, y: GROUND_Y - PIPE_HEIGHT, width: PIPE_WIDTH, height: PIPE_HEIGHT, link: null });
+            pipes.push({ x: x2, y: GROUND_Y - PIPE_HEIGHT, width: PIPE_WIDTH, height: PIPE_HEIGHT, link: null });
+            pipes[idxA].link = idxA + 1;
+            pipes[idxA + 1].link = idxA;
+        }
+
+        // Level generation/reset
+        let lastPlatformX = 200;
+        let lastSpikeX = 200;
+        function resetWorld() {
+            cameraX = 0;
+            clouds.length = platforms.length = coins.length = spikes.length = pipes.length = 0;
+            lastPlatformX = 200;
+            lastSpikeX = 200;
+
+            // Basic starter platforms
+            for (let i = 0; i < 8; i++) spawnPlatform();
+            for (let i = 0; i < 5; i++) spawnSpike();
+
+            // Spawn pipes across level
+            spawnPipesForLevel(levels[currentLevel].length);
+        }
+
+        function resetGame(advanceLevel = false) {
+            if (advanceLevel) {
+                if (currentLevel === levels.length - 1) {
+                    showWin = true;
+                    return;
+                } else {
+                    currentLevel++;
+                }
+            } else {
+                showWin = false;
+            }
+            mario.x = 50;
+            mario.y = 200;
+            mario.velocityY = 0;
+            mario.isJumping = false;
+            score = 0;
+            resetWorld();
+            // Change background color by level
+            canvas.style.background = levels[currentLevel].bg;
+        }
+
+        // Replace earlier initialization
+        resetWorld(); // create initial world
+        canvas.style.background = levels[currentLevel].bg;
+
+        /******** Spawning Helpers reused from earlier code ********/
+        function spawnCloud(x) {
+            clouds.push({
+                x,
+                y: rand(30, 120),
+                scale: rand(0.5, 1.5)
+            });
+        }
+
+        function spawnPlatform() {
+            const gap = rand(100, 250);
+            const width = rand(120, 220);
+            const y = rand(180, 280);
+            const x = lastPlatformX + gap;
+            platforms.push({ x, y, width, height: 20 });
+
+            // Occasionally spawn coins on the new platform
+            const coinCount = Math.floor(rand(1, 4));
+            for (let i = 0; i < coinCount; i++) {
+                coins.push({
+                    x: x + rand(10, width - 10),
+                    y: y - 25,
+                    radius: 8,
+                    collected: false
+                });
+            }
+
+            // Spawn clouds for parallax look
+            if (Math.random() < 0.6) spawnCloud(x);
+
+            lastPlatformX = x + width;
+        }
+
+        function spawnSpike() {
+            const gap = rand(150, 350);
+            const size = 24;
+            const x = lastSpikeX + gap;
+            spikes.push({ x, y: GROUND_Y - size, width: size, height: size });
+            lastSpikeX = x;
+        }
+
+        // Spawn pipes across level
+        function spawnPipesForLevel(levelLen) {
+            const spacing = 700; // distance between pipe pairs
+            let current = 400;
+            while (current < levelLen - 200) {
+                spawnPipePair(current, current + spacing/2);
+                current += spacing;
+            }
+        }
+
+        /******************** END WORLD DATA ********************/
+
+        // Input handling
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (showWin && (e.key === 'r' || e.key === 'R')) {
+                currentLevel = 0;
+                showWin = false;
+                resetGame();
+            }
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Helper to see if any jump key is pressed
+        function jumpKeyDown() {
+            return keys['ArrowUp'] || keys[' '] || keys['Space'] || keys['w'] || keys['W'];
+        }
+
+        // Pipe image
+        const pipeImg = new Image();
+        pipeImg.src = 'pipe.png';
+
+        // Audio
+        const bgm = document.getElementById('bgm');
+        const pipeSound = document.getElementById('pipeSound');
+        bgm.volume = 0.5;
+        bgm.play().catch(()=>{});
+
+        // Ensure bgm starts after user interaction if autoplay blocked
+        function unlockAudio() {
+            bgm.play().catch(()=>{});
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
+        }
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('keydown', unlockAudio);
+
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            /********** CAMERA **********/
+            // Follow Mario horizontally
+            cameraX = Math.max(0, mario.x - canvas.width * 0.3);
+
+            // Spawn new platforms/coins as we move forward
+            const levelLen = levels[currentLevel].length;
+            while (lastPlatformX < Math.min(levelLen, cameraX + canvas.width * 2)) {
+                spawnPlatform();
+            }
+            // Spawn spikes ahead
+            while (lastSpikeX < Math.min(levelLen, cameraX + canvas.width * 2)) {
+                spawnSpike();
+            }
+
+            /********** UPDATE **********/
+            // Handle input
+            if (keys['ArrowLeft']) {
+                mario.x -= mario.speed;
+                mario.direction = -1;
+                mario.isMoving = true;
+            } else if (keys['ArrowRight']) {
+                mario.x += mario.speed;
+                mario.direction = 1;
+                mario.isMoving = true;
+            } else {
+                mario.isMoving = false;
+            }
+
+            if (jumpKeyDown() && !mario.isJumping) {
+                mario.velocityY = -mario.jumpForce;
+                mario.isJumping = true;
+            }
+
+            // Update Mario's animation frame
+            if (mario.isMoving) {
+                mario.animationTimer++;
+                if (mario.animationTimer >= mario.animationSpeed) {
+                    mario.animationTimer = 0;
+                    mario.currentFrame = (mario.currentFrame + 1) % mario.frameCount;
+                }
+            } else {
+                mario.currentFrame = 0; // Standing frame
+            }
+
+            // Apply gravity
+            mario.velocityY += mario.gravity;
+            mario.y += mario.velocityY;
+
+            // Ground collision
+            if (mario.y + mario.height >= GROUND_Y) {
+                mario.y = GROUND_Y - mario.height;
+                mario.velocityY = 0;
+                mario.isJumping = false;
+            }
+
+            // Check collisions with floating platforms
+            for (const platform of platforms) {
+                if (mario.x + mario.width > platform.x &&
+                    mario.x < platform.x + platform.width &&
+                    mario.y + mario.height > platform.y &&
+                    mario.y + mario.height < platform.y + platform.height + mario.velocityY) {
+                    mario.y = platform.y - mario.height;
+                    mario.velocityY = 0;
+                    mario.isJumping = false;
+                }
+            }
+
+            // Coin collection
+            for (const coin of coins) {
+                if (!coin.collected &&
+                    mario.x < coin.x + coin.radius && mario.x + mario.width > coin.x - coin.radius &&
+                    mario.y < coin.y + coin.radius && mario.y + mario.height > coin.y - coin.radius) {
+                    coin.collected = true;
+                    score += 10;
+                }
+            }
+
+            // Spike collision (death)
+            for (const spike of spikes) {
+                if (mario.x + mario.width > spike.x &&
+                    mario.x < spike.x + spike.width &&
+                    mario.y + mario.height > spike.y &&
+                    mario.y < spike.y + spike.height) {
+                    resetGame();
+                }
+            }
+
+            // Do not allow Mario to go backwards beyond camera start
+            if (mario.x < cameraX) mario.x = cameraX;
+
+            /********** DRAW **********/
+
+            // Sky background already cleared to blue via canvas background CSS.
+
+            // Draw parallax clouds (they move slower)
+            ctx.fillStyle = '#ffffff';
+            clouds.forEach(cld => {
+                const cx = cld.x - cameraX * 0.5; // parallax factor
+                const cy = cld.y;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 20 * cld.scale, 0, Math.PI * 2);
+                ctx.arc(cx + 25 * cld.scale, cy + 5 * cld.scale, 15 * cld.scale, 0, Math.PI * 2);
+                ctx.arc(cx - 25 * cld.scale, cy + 5 * cld.scale, 15 * cld.scale, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            });
+
+            // Draw infinite ground as a repeating stripe
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, GROUND_Y - cameraX * 0 + 0, canvas.width, canvas.height - GROUND_Y);
+
+            // Draw floating platforms
+            ctx.fillStyle = '#8B4513';
+            platforms.forEach(platform => {
+                const dx = platform.x - cameraX;
+                if (dx + platform.width < 0 || dx > canvas.width) return; // skip offscreen
+                ctx.fillRect(dx, platform.y, platform.width, platform.height);
+            });
+
+            // Draw spikes
+            ctx.fillStyle = '#666666';
+            spikes.forEach(spike => {
+                const dx = spike.x - cameraX;
+                if (dx + spike.width < 0 || dx > canvas.width) return;
+                ctx.beginPath();
+                ctx.moveTo(dx, spike.y + spike.height);
+                ctx.lineTo(dx + spike.width / 2, spike.y);
+                ctx.lineTo(dx + spike.width, spike.y + spike.height);
+                ctx.closePath();
+                ctx.fill();
+            });
+
+            // Draw coins
+            coins.forEach(coin => {
+                if (coin.collected) return;
+                const dx = coin.x - cameraX;
+                if (dx + coin.radius < 0 || dx - coin.radius > canvas.width) return;
+                ctx.fillStyle = '#FFD700';
+                ctx.beginPath();
+                ctx.arc(dx, coin.y, coin.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#FFA500';
+                ctx.stroke();
+            });
+
+            // Draw pipes on ground
+            pipes.forEach(pipe => {
+                const dx = pipe.x - cameraX;
+                if (dx + pipe.width < 0 || dx > canvas.width) return;
+                if (pipeImg.complete && pipeImg.naturalWidth > 0) {
+                    ctx.drawImage(pipeImg, dx, pipe.y, pipe.width, pipe.height);
+                } else {
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(dx, pipe.y, pipe.width, pipe.height);
+                    ctx.fillStyle = '#006400';
+                    ctx.fillRect(dx, pipe.y, pipe.width, 10);
+                }
+            });
+
+            // Draw Mario sprite (consider camera)
+            if (mario.spriteSheet.complete) { // Check if image is loaded
+                ctx.save(); // Save current context state
+                if (mario.direction === -1) {
+                    // Flip sprite if moving left
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(
+                        mario.spriteSheet,
+                        mario.currentFrame * mario.frameWidth, // sx (source x)
+                        0,
+                        mario.frameWidth,
+                        mario.frameHeight,
+                        -(mario.x - cameraX + mario.width),  // adjust for camera and flip
+                        mario.y,
+                        mario.width,
+                        mario.height
+                    );
+                } else {
+                    ctx.drawImage(
+                        mario.spriteSheet,
+                        mario.currentFrame * mario.frameWidth,
+                        0,
+                        mario.frameWidth,
+                        mario.frameHeight,
+                        mario.x - cameraX,
+                        mario.y,
+                        mario.width,
+                        mario.height
+                    );
+                }
+                ctx.restore(); // Restore context state
+            }
+
+            // Draw UI (score)
+            ctx.fillStyle = 'white';
+            ctx.font = '20px Arial';
+            ctx.fillText(`Score: ${score}`, 20, 30);
+
+            /********** Mini-map **********/
+            ctx.save();
+            const mmX = canvas.width - MINIMAP_W - 10;
+            const mmY = 10;
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(mmX, mmY, MINIMAP_W, MINIMAP_H);
+
+            // World scale
+            const levelLenPx = levels[currentLevel].length;
+            const scale = MINIMAP_W / levelLenPx;
+
+            // Pipes
+            pipes.forEach(pipe => {
+                const x = mmX + pipe.x * scale;
+                if (pipeImg.complete && pipeImg.naturalWidth > 0) {
+                    ctx.drawImage(pipeImg, x, mmY + MINIMAP_H/2, pipe.width, pipe.height);
+                } else {
+                    ctx.fillStyle = '#228B22';
+                    ctx.fillRect(x, mmY + MINIMAP_H/2, pipe.width, pipe.height);
+                    ctx.fillStyle = '#006400';
+                    ctx.fillRect(x, mmY + MINIMAP_H/2, pipe.width, 10);
+                }
+            });
+            // Flag
+            ctx.fillStyle = 'yellow';
+            const flagPos = mmX + levels[currentLevel].flagX * scale;
+            ctx.fillRect(flagPos, mmY + 5, 4, MINIMAP_H -10);
+            ctx.beginPath();
+            ctx.moveTo(flagPos+4, mmY + 5);
+            ctx.lineTo(flagPos+15, mmY + 10);
+            ctx.lineTo(flagPos+4, mmY + 15);
+            ctx.closePath();
+            ctx.fill();
+
+            // Mario
+            ctx.fillStyle = 'red';
+            const marioDot = mmX + mario.x * scale;
+            ctx.fillRect(marioDot-2, mmY + MINIMAP_H/2 -2, 4,4);
+            ctx.restore();
+
+            // Win overlay
+            if (showWin) {
+                ctx.save();
+                ctx.globalAlpha = 0.85;
+                ctx.fillStyle = '#222';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = 'white';
+                ctx.font = '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Congratulations!', canvas.width/2, canvas.height/2 - 30);
+                ctx.font = '28px Arial';
+                ctx.fillText('You Win!', canvas.width/2, canvas.height/2 + 20);
+                ctx.font = '20px Arial';
+                ctx.fillText('Press R to Restart', canvas.width/2, canvas.height/2 + 60);
+                ctx.restore();
+                return;
+            }
+
+            // Request next frame
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
