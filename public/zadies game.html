@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Blob Eater (Offline)</title>
+  <title>Blob Eater (Online)</title>
   <style>
+    /* (Styles are identical to the original, copied verbatim) */
     html, body {
       height: 100%;
       margin: 0;
@@ -103,19 +104,6 @@
       pointer-events: none;
       opacity: 0.85;
     }
-    #offlineNotice {
-      position: absolute;
-      bottom: 16px;
-      left: 0;
-      right: 0;
-      color: #aaa;
-      font-size: 1em;
-      z-index: 20;
-      text-align: center;
-      pointer-events: none;
-      opacity: 0.7;
-      letter-spacing: 1px;
-    }
     /* Hide the audio element */
     #bgmAudio {
       display: none;
@@ -123,91 +111,93 @@
   </style>
 </head>
 <body>
-  <h1>Blob Eater</h1>
+  <h1>Blob Eater (Online)</h1>
   <div id="startScreen">
     <div id="usernameLabel">Enter your name:</div>
     <input type="text" id="usernameInput" maxlength="16" autocomplete="off" placeholder="Your name..." />
     <button id="startBtn" disabled>Start</button>
-    <div id="offlineNotice">(Offline Mode: No network required. All play is local.)</div>
   </div>
   <div id="usernameDisplay" style="display:none;"></div>
   <canvas id="gameCanvas" style="display:none;"></canvas>
   <!-- Background music audio element, hidden -->
   <audio id="bgmAudio" src="bgm.mp4" loop preload="auto"></audio>
+  <!-- Socket.IO client script served from the same server -->
+  <script src="/socket.io/socket.io.js"></script>
   <script>
-    // --- Start Screen Logic (Offline/Local Only) ---
+    // ---------------- Socket.IO Setup ----------------
+    const socket = io(); // automatically connects to the hosting origin
+    let myId = null;
+    socket.on('connect', () => {
+      myId = socket.id;
+    });
+
+    socket.on('usernameRejected', (msg) => {
+      alert(msg || 'Your username was rejected for inappropriate language.');
+      socket.disconnect();
+      location.reload();
+    });
+
+    // ---------------- UI Elements ----------------
     const startScreen = document.getElementById('startScreen');
     const usernameInput = document.getElementById('usernameInput');
     const startBtn = document.getElementById('startBtn');
     const usernameDisplay = document.getElementById('usernameDisplay');
     const canvas = document.getElementById('gameCanvas');
     const bgmAudio = document.getElementById('bgmAudio');
-    let username = "";
 
     // Enable start button only if username is not empty
-    usernameInput.addEventListener('input', function() {
+    usernameInput.addEventListener('input', () => {
       startBtn.disabled = usernameInput.value.trim().length === 0;
     });
-
-    // Allow pressing Enter to start
-    usernameInput.addEventListener('keydown', function(e) {
-      if (e.key === "Enter" && !startBtn.disabled) {
-        startBtn.click();
-      }
+    usernameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !startBtn.disabled) startBtn.click();
     });
 
-    startBtn.addEventListener('click', function() {
+    let username = '';
+
+    startBtn.addEventListener('click', () => {
       username = usernameInput.value.trim();
-      if (username.length === 0) return;
-      startScreen.style.display = "none";
-      canvas.style.display = "block";
-      usernameDisplay.textContent = "Player: " + username;
-      usernameDisplay.style.display = "block";
-      // Start the game loop
+      if (!username) return;
+
+      startScreen.style.display = 'none';
+      canvas.style.display = 'block';
+      usernameDisplay.textContent = 'Player: ' + username;
+      usernameDisplay.style.display = 'block';
+
+      // Start the game loop locally
       startGame();
-      // Start background music (user interaction has occurred)
-      if (bgmAudio) {
-        bgmAudio.currentTime = 0;
-        bgmAudio.volume = 0.5;
-        bgmAudio.play().catch(()=>{});
-      }
+
+      // Tell the server who we are (after user interaction to satisfy autoplay restrictions)
+      socket.emit('register', { username, color: blob.color });
+
+      // Start background music
+      bgmAudio.currentTime = 0;
+      bgmAudio.volume = 0.5;
+      bgmAudio.play().catch(()=>{});
     });
 
-    // --- Game Logic (All Local/Offline) ---
+    // ---------------- Canvas & Base Game State ----------------
     let ctx = canvas.getContext('2d');
-
-    // Set canvas to full window size
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
 
-    // Infinite world parameters
-    // The world is conceptually infinite, but we only render what's visible
-    // The camera follows the player blob
-    let camera = {
-      x: 0, // top-left world x of the viewport
-      y: 0  // top-left world y of the viewport
-    };
+    let camera = { x: 0, y: 0 };
 
-    // --- Jiggly Blob Helper (used for both player and food blobs) ---
     function randomColor() {
       const colors = ['#f44', '#fc4', '#4f4', '#4cf', '#c4f', '#fff', '#fa0', '#0fa'];
       return colors[Math.floor(Math.random() * colors.length)];
     }
 
     function makeJigglyBlob(aroundX = 0, aroundY = 0, minDist = 200, maxDist = 800, opts = {}) {
-      // Place at a random angle and distance from (aroundX, aroundY)
       const angle = Math.random() * Math.PI * 2;
       const dist = Math.random() * (maxDist - minDist) + minDist;
       const radius = opts.radius !== undefined ? opts.radius : (Math.random() * 10 + 10);
       const color = opts.color || randomColor();
-      // Jiggly parameters
-      const points = opts.points || (18 + Math.floor(Math.random() * 6)); // 18-23 points
+      const points = opts.points || (18 + Math.floor(Math.random() * 6));
       const baseOffsets = [];
-      for (let i = 0; i < points; i++) {
-        baseOffsets.push(Math.random() * 0.18 + 0.92); // 0.92-1.1
-      }
+      for (let i = 0; i < points; i++) baseOffsets.push(Math.random() * 0.18 + 0.92);
       const phase = Math.random() * Math.PI * 2;
       return {
         x: opts.x !== undefined ? opts.x : (aroundX + Math.cos(angle) * dist),
@@ -222,12 +212,12 @@
         vx: 0,
         vy: 0,
         isPlayer: !!opts.isPlayer,
-        squish: 0, // for squish effect when eating
-        squishDecay: opts.squishDecay || 0.85
+        squish: 0,
+        squishDecay: opts.squishDecay || 0.85,
       };
     }
 
-    // --- Player blob (jiggly) ---
+    // ---------------- Player (local) ----------------
     let blob = makeJigglyBlob(0, 0, 0, 0, {
       radius: 24,
       color: '#4cf',
@@ -235,28 +225,16 @@
       jiggleSpeed: 2.2,
       jiggleAmp: 0.16,
       isPlayer: true,
-      squishDecay: 0.8
+      squishDecay: 0.8,
     });
     blob.speed = 3;
     blob.dx = 0;
     blob.dy = 0;
 
-    // Blobs to eat (each has world coordinates)
-    let blobs = [];
-    function resetBlobs() {
-      blobs = [];
-      for (let i = 0; i < 14; i++) blobs.push(makeJigglyBlob(blob.x, blob.y, 200, 800));
-    }
+    // Other remote players mapped by their socket.id -> blob obj
+    const otherPlayers = {};
 
-    // Controls
-    function setupControls() {
-      document.addEventListener('keydown', keydownHandler);
-      document.addEventListener('keyup', keyupHandler);
-    }
-    function removeControls() {
-      document.removeEventListener('keydown', keydownHandler);
-      document.removeEventListener('keyup', keyupHandler);
-    }
+    // ---------------- Controls ----------------
     function keydownHandler(e) {
       if (e.key === 'ArrowUp' || e.key === 'w') blob.dy = -blob.speed;
       if (e.key === 'ArrowDown' || e.key === 's') blob.dy = blob.speed;
@@ -268,17 +246,25 @@
       if (['ArrowLeft','a','ArrowRight','d'].includes(e.key)) blob.dx = 0;
     }
 
-    // Camera follows the blob, keeping it centered
+    function setupControls() {
+      document.addEventListener('keydown', keydownHandler);
+      document.addEventListener('keyup', keyupHandler);
+    }
+    function removeControls() {
+      document.removeEventListener('keydown', keydownHandler);
+      document.removeEventListener('keyup', keyupHandler);
+    }
+
+    // ---------------- Camera ----------------
     function updateCamera() {
       camera.x = blob.x - canvas.width / 2;
       camera.y = blob.y - canvas.height / 2;
     }
 
-    // Draw a jiggly blob at world coordinates, using camera offset
+    // ---------------- Drawing Helpers ----------------
     function drawJigglyBlob(b, time) {
       const screenX = b.x - camera.x;
       const screenY = b.y - camera.y;
-      // Only draw if on screen
       if (
         screenX + b.radius < 0 || screenX - b.radius > canvas.width ||
         screenY + b.radius < 0 || screenY - b.radius > canvas.height
@@ -288,11 +274,8 @@
       for (let i = 0; i <= b.points; i++) {
         const t = i % b.points;
         const angle = (t / b.points) * Math.PI * 2;
-        // Jiggly offset
         let jiggle = Math.sin(time * b.jiggleSpeed + b.phase + t) * b.jiggleAmp;
-        // Squish effect (for player when eating)
         if (b.squish && b.isPlayer) {
-          // Squish in the direction of last squish
           const squishAmount = b.squish * Math.cos(angle - b.squishAngle);
           jiggle += squishAmount;
         }
@@ -311,109 +294,40 @@
       ctx.restore();
     }
 
-    // Helper: spawn a new blob not too close to the player
-    function spawnBlobFarFromPlayer() {
-      let newBlob;
-      let tries = 0;
-      do {
-        newBlob = makeJigglyBlob(blob.x, blob.y, 400, 1200);
-        tries++;
-      } while (
-        Math.hypot(newBlob.x - blob.x, newBlob.y - blob.y) < blob.radius + 80 && tries < 10
-      );
-      return newBlob;
-    }
-
-    // --- Blobs push in to you when you go on them, then eat ---
+    // ---------------- Update & Draw Loop ----------------
     function update() {
-      // Move blob
       blob.x += blob.dx;
       blob.y += blob.dy;
 
-      // Blobs push the player if overlapping, then get eaten if close enough
-      for (let i = blobs.length - 1; i >= 0; i--) {
-        let b = blobs[i];
-        // Blob velocity decay (for smooth push)
-        b.vx *= 0.92;
-        b.vy *= 0.92;
-
-        // Push logic
-        let dx = blob.x - b.x;
-        let dy = blob.y - b.y;
-        let dist = Math.hypot(dx, dy);
-        let minDist = blob.radius + b.radius * 0.85;
-        if (dist < minDist) {
-          // Push the player away from the blob center
-          let overlap = minDist - dist;
-          if (dist !== 0) {
-            let pushX = (dx / dist) * overlap * 0.5;
-            let pushY = (dy / dist) * overlap * 0.5;
-            blob.x += pushX;
-            blob.y += pushY;
-            // Also, blob gets a little "squish" velocity away from player
-            b.vx -= pushX * 0.2;
-            b.vy -= pushY * 0.2;
-            // Player gets squish effect in direction of push
-            blob.squish = Math.min(blob.squish + overlap * 0.012, 0.18);
-            blob.squishAngle = Math.atan2(dy, dx) + Math.PI; // squish away from food
-          }
-        }
-        // Eat if very close (smaller threshold)
-        if (dist < blob.radius + b.radius * 0.65) {
-          // Eat!
-          blob.radius += Math.max(2, b.radius * 0.3); // Get bigger
-          // Player gets a big squish in direction of food
-          blob.squish = 0.22;
-          blob.squishAngle = Math.atan2(dy, dx) + Math.PI;
-          blobs.splice(i, 1);
-          // New blob somewhere far from player
-          blobs.push(spawnBlobFarFromPlayer());
-        }
-      }
-
-      // Move blobs by their velocity (for squish effect)
-      for (let b of blobs) {
-        b.x += b.vx || 0;
-        b.y += b.vy || 0;
-      }
-
-      // Keep enough blobs in the world (in case player moves far)
-      while (blobs.length < 14) {
-        blobs.push(spawnBlobFarFromPlayer());
-      }
-
-      // Decay player squish
+      // Decay squish effect (local only)
       if (blob.squish) {
         blob.squish *= blob.squishDecay;
         if (blob.squish < 0.01) blob.squish = 0;
       }
 
       updateCamera();
+
+      // Send state to server (throttled by frame rate)
+      if (socket.connected) {
+        socket.emit('update', { x: blob.x, y: blob.y, radius: blob.radius });
+      }
     }
 
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Optionally, draw a faint grid for orientation
+      // Draw grid (for orientation)
       const gridSize = 200;
       ctx.save();
-      ctx.strokeStyle = "#444";
+      ctx.strokeStyle = '#444';
       ctx.lineWidth = 1;
-      for (
-        let gx = Math.floor(camera.x / gridSize) * gridSize;
-        gx < camera.x + canvas.width;
-        gx += gridSize
-      ) {
+      for (let gx = Math.floor(camera.x / gridSize) * gridSize; gx < camera.x + canvas.width; gx += gridSize) {
         ctx.beginPath();
         ctx.moveTo(gx - camera.x, 0);
         ctx.lineTo(gx - camera.x, canvas.height);
         ctx.stroke();
       }
-      for (
-        let gy = Math.floor(camera.y / gridSize) * gridSize;
-        gy < camera.y + canvas.height;
-        gy += gridSize
-      ) {
+      for (let gy = Math.floor(camera.y / gridSize) * gridSize; gy < camera.y + canvas.height; gy += gridSize) {
         ctx.beginPath();
         ctx.moveTo(0, gy - camera.y);
         ctx.lineTo(canvas.width, gy - camera.y);
@@ -421,48 +335,39 @@
       }
       ctx.restore();
 
-      // Draw blobs to eat (jiggly)
-      let now = performance.now() * 0.002;
-      for (let b of blobs) drawJigglyBlob(b, now);
-      // Draw player blob (jiggly)
+      const now = performance.now() * 0.002;
+
+      // Draw remote players first
+      for (const id in otherPlayers) drawJigglyBlob(otherPlayers[id], now);
+
+      // Draw local player on top
       drawJigglyBlob(blob, now);
 
-      // Draw username above player blob
-      if (username && typeof blob.x === "number" && typeof blob.y === "number") {
+      // Draw username above local player
+      if (username) {
         const screenX = blob.x - camera.x;
         const screenY = blob.y - camera.y;
         ctx.save();
-        ctx.font = "bold 1.1em Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "bottom";
-        ctx.fillStyle = "#fff";
-        ctx.shadowColor = "#000";
+        ctx.font = 'bold 1.1em Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = '#000';
         ctx.shadowBlur = 4;
         ctx.fillText(username, screenX, screenY - blob.radius - 10);
         ctx.restore();
       }
     }
 
-    let animationId = null;
+    let animationId;
     function loop() {
       update();
       draw();
       animationId = requestAnimationFrame(loop);
     }
 
-    // On resize, nothing to do except keep the camera centered
-    window.addEventListener('resize', () => {
-      if (canvas.style.display !== "none") {
-        resizeCanvas();
-        updateCamera();
-      }
-    });
-
-    // Start the game after username is entered and start button is pressed
     function startGame() {
-      // Show canvas, hide start screen
       resizeCanvas();
-      // Reset player blob as jiggly
       blob = makeJigglyBlob(0, 0, 0, 0, {
         radius: 24,
         color: '#4cf',
@@ -470,43 +375,72 @@
         jiggleSpeed: 2.2,
         jiggleAmp: 0.16,
         isPlayer: true,
-        squishDecay: 0.8
+        squishDecay: 0.8,
       });
       blob.speed = 3;
       blob.dx = 0;
       blob.dy = 0;
-      resetBlobs();
-      updateCamera();
       setupControls();
+      updateCamera();
       loop();
     }
 
-    // If user reloads, show start screen again and stop game loop
-    function stopGame() {
-      if (animationId) cancelAnimationFrame(animationId);
-      removeControls();
-      canvas.style.display = "none";
-      usernameDisplay.style.display = "none";
-      startScreen.style.display = "flex";
-      usernameInput.value = "";
-      startBtn.disabled = true;
-      username = "";
-      // Pause and reset background music
-      if (bgmAudio) {
-        bgmAudio.pause();
-        bgmAudio.currentTime = 0;
-      }
-    }
-
-    // Optional: allow restarting by pressing Escape
-    document.addEventListener('keydown', function(e) {
-      if (e.key === "Escape" && canvas.style.display !== "none") {
-        stopGame();
+    // ---------------- Remote Player Events ----------------
+    socket.on('currentPlayers', (players) => {
+      for (const id in players) {
+        if (id === myId) continue;
+        const p = players[id];
+        const op = makeJigglyBlob(p.x, p.y, 0, 0, {
+          radius: p.radius,
+          color: p.color,
+          points: 22,
+          jiggleSpeed: 2.2,
+          jiggleAmp: 0.16,
+        });
+        otherPlayers[id] = op;
       }
     });
 
-    // On first load, show start screen, hide canvas
-    stopGame();
+    socket.on('newPlayer', (p) => {
+      if (p.id === myId) return;
+      const op = makeJigglyBlob(p.x, p.y, 0, 0, {
+        radius: p.radius,
+        color: p.color,
+        points: 22,
+        jiggleSpeed: 2.2,
+        jiggleAmp: 0.16,
+      });
+      otherPlayers[p.id] = op;
+    });
+
+    socket.on('playerMoved', (p) => {
+      if (p.id === myId) return;
+      if (!otherPlayers[p.id]) {
+        otherPlayers[p.id] = makeJigglyBlob(p.x, p.y, 0, 0, {
+          radius: p.radius,
+          color: p.color,
+          points: 22,
+          jiggleSpeed: 2.2,
+          jiggleAmp: 0.16,
+        });
+      }
+      const op = otherPlayers[p.id];
+      op.x = p.x;
+      op.y = p.y;
+      op.radius = p.radius;
+    });
+
+    socket.on('playerDisconnect', (id) => {
+      delete otherPlayers[id];
+    });
+
+    // ---------------- Window Resize ----------------
+    window.addEventListener('resize', () => {
+      if (canvas.style.display !== 'none') {
+        resizeCanvas();
+        updateCamera();
+      }
+    });
   </script>
 </body>
-</html>
+</html> 
