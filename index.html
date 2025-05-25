@@ -63,6 +63,75 @@
             transform: none;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+
+        /* Cookie Banner Styles */
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            display: none;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .cookie-banner button {
+            background: #8b0000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .cookie-banner button:hover {
+            background: #ff0000;
+            transform: translateY(-2px);
+        }
+
+        /* Cookie Settings Panel */
+        .cookie-settings {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            display: none;
+            z-index: 1001;
+            min-width: 300px;
+        }
+
+        .cookie-settings h3 {
+            margin-top: 0;
+            color: #ff0000;
+        }
+
+        .cookie-settings label {
+            display: block;
+            margin: 10px 0;
+        }
+
+        .cookie-settings button {
+            background: #8b0000;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .cookie-settings button:hover {
+            background: #ff0000;
+        }
     </style>
 </head>
 <body>
@@ -91,7 +160,7 @@
 
         <!-- 3D Games -->
         <a href="3d rayc.html" class="game-link">3d game</a>
-        <a href="grants-game.html" class="game-link">4d grow Adventure</a>
+        <a href="grants game.html" class="game-link">4d grow Adventure</a>
 
         <!-- Collection Games -->
         <a href="e collect.html" class="game-link">easy collect the dots</a>
@@ -115,21 +184,173 @@
         <a href="working.html" class="game-link">Peaceful Sparkle Garden</a>
         <a href="zadies game.html" class="game-link">blob eater</a>
 
+        <!-- Additional Games -->
+        <a href="avatar.html" class="game-link">Avatar</a>
+        <a href="coin.html" class="game-link">Coin Game</a>
+        <a href="dungens.html" class="game-link">Dungeons</a>
+        <a href="mine.html" class="game-link">Mine Game</a>
+        <a href="neon.html" class="game-link">Neon Game</a>
+        <a href="ping pong.html" class="game-link">Ping Pong</a> 
+
         <!-- Coming Soon Slots -->
         <a class="game-link empty-slot">Coming Soon</a>
         <a class="game-link empty-slot">Coming Soon</a>
         <a class="game-link empty-slot">Coming Soon</a>
         <a class="game-link empty-slot">Coming Soon</a>
         <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
     </div>
+
+    <!-- Cookie Banner -->
+    <div id="cookieBanner" class="cookie-banner">
+        <p>We use cookies to enhance your gaming experience and save your progress.</p>
+        <button onclick="acceptAllCookies()">Accept All</button>
+        <button onclick="showCookieSettings()">Customize</button>
+    </div>
+
+    <!-- Cookie Settings Panel -->
+    <div id="cookieSettings" class="cookie-settings">
+        <h3>Cookie Settings</h3>
+        <label>
+            <input type="checkbox" id="essentialCookies" checked disabled>
+            Essential Cookies (Required)
+        </label>
+        <label>
+            <input type="checkbox" id="gameProgressCookies">
+            Game Progress
+        </label>
+        <label>
+            <input type="checkbox" id="preferenceCookies">
+            Game Preferences
+        </label>
+        <button onclick="saveCookieSettings()">Save Settings</button>
+        <button onclick="closeCookieSettings()">Close</button>
+    </div>
+
+    <script>
+        // Cookie Management System
+        const COOKIE_PREFIX = 'carter_games_';
+        const COOKIE_EXPIRY_DAYS = 365;
+
+        // Cookie Types
+        const COOKIE_TYPES = {
+            ESSENTIAL: 'essential',
+            GAME_PROGRESS: 'game_progress',
+            PREFERENCES: 'preferences'
+        };
+
+        // Initialize cookies
+        function initializeCookies() {
+            if (!getCookie('cookie_consent')) {
+                document.getElementById('cookieBanner').style.display = 'block';
+            }
+        }
+
+        // Set a cookie
+        function setCookie(name, value, type) {
+            if (!isCookieTypeAllowed(type)) return;
+
+            const date = new Date();
+            date.setTime(date.getTime() + (COOKIE_EXPIRY_DAYS * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = COOKIE_PREFIX + name + "=" + value + ";" + expires + ";path=/";
+        }
+
+        // Get a cookie
+        function getCookie(name) {
+            const fullName = COOKIE_PREFIX + name;
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(fullName + '=')) {
+                    return cookie.substring(fullName.length + 1);
+                }
+            }
+            return null;
+        }
+
+        // Delete a cookie
+        function deleteCookie(name) {
+            document.cookie = COOKIE_PREFIX + name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        }
+
+        // Check if cookie type is allowed
+        function isCookieTypeAllowed(type) {
+            if (type === COOKIE_TYPES.ESSENTIAL) return true;
+            
+            const consent = getCookie('cookie_consent');
+            if (!consent) return false;
+
+            const settings = JSON.parse(consent);
+            return settings[type] === true;
+        }
+
+        // Accept all cookies
+        function acceptAllCookies() {
+            const settings = {
+                [COOKIE_TYPES.ESSENTIAL]: true,
+                [COOKIE_TYPES.GAME_PROGRESS]: true,
+                [COOKIE_TYPES.PREFERENCES]: true
+            };
+            setCookie('cookie_consent', JSON.stringify(settings), COOKIE_TYPES.ESSENTIAL);
+            document.getElementById('cookieBanner').style.display = 'none';
+        }
+
+        // Show cookie settings
+        function showCookieSettings() {
+            document.getElementById('cookieSettings').style.display = 'block';
+            const consent = getCookie('cookie_consent');
+            if (consent) {
+                const settings = JSON.parse(consent);
+                document.getElementById('gameProgressCookies').checked = settings[COOKIE_TYPES.GAME_PROGRESS];
+                document.getElementById('preferenceCookies').checked = settings[COOKIE_TYPES.PREFERENCES];
+            }
+        }
+
+        // Save cookie settings
+        function saveCookieSettings() {
+            const settings = {
+                [COOKIE_TYPES.ESSENTIAL]: true,
+                [COOKIE_TYPES.GAME_PROGRESS]: document.getElementById('gameProgressCookies').checked,
+                [COOKIE_TYPES.PREFERENCES]: document.getElementById('preferenceCookies').checked
+            };
+            setCookie('cookie_consent', JSON.stringify(settings), COOKIE_TYPES.ESSENTIAL);
+            document.getElementById('cookieSettings').style.display = 'none';
+            document.getElementById('cookieBanner').style.display = 'none';
+        }
+
+        // Close cookie settings
+        function closeCookieSettings() {
+            document.getElementById('cookieSettings').style.display = 'none';
+        }
+
+        // Game Progress Functions
+        function saveGameProgress(gameId, progress) {
+            if (!isCookieTypeAllowed(COOKIE_TYPES.GAME_PROGRESS)) return;
+            setCookie(`game_${gameId}_progress`, JSON.stringify(progress), COOKIE_TYPES.GAME_PROGRESS);
+        }
+
+        function getGameProgress(gameId) {
+            if (!isCookieTypeAllowed(COOKIE_TYPES.GAME_PROGRESS)) return null;
+            const progress = getCookie(`game_${gameId}_progress`);
+            return progress ? JSON.parse(progress) : null;
+        }
+
+        // Game Preferences Functions
+        function saveGamePreferences(gameId, preferences) {
+            if (!isCookieTypeAllowed(COOKIE_TYPES.PREFERENCES)) return;
+            setCookie(`game_${gameId}_preferences`, JSON.stringify(preferences), COOKIE_TYPES.PREFERENCES);
+        }
+
+        function getGamePreferences(gameId) {
+            if (!isCookieTypeAllowed(COOKIE_TYPES.PREFERENCES)) return null;
+            const preferences = getCookie(`game_${gameId}_preferences`);
+            return preferences ? JSON.parse(preferences) : null;
+        }
+
+        // Initialize cookies when page loads
+        window.onload = function() {
+            initializeCookies();
+        };
+    </script>
 </body>
 </html>
