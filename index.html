@@ -3,354 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carter's Games</title>
+    <title>Cpenguins</title>
     <style>
-        html, body {
+        * {
             margin: 0;
             padding: 0;
-            min-height: 100%;
-            width: 100%;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         body {
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
             min-height: 100vh;
-            min-width: 100vw;
-            background: url('background.png') no-repeat center center fixed;
-            background-size: cover;
-            color: white;
-            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 40px 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .games-container {
-            display: flex;
-            flex-wrap: wrap;
             justify-content: center;
-            max-width: 1200px;
-            gap: 20px;
-            margin-bottom: 40px;
+            text-align: center;
+            padding: 2rem;
         }
-        .game-link {
-            margin: 10px;
-            padding: 20px;
-            background: rgba(139, 0, 0, 0.7); /* Dark red with transparency */
+
+        .container {
+            max-width: 800px;
+            background-color: white;
+            padding: 3rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .nav-links a {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background-color: #3498db;
             color: white;
             text-decoration: none;
-            font-size: 24px;
-            border-radius: 10px;
-            transition: all 0.3s;
-            flex: 1;
-            min-width: 200px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        .game-link:hover {
-            background: rgba(255, 0, 0, 0.8); /* Lighter red with transparency */
-            transform: translateY(-2px);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
-        }
-        .empty-slot {
-            background: rgba(139, 0, 0, 0.4); /* More transparent for empty slots */
-            cursor: default;
-        }
-        .empty-slot:hover {
-            background: rgba(139, 0, 0, 0.4);
-            transform: none;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            transition: background-color 0.3s;
         }
 
-        /* Cookie Banner Styles */
-        .cookie-banner {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            padding: 20px;
-            display: none;
-            z-index: 1000;
-            text-align: center;
+        .nav-links a:hover {
+            background-color: #2980b9;
         }
 
-        .cookie-banner button {
-            background: #8b0000;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
+        .penguin-emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
         }
 
-        .cookie-banner button:hover {
-            background: #ff0000;
-            transform: translateY(-2px);
-        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 2rem;
+            }
 
-        /* Cookie Settings Panel */
-        .cookie-settings {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-            display: none;
-            z-index: 1001;
-            min-width: 300px;
-        }
-
-        .cookie-settings h3 {
-            margin-top: 0;
-            color: #ff0000;
-        }
-
-        .cookie-settings label {
-            display: block;
-            margin: 10px 0;
-        }
-
-        .cookie-settings button {
-            background: #8b0000;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            margin: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .cookie-settings button:hover {
-            background: #ff0000;
+            h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Hi!</h1>
-        <h1>Welcome to My Games!</h1></div>
-        <div class="special" style="margin-bottom: 40px; text-align: center;"></div> 
-        
-        <h2 style="margin-bottom: 20px;">special</h2>
-        <a href="good.html" class="game-link">Game Dev Studio</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-
-        <div class="games" style="margin-bottom: 40px; text-align: center;"></div> 
-        
-        <h2 style="margin-bottom: 20px;">Games</h2>
+    <div class="container">
+        <div class="penguin-emoji">🐧</div>
+        <h1>Welcome to My Website!</h1>
+        <p class="subtitle">The Penguin Lover's Digital Home</p>
+        <p>Hi there! I'm Carter, and this is my corner of the internet. I love penguins, coding, and playing Zelda games. Feel free to explore and learn more about me!</p>
+        <div class="nav-links">
+            <a href="about me.html">About Me</a>
+        </div>
     </div>
-    <div class="games-container">
-        <!-- Platformers -->
-        <a href="i plat.html" class="game-link">Infinite Platformer</a>
-        <a href="pix plat.html" class="game-link">Infinite Pixel Platformer</a>
-        <a href="3d plat.html" class="game-link">3d Platformer</a>
-        <a href="jg.html" class="game-link">Super Mario Platformer</a>
-        <a href="stick.html" class="game-link">Runaway stick</a>
-
-        <!-- 3D Games -->
-        <a href="3d rayc.html" class="game-link">3d game</a>
-        <a href="grants game.html" class="game-link">4d grow Adventure</a>
-
-        <!-- Collection Games -->
-        <a href="e collect.html" class="game-link">easy collect the dots</a>
-        <a href="h collect.html" class="game-link">hard collect the dots</a>
-        <a href="cs1.html" class="game-link">Food Merge</a>
-        <a href="penguin clicker.html" class="game-link">Penguin Clicker</a>
-
-        <!-- Puzzle/Strategy -->
-        <a href="ai maze.html" class="game-link">ai maze</a>
-        <a href="chess.html" class="game-link">chess</a>
-        <a href="biggest game.html" class="game-link">Hacker Tetris</a>
-        <a href="lg.html" class="game-link">Math Master</a>
-
-        <!-- Action/Arcade -->
-        <a href="meteor.html" class="game-link">Meteor Shower</a>
-        <a href="slip pen.html" class="game-link">Slippery Penguin</a>
-        <a href="super game.html" class="game-link">Neon Space Runner</a>
-        <a href="h shoot.html" class="game-link">just a game</a>
-        <a href="Turtle Invator 2.html" class="game-link">Turtle Invator 2</a>
-        <a href="turtle invator.html" class="game-link">Turtle Invator</a>
-        <a href="working.html" class="game-link">Peaceful Sparkle Garden</a>
-        <a href="public/zadies game.html" class="game-link">blob eater</a>
-
-        <!-- Additional Games -->
-        <a href="avatar.html" class="game-link">Avatar</a>
-        <a href="coin.html" class="game-link">Coin Game</a>
-        <a href="dungens.html" class="game-link">Dungeons</a>
-        <a href="mine.html" class="game-link">Mine Game</a>
-        <a href="neon.html" class="game-link">Neon Game</a>
-        <a href="ping pong.html" class="game-link">Ping Pong</a> 
-
-        <!-- Coming Soon Slots -->
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-        <a class="game-link empty-slot">Coming Soon</a>
-    </div>
-
-    <!-- Cookie Banner -->
-    <div id="cookieBanner" class="cookie-banner">
-        <p>We use cookies to enhance your gaming experience and save your progress.</p>
-        <button onclick="acceptAllCookies()">Accept All</button>
-        <button onclick="showCookieSettings()">Customize</button>
-    </div>
-
-    <!-- Cookie Settings Panel -->
-    <div id="cookieSettings" class="cookie-settings">
-        <h3>Cookie Settings</h3>
-        <label>
-            <input type="checkbox" id="essentialCookies" checked disabled>
-            Essential Cookies (Required)
-        </label>
-        <label>
-            <input type="checkbox" id="gameProgressCookies">
-            Game Progress
-        </label>
-        <label>
-            <input type="checkbox" id="preferenceCookies">
-            Game Preferences
-        </label>
-        <button onclick="saveCookieSettings()">Save Settings</button>
-        <button onclick="closeCookieSettings()">Close</button>
-    </div>
-
-    <script>
-        // Cookie Management System
-        const COOKIE_PREFIX = 'carter_games_';
-        const COOKIE_EXPIRY_DAYS = 365;
-
-        // Cookie Types
-        const COOKIE_TYPES = {
-            ESSENTIAL: 'essential',
-            GAME_PROGRESS: 'game_progress',
-            PREFERENCES: 'preferences'
-        };
-
-        // Initialize cookies
-        function initializeCookies() {
-            if (!getCookie('cookie_consent')) {
-                document.getElementById('cookieBanner').style.display = 'block';
-            }
-        }
-
-        // Set a cookie
-        function setCookie(name, value, type) {
-            if (!isCookieTypeAllowed(type)) return;
-
-            const date = new Date();
-            date.setTime(date.getTime() + (COOKIE_EXPIRY_DAYS * 24 * 60 * 60 * 1000));
-            const expires = "expires=" + date.toUTCString();
-            document.cookie = COOKIE_PREFIX + name + "=" + value + ";" + expires + ";path=/";
-        }
-
-        // Get a cookie
-        function getCookie(name) {
-            const fullName = COOKIE_PREFIX + name;
-            const cookies = document.cookie.split(';');
-            for (let cookie of cookies) {
-                cookie = cookie.trim();
-                if (cookie.startsWith(fullName + '=')) {
-                    return cookie.substring(fullName.length + 1);
-                }
-            }
-            return null;
-        }
-
-        // Delete a cookie
-        function deleteCookie(name) {
-            document.cookie = COOKIE_PREFIX + name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-        }
-
-        // Check if cookie type is allowed
-        function isCookieTypeAllowed(type) {
-            if (type === COOKIE_TYPES.ESSENTIAL) return true;
-            
-            const consent = getCookie('cookie_consent');
-            if (!consent) return false;
-
-            const settings = JSON.parse(consent);
-            return settings[type] === true;
-        }
-
-        // Accept all cookies
-        function acceptAllCookies() {
-            const settings = {
-                [COOKIE_TYPES.ESSENTIAL]: true,
-                [COOKIE_TYPES.GAME_PROGRESS]: true,
-                [COOKIE_TYPES.PREFERENCES]: true
-            };
-            setCookie('cookie_consent', JSON.stringify(settings), COOKIE_TYPES.ESSENTIAL);
-            document.getElementById('cookieBanner').style.display = 'none';
-        }
-
-        // Show cookie settings
-        function showCookieSettings() {
-            document.getElementById('cookieSettings').style.display = 'block';
-            const consent = getCookie('cookie_consent');
-            if (consent) {
-                const settings = JSON.parse(consent);
-                document.getElementById('gameProgressCookies').checked = settings[COOKIE_TYPES.GAME_PROGRESS];
-                document.getElementById('preferenceCookies').checked = settings[COOKIE_TYPES.PREFERENCES];
-            }
-        }
-
-        // Save cookie settings
-        function saveCookieSettings() {
-            const settings = {
-                [COOKIE_TYPES.ESSENTIAL]: true,
-                [COOKIE_TYPES.GAME_PROGRESS]: document.getElementById('gameProgressCookies').checked,
-                [COOKIE_TYPES.PREFERENCES]: document.getElementById('preferenceCookies').checked
-            };
-            setCookie('cookie_consent', JSON.stringify(settings), COOKIE_TYPES.ESSENTIAL);
-            document.getElementById('cookieSettings').style.display = 'none';
-            document.getElementById('cookieBanner').style.display = 'none';
-        }
-
-        // Close cookie settings
-        function closeCookieSettings() {
-            document.getElementById('cookieSettings').style.display = 'none';
-        }
-
-        // Game Progress Functions
-        function saveGameProgress(gameId, progress) {
-            if (!isCookieTypeAllowed(COOKIE_TYPES.GAME_PROGRESS)) return;
-            setCookie(`game_${gameId}_progress`, JSON.stringify(progress), COOKIE_TYPES.GAME_PROGRESS);
-        }
-
-        function getGameProgress(gameId) {
-            if (!isCookieTypeAllowed(COOKIE_TYPES.GAME_PROGRESS)) return null;
-            const progress = getCookie(`game_${gameId}_progress`);
-            return progress ? JSON.parse(progress) : null;
-        }
-
-        // Game Preferences Functions
-        function saveGamePreferences(gameId, preferences) {
-            if (!isCookieTypeAllowed(COOKIE_TYPES.PREFERENCES)) return;
-            setCookie(`game_${gameId}_preferences`, JSON.stringify(preferences), COOKIE_TYPES.PREFERENCES);
-        }
-
-        function getGamePreferences(gameId) {
-            if (!isCookieTypeAllowed(COOKIE_TYPES.PREFERENCES)) return null;
-            const preferences = getCookie(`game_${gameId}_preferences`);
-            return preferences ? JSON.parse(preferences) : null;
-        }
-
-        // Initialize cookies when page loads
-        window.onload = function() {
-            initializeCookies();
-        };
-    </script>
 </body>
 </html>

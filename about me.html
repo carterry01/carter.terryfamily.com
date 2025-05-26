@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Me</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            padding: 3rem 0;
+            background-color: #2c3e50;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ecf0f1;
+        }
+
+        section {
+            background-color: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 0.5rem;
+        }
+
+        .interests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .interest-item {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .contact-info a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .contact-info a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            header {
+                padding: 2rem 0;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Carter</h1>
+            <p class="subtitle">The Penguin Lover</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="about">
+            <h2>About Me</h2>
+            <p>Welcome to my personal website! I'm passionate about penguins. I love to play video games like Zelda and I love coding, and am always excited to make more games.</p>
+        </section>
+
+        <section id="interests">
+            <h2>Interests & Hobbies</h2>
+            <div class="interests-grid">
+                <div class="interest-item">
+                    <h3>Zelda</h3>
+                    <p>Exploring the vast world of Hyrule and solving puzzles in The Legend of Zelda games</p>
+                </div>
+                <div class="interest-item">
+                    <h3>Coding</h3>
+                    <p>Creating games and learning new programming skills</p>
+                </div>
+                <div class="interest-item">
+                    <h3>Penguins</h3>
+                    <p>Learning about and appreciating these amazing Antarctic birds</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact">
+            <h2>Get in Touch</h2>
+            <div class="contact-info">
+                <p>Email: <a href="mailto:carterry01@gmail.com">carterry01@gmail.com</a></p>
+                <p>Website: <a href="https://carter.terryfamily.com" target="_blank">carter.terryfamily.com</a></p>
+                <p>GitHub: <a href="https://github.com/carterry01/carter.terryfamily.com" target="_blank">github.com/carterry01/carter.terryfamily.com</a></p>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
