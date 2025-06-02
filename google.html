@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penguintopia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+            background-image: url('penguin bg.png');
+            background-repeat: repeat;
+            background-size: 300px auto;
+            cursor: url('penguincursor.png'), auto;
+        }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #1a73e8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .logo span {
+            color: #ea4335;
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 584px;
+            padding: 20px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            outline: none;
+            transition: box-shadow 0.3s;
+        }
+
+        .search-box:hover,
+        .search-box:focus {
+            box-shadow: 0 1px 6px rgba(32,33,36,.28);
+            border-color: rgba(223,225,229,0);
+        }
+
+        .search-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .search-button {
+            background-color: #f8f9fa;
+            border: 1px solid #f8f9fa;
+            border-radius: 4px;
+            color: #3c4043;
+            font-size: 14px;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .search-button:hover {
+            box-shadow: 0 1px 1px rgba(0,0,0,.1);
+            border: 1px solid #dadce0;
+        }
+
+        .penguin-icon {
+            font-size: 2rem;
+            margin-right: 10px;
+            color: #1a73e8;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">
+        <span>🐧</span> Penguintopia
+    </div>
+    <div class="search-container">
+        <form action="results.html" method="GET">
+            <input type="text" name="q" class="search-box" placeholder="Search for .terryfamily.com s">
+        </form>
+    </div>
+</body>
+</html>

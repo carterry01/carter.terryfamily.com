@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Drone Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a1a;
+            font-family: 'Press Start 2P', cursive;
+            perspective: 1000px;
+        }
+        #gameContainer {
+            position: relative;
+            transform-style: preserve-3d;
+            transform: rotateX(30deg);
+        }
+        #gameHeader {
+            position: absolute;
+            top: -80px;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            transform: translateZ(20px);
+        }
+        .header-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .header-icon {
+            width: 16px;
+            height: 16px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .health-bar {
+            width: 100px;
+            height: 10px;
+            background: #333;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .health-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        .health-fill.high { background: #2ecc71; }
+        .health-fill.medium { background: #f1c40f; }
+        .health-fill.low { background: #e74c3c; }
+        canvas {
+            border: 4px solid #333;
+            background: #87CEEB;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+            transform: translateZ(20px);
+            font-size: 12px;
+        }
+        #victoryMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateZ(30px);
+            color: #2ecc71;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 24px;
+            display: none;
+            border: 4px solid #2ecc71;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) translateZ(30px) scale(1); }
+            50% { transform: translate(-50%, -50%) translateZ(30px) scale(1.1); }
+            100% { transform: translate(-50%, -50%) translateZ(30px) scale(1); }
+        }
+        .drone-3d {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            transform-style: preserve-3d;
+            image-rendering: pixelated;
+        }
+        .drone-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #4a90e2;
+            border: 2px solid #2c3e50;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+        }
+        .drone-face.front { transform: translateZ(16px); }
+        .drone-face.back { transform: translateZ(-16px) rotateY(180deg); }
+        .drone-face.right { transform: translateX(16px) rotateY(90deg); }
+        .drone-face.left { transform: translateX(-16px) rotateY(-90deg); }
+        .drone-face.top { transform: translateY(-16px) rotateX(90deg); }
+        .drone-face.bottom { transform: translateY(16px) rotateX(-90deg); }
+        .propeller {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #2c3e50;
+            border-radius: 2px;
+        }
+        .propeller.top-left { top: -4px; left: -4px; }
+        .propeller.top-right { top: -4px; right: -4px; }
+        .propeller.bottom-left { bottom: -4px; left: -4px; }
+        .propeller.bottom-right { bottom: -4px; right: -4px; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="victoryMessage">
+            VICTORY!<br>
+            <span style="font-size: 16px; color: #fff;">All propellers collected!</span>
+        </div>
+        <div id="gameHeader">
+            <div class="header-section">
+                <div class="header-item">
+                    <div class="header-icon" style="background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23fff\'><path d=\'M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z\'/></svg>');"></div>
+                    <span>Score: <span id="scoreDisplay">0</span></span>
+                </div>
+                <div class="header-item">
+                    <div class="header-icon" style="background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23fff\'><path d=\'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z\'/></svg>');"></div>
+                    <span>Propellers: <span id="collectiblesDisplay">0</span>/<span id="totalCollectibles">5</span></span>
+                </div>
+            </div>
+            <div class="header-section">
+                <div class="header-item">
+                    <div class="header-icon" style="background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23fff\'><path d=\'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z\'/></svg>');"></div>
+                    <div class="health-bar">
+                        <div id="healthFill" class="health-fill high"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-section">
+                <div class="header-item" id="speedBoostDisplay" style="display: none;">
+                    <div class="header-icon" style="background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23fff\'><path d=\'M13 5.83l1.88 1.88-1.6 1.6 1.41 1.41 3.02-3.02L12 2h-1v5.03l2 2v-3.2zM5.41 4L4 5.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l4.29-4.29 2.3 2.29L20 18.59 5.41 4z\'/></svg>');"></div>
+                    <span>Speed Boost: <span id="speedBoostTimer">0</span>s</span>
+                </div>
+                <div class="header-item" id="invincibleDisplay" style="display: none;">
+                    <div class="header-icon" style="background-image: url('data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'%23fff\'><path d=\'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z\'/></svg>');"></div>
+                    <span>Invincible: <span id="invincibleTimer">0</span>s</span>
+                </div>
+            </div>
+        </div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="instructions">
+            Use arrow keys to control the drone<br>
+            ↑ - Move up<br>
+            ↓ - Move down<br>
+            ← - Move left<br>
+            → - Move right
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        class PixelObject {
+            constructor(x, y, z, width, height, depth, color) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.width = width;
+                this.height = height;
+                this.depth = depth;
+                this.color = color;
+                this.isSolid = true;  // Make all platforms solid
+            }
+
+            // Add collision detection method
+            checkCollision(drone) {
+                if (!this.isSolid) return false;
+
+                const droneRight = drone.x + drone.width;
+                const droneBottom = drone.y + drone.height;
+                const platformRight = this.x + this.width;
+                const platformTop = this.y;
+
+                // Check if drone is above the platform
+                const isAbove = droneBottom <= platformTop + 5 && 
+                               droneBottom >= platformTop - 5 &&
+                               droneRight > this.x && 
+                               drone.x < platformRight;
+
+                // Check if drone is colliding with platform
+                const isColliding = drone.x < platformRight &&
+                                  droneRight > this.x &&
+                                  drone.y < platformTop + this.height &&
+                                  droneBottom > platformTop;
+
+                return { isAbove, isColliding };
+            }
+
+            draw() {
+                const scale = 1 + (this.z / 1000);
+                const x = this.x * scale;
+                const y = this.y * scale;
+                const width = this.width * scale;
+                const height = this.height * scale;
+
+                // Draw main face
+                ctx.fillStyle = this.color;
+                ctx.fillRect(x, y, width, height);
+
+                // Draw top face
+                ctx.fillStyle = this.darkenColor(this.color, 20);
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + width, y);
+                ctx.lineTo(x + width - 10, y - 10);
+                ctx.lineTo(x - 10, y - 10);
+                ctx.fill();
+
+                // Draw side face
+                ctx.fillStyle = this.darkenColor(this.color, 40);
+                ctx.beginPath();
+                ctx.moveTo(x + width, y);
+                ctx.lineTo(x + width, y + height);
+                ctx.lineTo(x + width - 10, y + height - 10);
+                ctx.lineTo(x + width - 10, y - 10);
+                ctx.fill();
+
+                // Draw landing indicator
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(x + width/2 - 5, y - 2, 10, 2);
+            }
+
+            darkenColor(color, amount) {
+                const num = parseInt(color.replace('#', ''), 16);
+                const r = Math.max(0, (num >> 16) - amount);
+                const g = Math.max(0, ((num >> 8) & 0x00FF) - amount);
+                const b = Math.max(0, (num & 0x0000FF) - amount);
+                return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+            }
+        }
+
+        class Lighthouse extends PixelObject {
+            constructor(x, y) {
+                super(x, y, 0, 40, 120, 40, '#e74c3c');
+                this.lightAngle = 0;
+            }
+
+            draw() {
+                super.draw();
+                
+                // Draw light beam
+                const beamLength = 200;
+                this.lightAngle += 0.02;
+                const beamX = this.x + this.width/2;
+                const beamY = this.y + 20;
+                
+                ctx.save();
+                ctx.translate(beamX, beamY);
+                ctx.rotate(this.lightAngle);
+                
+                const gradient = ctx.createLinearGradient(0, 0, beamLength, 0);
+                gradient.addColorStop(0, 'rgba(255, 255, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 255, 0, 0)');
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, -5, beamLength, 10);
+                ctx.restore();
+            }
+        }
+
+        class Spark {
+            constructor(x, y, color = '#f1c40f') {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 5;
+                this.vy = (Math.random() - 0.5) * 5;
+                this.life = 1;
+                this.size = Math.random() * 3 + 2;
+                this.color = color;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= 0.02;
+                this.vy += 0.1; // gravity
+            }
+
+            draw() {
+                ctx.fillStyle = this.color.replace(')', `, ${this.life})`).replace('rgb', 'rgba');
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        class Collectible {
+            constructor(x, y, isInWater = false) {
+                this.x = x;
+                this.y = y;
+                this.originalY = y;  // Store original position
+                this.width = 20;
+                this.height = 20;
+                this.collected = false;
+                this.rotation = 0;
+                this.bladeCount = 4;
+                this.bladeLength = 8;
+                this.hubSize = 4;
+                this.spinSpeed = 0.1;
+                this.floatOffset = 0;
+                this.isInWater = isInWater;
+                this.waterOffset = 0;
+                this.attractionRange = 100;  // Range at which propeller starts floating up
+                this.floatUpSpeed = 2;       // How fast it floats up
+                this.isFloatingUp = false;
+            }
+
+            update(drone) {
+                if (this.collected) return;
+
+                // Check if drone is close enough to attract underwater propeller
+                if (this.isInWater && !this.isFloatingUp) {
+                    const dx = this.x - drone.x;
+                    const dy = this.y - drone.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < this.attractionRange) {
+                        this.isFloatingUp = true;
+                        // Create water splash effect
+                        for (let i = 0; i < 10; i++) {
+                            const angle = (Math.random() * Math.PI * 2);
+                            const speed = Math.random() * 3 + 2;
+                            const spark = new Spark(
+                                this.x + this.width/2,
+                                this.y + this.height/2,
+                                '#3498db'
+                            );
+                            spark.vx = Math.cos(angle) * speed;
+                            spark.vy = Math.sin(angle) * speed;
+                            drone.sparks.push(spark);
+                        }
+                    }
+                }
+
+                // Float up if attracted
+                if (this.isFloatingUp) {
+                    this.y -= this.floatUpSpeed;
+                    // Stop floating up when it reaches the surface
+                    if (this.y <= this.originalY - 50) {
+                        this.isFloatingUp = false;
+                        this.isInWater = false;
+                    }
+                }
+            }
+
+            draw() {
+                if (this.collected) return;
+
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                
+                // Add floating motion
+                this.floatOffset += 0.05;
+                const floatY = Math.sin(this.floatOffset) * 3;
+                ctx.translate(0, floatY);
+
+                // Add water motion for underwater propellers
+                if (this.isInWater && !this.isFloatingUp) {
+                    this.waterOffset += 0.1;
+                    const waterY = Math.sin(this.waterOffset) * 2;
+                    ctx.translate(0, waterY);
+                }
+                
+                // Rotate the entire propeller
+                this.rotation += this.spinSpeed;
+                ctx.rotate(this.rotation);
+
+                // Draw propeller hub
+                ctx.fillStyle = this.isInWater ? '#34495e' : '#2c3e50';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.hubSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw propeller blades
+                ctx.fillStyle = this.isInWater ? '#2c3e50' : '#34495e';
+                for (let i = 0; i < this.bladeCount; i++) {
+                    const angle = (i * 2 * Math.PI / this.bladeCount);
+                    ctx.save();
+                    ctx.rotate(angle);
+                    
+                    // Draw blade
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(this.bladeLength, -2);
+                    ctx.lineTo(this.bladeLength, 2);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.restore();
+                }
+
+                // Draw glow effect
+                const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.bladeLength + 5);
+                gradient.addColorStop(0, this.isInWater ? 'rgba(52, 152, 219, 0.3)' : 'rgba(52, 152, 219, 0.2)');
+                gradient.addColorStop(1, 'rgba(52, 152, 219, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(0, 0, this.bladeLength + 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            checkCollision(drone) {
+                if (this.collected) return false;
+                
+                return drone.x < this.x + this.width &&
+                       drone.x + drone.width > this.x &&
+                       drone.y < this.y + this.height &&
+                       drone.y + drone.height > this.y;
+            }
+        }
+
+        class Goal {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 40;
+                this.height = 40;
+                this.reached = false;
+                this.pulse = 0;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                
+                // Draw pulsing circle
+                this.pulse = (this.pulse + 0.05) % (Math.PI * 2);
+                const pulseSize = Math.sin(this.pulse) * 5;
+                
+                ctx.fillStyle = this.reached ? '#2ecc71' : '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(0, 0, 20 + pulseSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw checkmark if reached
+                if (this.reached) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(-8, 0);
+                    ctx.lineTo(-2, 6);
+                    ctx.lineTo(8, -6);
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+            }
+
+            checkCollision(drone) {
+                if (this.reached) return false;
+                
+                return drone.x < this.x + this.width &&
+                       drone.x + drone.width > this.x &&
+                       drone.y < this.y + this.height &&
+                       drone.y + drone.height > this.y;
+            }
+        }
+
+        class PowerUp {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.width = 20;
+                this.height = 20;
+                this.collected = false;
+                this.rotation = 0;
+                this.type = type;
+                this.pulse = 0;
+                this.floatOffset = 0;
+                this.spawnTimer = 0;
+            }
+
+            draw() {
+                if (this.collected) return;
+
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                
+                // Add floating motion
+                this.floatOffset += 0.05;
+                const floatY = Math.sin(this.floatOffset) * 3;
+                ctx.translate(0, floatY);
+                
+                // Rotate the entire power-up
+                this.rotation += 0.02;
+                ctx.rotate(this.rotation);
+
+                if (this.type === 'speed') {
+                    // Draw speed symbol
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -8);
+                    ctx.lineTo(8, 0);
+                    ctx.lineTo(0, 8);
+                    ctx.lineTo(-8, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Draw speed lines
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-4, 0);
+                    ctx.lineTo(4, 0);
+                    ctx.moveTo(0, -4);
+                    ctx.lineTo(0, 4);
+                    ctx.stroke();
+                } else {
+                    // Draw health symbol
+                    ctx.fillStyle = '#e84393';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -8);
+                    ctx.bezierCurveTo(4, -8, 4, -12, 0, -12);
+                    ctx.bezierCurveTo(-4, -12, -4, -8, 0, -8);
+                    ctx.bezierCurveTo(0, -4, 4, 0, 0, 8);
+                    ctx.bezierCurveTo(-4, 0, 0, -4, 0, -8);
+                    ctx.fill();
+                }
+                
+                // Draw pulsing effect
+                this.pulse = (this.pulse + 0.1) % (Math.PI * 2);
+                const pulseSize = Math.sin(this.pulse) * 3;
+                ctx.strokeStyle = this.type === 'speed' ? '#c0392b' : '#fd79a8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, 12 + pulseSize, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Add sparkle effect
+                if (Math.random() < 0.3) {
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.arc(
+                        (Math.random() - 0.5) * 20,
+                        (Math.random() - 0.5) * 20,
+                        Math.random() * 2,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+            }
+
+            update() {
+                // Update is handled in draw() for this power-up
+            }
+
+            checkCollision(drone) {
+                if (this.collected) return false;
+                
+                return drone.x < this.x + this.width &&
+                       drone.x + drone.width > this.x &&
+                       drone.y < this.y + this.height &&
+                       drone.y + drone.height > this.y;
+            }
+
+            reset() {
+                this.collected = false;
+                this.spawnTimer = 0;
+                // Randomize position within safe bounds
+                this.x = Math.random() * (canvas.width - 100) + 50;
+                this.y = Math.random() * (canvas.height - 200) + 50;
+            }
+        }
+
+        class EnemyDrone {
+            constructor(x, y, type = 'chaser') {
+                this.x = x;
+                this.y = y;
+                this.width = 32;
+                this.height = 32;
+                this.type = type;  // 'chaser' or 'patroller'
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.speed = 2;
+                this.rotation = 0;
+                this.propellerRotation = 0;
+                this.patrolPoints = [];
+                this.currentPatrolIndex = 0;
+                this.detectionRange = 200;
+                this.isActive = true;
+                
+                if (type === 'patroller') {
+                    // Create patrol path
+                    this.patrolPoints = [
+                        {x: x, y: y},
+                        {x: x + 100, y: y},
+                        {x: x + 100, y: y + 100},
+                        {x: x, y: y + 100}
+                    ];
+                }
+            }
+
+            update(drone) {
+                if (!this.isActive) return;
+
+                if (this.type === 'chaser') {
+                    // Calculate direction to player
+                    const dx = drone.x - this.x;
+                    const dy = drone.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    // Only chase if player is within detection range
+                    if (distance < this.detectionRange) {
+                        // Normalize direction
+                        const dirX = dx / distance;
+                        const dirY = dy / distance;
+
+                        // Move towards player
+                        this.velocityX = dirX * this.speed;
+                        this.velocityY = dirY * this.speed;
+                    } else {
+                        // Slow down when not chasing
+                        this.velocityX *= 0.95;
+                        this.velocityY *= 0.95;
+                    }
+                } else if (this.type === 'patroller') {
+                    // Move along patrol path
+                    const target = this.patrolPoints[this.currentPatrolIndex];
+                    const dx = target.x - this.x;
+                    const dy = target.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 5) {
+                        this.currentPatrolIndex = (this.currentPatrolIndex + 1) % this.patrolPoints.length;
+                    } else {
+                        this.velocityX = (dx / distance) * this.speed;
+                        this.velocityY = (dy / distance) * this.speed;
+                    }
+                }
+
+                // Update position
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+
+                // Update rotation
+                this.rotation = Math.atan2(this.velocityY, this.velocityX) * 180 / Math.PI;
+                this.propellerRotation += 10;
+                if (this.propellerRotation >= 360) this.propellerRotation = 0;
+
+                // Keep within bounds
+                this.x = Math.max(0, Math.min(canvas.width - this.width, this.x));
+                this.y = Math.max(0, Math.min(canvas.height - this.height, this.y));
+            }
+
+            draw() {
+                if (!this.isActive) return;
+
+                ctx.save();
+                ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                ctx.rotate(this.rotation * Math.PI / 180);
+
+                // Draw enemy drone body
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(-16, -16, 32, 32);
+
+                // Draw enemy drone details
+                ctx.fillStyle = '#c0392b';
+                // Center line
+                ctx.fillRect(-12, -2, 24, 4);
+                // Cross lines
+                ctx.fillRect(-2, -12, 4, 24);
+                
+                // Draw propellers
+                const propSize = 8;
+                const propOffset = 12;
+                const propAngle = this.propellerRotation * Math.PI / 180;
+                
+                ctx.fillStyle = '#c0392b';
+                for (let i = 0; i < 4; i++) {
+                    const angle = propAngle + (i * Math.PI / 2);
+                    const x = Math.cos(angle) * propOffset;
+                    const y = Math.sin(angle) * propOffset;
+                    
+                    // Draw propeller hub
+                    ctx.fillRect(x - propSize/2, y - propSize/2, propSize, propSize);
+                    
+                    // Draw propeller blades
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(angle);
+                    ctx.fillRect(-propSize/2, -propSize/2, propSize, propSize);
+                    ctx.restore();
+                }
+
+                // Draw detection range for chasers
+                if (this.type === 'chaser') {
+                    ctx.strokeStyle = 'rgba(231, 76, 60, 0.2)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.detectionRange, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            checkCollision(drone) {
+                if (!this.isActive) return false;
+
+                return drone.x < this.x + this.width &&
+                       drone.x + drone.width > this.x &&
+                       drone.y < this.y + this.height &&
+                       drone.y + drone.height > this.y;
+            }
+        }
+
+        class Drone {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.z = 0;
+                this.width = 32;
+                this.height = 32;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.velocityZ = 0;
+                this.acceleration = 0.2;
+                this.maxSpeed = 5;
+                this.friction = 0.95;
+                this.gravity = 0.1;
+                this.rotationX = 0;
+                this.rotationY = 0;
+                this.rotationZ = 0;
+                this.propellerRotation = 0;
+                this.isLanding = false;
+                this.landingPlatform = null;
+                this.isDead = false;
+                this.deathTimer = 0;
+                this.sparks = [];
+                this.originalColor = '#4a90e2';
+                this.score = 0;
+                this.collectiblesFound = 0;
+                this.maxHealth = 50;
+                this.health = this.maxHealth;
+                this.speedBoost = 1;
+                this.speedBoostTimer = 0;
+                this.invincible = false;
+                this.invincibleTimer = 0;
+                this.waterProtection = false;
+                this.waterProtectionTimer = 0;
+            }
+
+            draw() {
+                const scale = 1 + (this.z / 1000);
+                const centerX = this.x + this.width/2;
+                const centerY = this.y + this.height/2;
+
+                // Draw sparks
+                this.sparks.forEach(spark => spark.draw());
+
+                if (this.isDead) {
+                    // Draw dead drone
+                    ctx.fillStyle = '#2ecc71';
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    return;
+                }
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(this.rotationY * Math.PI / 180);
+                ctx.rotate(this.rotationX * Math.PI / 180);
+                ctx.scale(scale, scale);
+
+                // Draw drone body (pixelated)
+                ctx.fillStyle = this.isLanding ? '#2ecc71' : this.originalColor;
+                ctx.fillRect(-16, -16, 32, 32);
+
+                // Draw drone details
+                ctx.fillStyle = '#2c3e50';
+                // Center line
+                ctx.fillRect(-12, -2, 24, 4);
+                // Cross lines
+                ctx.fillRect(-2, -12, 4, 24);
+                
+                // Draw propellers
+                const propSize = 8;
+                const propOffset = 12;
+                const propAngle = this.propellerRotation * Math.PI / 180;
+                
+                // Draw propeller blades
+                ctx.fillStyle = '#2c3e50';
+                for (let i = 0; i < 4; i++) {
+                    const angle = propAngle + (i * Math.PI / 2);
+                    const x = Math.cos(angle) * propOffset;
+                    const y = Math.sin(angle) * propOffset;
+                    
+                    // Draw propeller hub
+                    ctx.fillRect(x - propSize/2, y - propSize/2, propSize, propSize);
+                    
+                    // Draw propeller blades
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(angle);
+                    ctx.fillRect(-propSize/2, -propSize/2, propSize, propSize);
+                    ctx.restore();
+                }
+
+                // Draw lights
+                ctx.fillStyle = '#e74c3c';  // Red light
+                ctx.fillRect(-4, -12, 8, 4);
+                ctx.fillStyle = '#2ecc71';  // Green light
+                ctx.fillRect(-4, 8, 8, 4);
+
+                // Draw shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 16, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw water protection effect
+                if (this.waterProtection) {
+                    ctx.save();
+                    ctx.translate(this.x + this.width/2, this.y + this.height/2);
+                    
+                    // Draw blue shield
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 30);
+                    gradient.addColorStop(0, 'rgba(52, 152, 219, 0.3)');
+                    gradient.addColorStop(1, 'rgba(52, 152, 219, 0)');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                }
+
+                ctx.restore();
+            }
+
+            update() {
+                if (this.isDead) {
+                    this.deathTimer += 1/60;
+                    if (this.deathTimer >= 5) {
+                        this.reset();
+                    }
+                    this.sparks.forEach(spark => spark.update());
+                    this.sparks = this.sparks.filter(spark => spark.life > 0);
+                    return;
+                }
+
+                // Update water protection timer
+                if (this.waterProtectionTimer > 0) {
+                    this.waterProtectionTimer -= 1/60;
+                    if (this.waterProtectionTimer <= 0) {
+                        this.waterProtection = false;
+                    }
+                }
+
+                // Update power-up timers
+                if (this.speedBoostTimer > 0) {
+                    this.speedBoostTimer -= 1/60;
+                    if (this.speedBoostTimer <= 0) {
+                        this.speedBoost = 1;
+                    }
+                }
+
+                if (this.invincibleTimer > 0) {
+                    this.invincibleTimer -= 1/60;
+                    if (this.invincibleTimer <= 0) {
+                        this.invincible = false;
+                    }
+                }
+
+                this.velocityY += this.gravity;
+                this.velocityZ *= this.friction;
+                this.velocityX *= this.friction;
+                this.velocityY *= this.friction;
+
+                const oldX = this.x;
+                const oldY = this.y;
+
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                this.z += this.velocityZ;
+
+                // Check if drone is in water
+                if (this.y + this.height > canvas.height - 50) {
+                    if (!this.invincible && !this.waterProtection) {
+                        this.health -= 10;
+                        if (this.health <= 0) {
+                            this.die();
+                        } else {
+                            this.invincible = true;
+                            this.invincibleTimer = 2;
+                        }
+                    }
+                    return;
+                }
+
+                // Check collisions with all platforms
+                let canLand = false;
+                let landingPlatform = null;
+
+                [...buildings, lighthouse].forEach(platform => {
+                    const { isAbove, isColliding } = platform.checkCollision(this);
+                    
+                    if (isAbove && Math.abs(this.velocityY) < 2) {
+                        canLand = true;
+                        landingPlatform = platform;
+                    }
+                });
+
+                // Handle landing
+                if (canLand && !this.isLanding) {
+                    this.isLanding = true;
+                    this.landingPlatform = landingPlatform;
+                    this.velocityY = 0;
+                    this.velocityX *= 0.8;
+                } else if (!canLand) {
+                    this.isLanding = false;
+                    this.landingPlatform = null;
+                }
+
+                // If landing, keep drone on platform
+                if (this.isLanding && this.landingPlatform) {
+                    this.y = this.landingPlatform.y - this.height;
+                    this.velocityY = 0;
+                }
+
+                this.rotationX = this.velocityY * 2;
+                this.rotationY = this.velocityX * 2;
+                
+                this.propellerRotation += 10;
+                if (this.propellerRotation >= 360) this.propellerRotation = 0;
+
+                // Keep drone within canvas bounds
+                if (this.x < 0) {
+                    this.x = 0;
+                    this.velocityX = 0;
+                }
+                if (this.x + this.width > canvas.width) {
+                    this.x = canvas.width - this.width;
+                    this.velocityX = 0;
+                }
+                if (this.y < 0) {
+                    this.y = 0;
+                    this.velocityY = 0;
+                }
+                if (this.y + this.height > canvas.height) {
+                    this.y = canvas.height - this.height;
+                    this.velocityY = 0;
+                }
+                if (this.z < -100) {
+                    this.z = -100;
+                    this.velocityZ = 0;
+                }
+                if (this.z > 100) {
+                    this.z = 100;
+                    this.velocityZ = 0;
+                }
+
+                // Check collectible collisions
+                collectibles.forEach(collectible => {
+                    if (collectible.checkCollision(this)) {
+                        collectible.collected = true;
+                        this.score += 100;
+                        this.collectiblesFound++;
+                        
+                        // Add water protection if collecting underwater propeller
+                        if (collectible.isInWater) {
+                            this.waterProtection = true;
+                            this.waterProtectionTimer = 3; // 3 seconds of water protection
+                            // Create special water protection effect
+                            for (let i = 0; i < 20; i++) {
+                                this.sparks.push(new Spark(
+                                    collectible.x + collectible.width/2,
+                                    collectible.y + collectible.height/2,
+                                    '#3498db' // Blue sparks for water protection
+                                ));
+                            }
+                        }
+                        
+                        // Create spark effect for collection
+                        for (let i = 0; i < 10; i++) {
+                            this.sparks.push(new Spark(
+                                collectible.x + collectible.width/2,
+                                collectible.y + collectible.height/2
+                            ));
+                        }
+                    }
+                });
+
+                // Check goal collision
+                if (goal.checkCollision(this)) {
+                    goal.reached = true;
+                    this.score += 500;
+                    // Create big spark effect for reaching goal
+                    for (let i = 0; i < 30; i++) {
+                        this.sparks.push(new Spark(
+                            goal.x + goal.width/2,
+                            goal.y + goal.height/2
+                        ));
+                    }
+                }
+
+                // Check power-up collisions
+                powerUps.forEach(powerUp => {
+                    if (powerUp.checkCollision(this)) {
+                        powerUp.collected = true;
+                        if (powerUp.type === 'speed') {
+                            this.speedBoost = 2;
+                            this.speedBoostTimer = 10; // 10 seconds
+                        } else {
+                            this.health = Math.min(this.maxHealth, this.health + 12);
+                        }
+                        // Create spark effect for collection
+                        for (let i = 0; i < 10; i++) {
+                            this.sparks.push(new Spark(
+                                powerUp.x + powerUp.width/2,
+                                powerUp.y + powerUp.height/2
+                            ));
+                        }
+                    }
+                });
+
+                // Check enemy collisions
+                enemies.forEach(enemy => {
+                    if (enemy.checkCollision(this)) {
+                        if (!this.invincible) {
+                            this.health -= 5;
+                            if (this.health <= 0) {
+                                this.die();
+                            } else {
+                                this.invincible = true;
+                                this.invincibleTimer = 2;
+                            }
+                        }
+                    }
+                });
+
+                // Check if all collectibles are collected
+                const allCollected = collectibles.every(c => c.collected);
+                if (allCollected) {
+                    document.getElementById('victoryMessage').style.display = 'block';
+                }
+
+                // Add UI update at the end of the update method
+                this.updateUI();
+            }
+
+            die() {
+                this.isDead = true;
+                this.deathTimer = 0;
+                // Create initial burst of sparks
+                for (let i = 0; i < 20; i++) {
+                    this.sparks.push(new Spark(
+                        this.x + this.width/2,
+                        this.y + this.height/2
+                    ));
+                }
+            }
+
+            reset() {
+                this.x = canvas.width/2 - 16;
+                this.y = canvas.height/2 - 16;
+                this.z = 0;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.velocityZ = 0;
+                this.isDead = false;
+                this.deathTimer = 0;
+                this.sparks = [];
+                this.isLanding = false;
+                this.landingPlatform = null;
+                this.score = 0;
+                this.collectiblesFound = 0;
+                collectibles.forEach(c => c.collected = false);
+                goal.reached = false;
+                this.health = this.maxHealth;
+                this.speedBoost = 1;
+                this.speedBoostTimer = 0;
+                this.invincible = false;
+                this.invincibleTimer = 0;
+                this.waterProtection = false;
+                this.waterProtectionTimer = 0;
+                powerUps.forEach(p => p.collected = false);
+                document.getElementById('victoryMessage').style.display = 'none';
+            }
+
+            move(direction) {
+                if (this.isDead) return;
+
+                const speedMultiplier = this.isLanding ? 0.5 : 1;
+                const finalSpeedMultiplier = speedMultiplier * this.speedBoost;
+                
+                switch(direction) {
+                    case 'up':
+                        if (!this.isLanding) {
+                            this.velocityY -= this.acceleration * finalSpeedMultiplier;
+                            this.velocityZ -= this.acceleration * 0.5 * finalSpeedMultiplier;
+                        }
+                        break;
+                    case 'down':
+                        this.velocityY += this.acceleration * finalSpeedMultiplier;
+                        this.velocityZ += this.acceleration * 0.5 * finalSpeedMultiplier;
+                        break;
+                    case 'left':
+                        this.velocityX -= this.acceleration * finalSpeedMultiplier;
+                        break;
+                    case 'right':
+                        this.velocityX += this.acceleration * finalSpeedMultiplier;
+                        break;
+                }
+
+                this.velocityX = Math.max(Math.min(this.velocityX, this.maxSpeed * this.speedBoost), -this.maxSpeed * this.speedBoost);
+                this.velocityY = Math.max(Math.min(this.velocityY, this.maxSpeed * this.speedBoost), -this.maxSpeed * this.speedBoost);
+                this.velocityZ = Math.max(Math.min(this.velocityZ, this.maxSpeed * this.speedBoost), -this.maxSpeed * this.speedBoost);
+            }
+
+            updateUI() {
+                // Update score
+                document.getElementById('scoreDisplay').textContent = this.score;
+                document.getElementById('collectiblesDisplay').textContent = this.collectiblesFound;
+                document.getElementById('totalCollectibles').textContent = collectibles.length;
+
+                // Update health bar
+                const healthFill = document.getElementById('healthFill');
+                const healthPercent = (this.health / this.maxHealth) * 100;
+                healthFill.style.width = `${healthPercent}%`;
+                
+                // Update health bar color
+                healthFill.className = 'health-fill';
+                if (this.health > 50) {
+                    healthFill.classList.add('high');
+                } else if (this.health > 25) {
+                    healthFill.classList.add('medium');
+                } else {
+                    healthFill.classList.add('low');
+                }
+
+                // Update speed boost display
+                const speedBoostDisplay = document.getElementById('speedBoostDisplay');
+                const speedBoostTimer = document.getElementById('speedBoostTimer');
+                if (this.speedBoostTimer > 0) {
+                    speedBoostDisplay.style.display = 'flex';
+                    speedBoostTimer.textContent = Math.ceil(this.speedBoostTimer);
+                } else {
+                    speedBoostDisplay.style.display = 'none';
+                }
+
+                // Update invincible display
+                const invincibleDisplay = document.getElementById('invincibleDisplay');
+                const invincibleTimer = document.getElementById('invincibleTimer');
+                if (this.invincibleTimer > 0) {
+                    invincibleDisplay.style.display = 'flex';
+                    invincibleTimer.textContent = Math.ceil(this.invincibleTimer);
+                } else {
+                    invincibleDisplay.style.display = 'none';
+                }
+            }
+        }
+
+        const drone = new Drone(canvas.width/2 - 16, canvas.height/2 - 16);
+        const lighthouse = new Lighthouse(100, canvas.height - 120);
+        const buildings = [
+            new PixelObject(300, canvas.height - 80, 0, 60, 80, 60, '#95a5a6'),
+            new PixelObject(400, canvas.height - 100, 0, 40, 100, 40, '#7f8c8d'),
+            new PixelObject(500, canvas.height - 60, 0, 50, 60, 50, '#bdc3c7')
+        ];
+
+        const keys = {};
+
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        function drawGrid() {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            
+            const gridSize = 50;
+            const perspective = 0.3;
+            
+            for (let i = 0; i < canvas.width; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, canvas.height);
+                ctx.lineTo(i + canvas.height * perspective, 0);
+                ctx.stroke();
+            }
+            
+            for (let i = 0; i < canvas.height; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+        }
+
+        function drawWater() {
+            const gradient = ctx.createLinearGradient(0, canvas.height - 50, 0, canvas.height);
+            gradient.addColorStop(0, '#3498db');
+            gradient.addColorStop(1, '#2980b9');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+            
+            // Draw wave pattern
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < canvas.width; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(i, canvas.height - 30);
+                ctx.lineTo(i + 10, canvas.height - 35);
+                ctx.lineTo(i + 20, canvas.height - 30);
+                ctx.stroke();
+            }
+        }
+
+        // Create more collectibles with some in water
+        const collectibles = [
+            new Collectible(200, 100),
+            new Collectible(400, 200),
+            new Collectible(600, 150),
+            new Collectible(300, 300),
+            new Collectible(500, 400),
+            new Collectible(150, canvas.height - 30, true),  // In water
+            new Collectible(350, canvas.height - 25, true),  // In water
+            new Collectible(550, canvas.height - 35, true),  // In water
+            new Collectible(750, canvas.height - 30, true),  // In water
+            new Collectible(250, 450),
+            new Collectible(450, 350),
+            new Collectible(650, 250),
+            new Collectible(150, 350),
+            new Collectible(350, 150),
+            new Collectible(550, 150)
+        ];
+        const goal = new Goal(700, 500);
+
+        // Create power-ups with respawn functionality
+        const powerUps = [
+            new PowerUp(150, 150, 'speed'),
+            new PowerUp(450, 250, 'health'),
+            new PowerUp(650, 350, 'speed'),
+            new PowerUp(250, 450, 'health'),
+            new PowerUp(350, 150, 'speed'),
+            new PowerUp(550, 250, 'health')
+        ];
+
+        // Create enemy drones
+        const enemies = [
+            new EnemyDrone(100, 100, 'chaser'),
+            new EnemyDrone(600, 400, 'chaser'),
+            new EnemyDrone(300, 300, 'patroller'),
+            new EnemyDrone(500, 200, 'patroller')
+        ];
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawGrid();
+            drawWater();
+            
+            buildings.forEach(building => building.draw());
+            lighthouse.draw();
+
+            // Update and draw collectibles
+            collectibles.forEach(collectible => {
+                collectible.update(drone);
+                collectible.draw();
+            });
+
+            // Update and draw power-ups
+            powerUps.forEach(powerUp => {
+                if (powerUp.collected) {
+                    powerUp.spawnTimer += 1/60; // Increment timer
+                    if (powerUp.spawnTimer >= 30) { // 30 seconds
+                        powerUp.reset();
+                    }
+                }
+                powerUp.update();
+                powerUp.draw();
+            });
+
+            // Draw goal
+            goal.draw();
+
+            // Update and draw enemies
+            enemies.forEach(enemy => {
+                enemy.update(drone);
+                enemy.draw();
+            });
+
+            if (!drone.isDead) {
+                if (keys['ArrowUp']) drone.move('up');
+                if (keys['ArrowDown']) drone.move('down');
+                if (keys['ArrowLeft']) drone.move('left');
+                if (keys['ArrowRight']) drone.move('right');
+            }
+
+            drone.update();
+            drone.draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
