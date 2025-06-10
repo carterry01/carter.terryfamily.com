@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=800, initial-scale=1.0">
-    <title>Neon Ping Pong</title>
+    <title>Ping Pong Game</title>
     <style>
         body {
             margin: 0;
@@ -12,17 +12,12 @@
             align-items: center;
             min-height: 100vh;
             background: #000;
-            font-family: 'Courier New', monospace;
-            position: relative;
-            overflow: hidden;
         }
         #gameCanvas {
             display: block;
             border: 3px solid #0ff;
             box-shadow: 0 0 20px #0ff;
             background: #000;
-            position: relative;
-            z-index: 1;
         }
         #score {
             position: absolute;
@@ -35,256 +30,11 @@
             text-shadow: 0 0 10px #0ff;
             z-index: 2;
         }
-        #grid {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                linear-gradient(90deg, rgba(0,255,255,0.1) 1px, transparent 1px),
-                linear-gradient(0deg, rgba(0,255,255,0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
-            pointer-events: none;
-            z-index: 0;
-        }
-        #scanline {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(
-                to bottom,
-                transparent 50%,
-                rgba(0, 255, 255, 0.1) 50%
-            );
-            background-size: 100% 4px;
-            pointer-events: none;
-            z-index: 3;
-            animation: scan 8s linear infinite;
-        }
-        #glow {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, transparent 0%, #000 70%);
-            pointer-events: none;
-            z-index: 4;
-        }
-        @keyframes scan {
-            from { transform: translateY(-100%); }
-            to { transform: translateY(100%); }
-        }
     </style>
 </head>
 <body>
-    <div id="grid"></div>
-    <div id="scanline"></div>
-    <div id="glow"></div>
     <div id="score">0 : 0</div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-
-        // Game objects
-        const paddle1 = {
-            x: 20,
-            y: canvas.height / 2 - 50,
-            width: 20,
-            height: 100,
-            speed: 8,
-            color: '#0ff',
-            score: 0
-        };
-
-        const paddle2 = {
-            x: canvas.width - 40,
-            y: canvas.height / 2 - 50,
-            width: 20,
-            height: 100,
-            speed: 8,
-            color: '#f0f',
-            score: 0
-        };
-
-        const ball = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 10,
-            speed: 7,
-            dx: 7,
-            dy: 7,
-            color: '#fff'
-        };
-
-        let gameOver = false;
-        const winningScore = 5;
-
-        // Event listeners
-        let wPressed = false;
-        let sPressed = false;
-        let upPressed = false;
-        let downPressed = false;
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'w' || e.key === 'W') wPressed = true;
-            if (e.key === 's' || e.key === 'S') sPressed = true;
-            if (e.key === 'ArrowUp') upPressed = true;
-            if (e.key === 'ArrowDown') downPressed = true;
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'w' || e.key === 'W') wPressed = false;
-            if (e.key === 's' || e.key === 'S') sPressed = false;
-            if (e.key === 'ArrowUp') upPressed = false;
-            if (e.key === 'ArrowDown') downPressed = false;
-        });
-
-        function drawPaddle(paddle) {
-            ctx.beginPath();
-            ctx.rect(paddle.x, paddle.y, paddle.width, paddle.height);
-            ctx.fillStyle = paddle.color;
-            ctx.fill();
-            ctx.closePath();
-
-            // Add glow effect
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = paddle.color;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-
-        function drawBall() {
-            ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = ball.color;
-            ctx.fill();
-            ctx.closePath();
-
-            // Add glow effect
-            ctx.shadowBlur = 20;
-            ctx.shadowColor = ball.color;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-
-        function movePaddles() {
-            // Paddle 1 (W/S keys)
-            if (wPressed && paddle1.y > 0) {
-                paddle1.y -= paddle1.speed;
-            }
-            if (sPressed && paddle1.y < canvas.height - paddle1.height) {
-                paddle1.y += paddle1.speed;
-            }
-
-            // Paddle 2 (Arrow keys)
-            if (upPressed && paddle2.y > 0) {
-                paddle2.y -= paddle2.speed;
-            }
-            if (downPressed && paddle2.y < canvas.height - paddle2.height) {
-                paddle2.y += paddle2.speed;
-            }
-        }
-
-        function drawScore() {
-            scoreElement.textContent = `${paddle1.score} : ${paddle2.score}`;
-        }
-
-        function moveBall() {
-            ball.x += ball.dx;
-            ball.y += ball.dy;
-
-            // Top and bottom wall collision
-            if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
-                ball.dy = -ball.dy;
-            }
-
-            // Paddle collision
-            if (ball.dx < 0) {
-                // Left paddle
-                if (ball.x - ball.radius < paddle1.x + paddle1.width &&
-                    ball.y > paddle1.y &&
-                    ball.y < paddle1.y + paddle1.height) {
-                    ball.dx = -ball.dx;
-                    // Add some randomness to the bounce
-                    ball.dy = ball.dy + (Math.random() * 2 - 1);
-                }
-            } else {
-                // Right paddle
-                if (ball.x + ball.radius > paddle2.x &&
-                    ball.y > paddle2.y &&
-                    ball.y < paddle2.y + paddle2.height) {
-                    ball.dx = -ball.dx;
-                    // Add some randomness to the bounce
-                    ball.dy = ball.dy + (Math.random() * 2 - 1);
-                }
-            }
-
-            // Score points
-            if (ball.x + ball.radius < 0) {
-                paddle2.score++;
-                resetBall();
-            } else if (ball.x - ball.radius > canvas.width) {
-                paddle1.score++;
-                resetBall();
-            }
-
-            // Check for winner
-            if (paddle1.score >= winningScore || paddle2.score >= winningScore) {
-                gameOver = true;
-            }
-        }
-
-        function resetBall() {
-            ball.x = canvas.width / 2;
-            ball.y = canvas.height / 2;
-            ball.dx = -ball.dx;
-            ball.dy = (Math.random() * 2 - 1) * ball.speed;
-        }
-
-        function draw() {
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (!gameOver) {
-                movePaddles();
-                moveBall();
-                drawPaddle(paddle1);
-                drawPaddle(paddle2);
-                drawBall();
-                drawScore();
-                requestAnimationFrame(draw);
-            } else {
-                // Game over screen
-                ctx.fillStyle = '#fff';
-                ctx.font = '48px "Courier New"';
-                ctx.textAlign = 'center';
-                const winner = paddle1.score > paddle2.score ? "Player 1" : "Player 2";
-                ctx.fillText(`${winner} Wins!`, canvas.width / 2, canvas.height / 2);
-                ctx.font = '24px "Courier New"';
-                ctx.fillText(`Final Score: ${paddle1.score} - ${paddle2.score}`, canvas.width / 2, canvas.height / 2 + 40);
-                ctx.fillText('Click to Play Again', canvas.width / 2, canvas.height / 2 + 80);
-            }
-        }
-
-        // Start game
-        draw();
-
-        // Restart game on click
-        canvas.addEventListener('click', () => {
-            if (gameOver) {
-                gameOver = false;
-                paddle1.score = 0;
-                paddle2.score = 0;
-                resetBall();
-                draw();
-            }
-        });
-    </script>
+    <script src="pingpong.js"></script>
 </body>
 </html>

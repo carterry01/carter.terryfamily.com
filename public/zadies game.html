@@ -108,72 +108,13 @@
     #bgmAudio {
       display: none;
     }
-
-    /* Cookie Banner Styles */
-    .cookie-banner {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(34, 34, 34, 0.95);
-      color: #fff;
-      padding: 20px;
-      display: none;
-      z-index: 1000;
-      text-align: center;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-    }
-
-    .cookie-banner button {
-      background: #4cf;
-      color: #222;
-      border: none;
-      padding: 8px 20px;
-      margin: 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background 0.2s;
-    }
-
-    .cookie-banner button:hover {
-      background: #6df;
-    }
-
-    /* Content Warning Styles */
-    .content-warning {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(34, 34, 34, 0.95);
-      padding: 20px;
-      border-radius: 10px;
-      color: #fff;
-      text-align: center;
-      z-index: 1001;
-      display: none;
-      max-width: 80%;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    }
-
-    .content-warning button {
-      background: #4cf;
-      color: #222;
-      border: none;
-      padding: 8px 20px;
-      margin: 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
   </style>
 </head>
 <body>
   <h1>Blob Eater (Online)</h1>
   <div id="startScreen">
     <div id="usernameLabel">Enter your name:</div>
-    <input type="text" id="usernameInput" autocomplete="off" placeholder="Your name..." />
+    <input type="text" id="usernameInput" maxlength="16" autocomplete="off" placeholder="Your name..." />
     <button id="startBtn" disabled>Start</button>
   </div>
   <div id="usernameDisplay" style="display:none;"></div>
@@ -182,19 +123,6 @@
   <audio id="bgmAudio" src="bgm.mp4" loop preload="auto"></audio>
   <!-- Socket.IO client script served from the same server -->
   <script src="/socket.io/socket.io.js"></script>
-  <!-- Cookie Banner -->
-  <div id="cookieBanner" class="cookie-banner">
-    <p>We use cookies to save your game progress and preferences. We also filter inappropriate content to keep the game family-friendly.</p>
-    <button onclick="acceptCookies()">Accept</button>
-  </div>
-
-  <!-- Content Warning -->
-  <div id="contentWarning" class="content-warning">
-    <h3>Content Warning</h3>
-    <p id="warningMessage"></p>
-    <button onclick="closeWarning()">OK</button>
-  </div>
-
   <script>
     // ---------------- Socket.IO Setup ----------------
     const socket = io(); // automatically connects to the hosting origin
@@ -227,79 +155,9 @@
 
     let username = '';
 
-    // Content Filter System
-    const badWords = [
-      // Add your list of bad words here
-      'badword1', 'badword2', 'badword3'
-    ];
-
-    const COOKIE_PREFIX = 'blob_eater_';
-    const COOKIE_EXPIRY_DAYS = 365;
-
-    // Cookie Management
-    function setCookie(name, value) {
-      const date = new Date();
-      date.setTime(date.getTime() + (COOKIE_EXPIRY_DAYS * 24 * 60 * 60 * 1000));
-      const expires = "expires=" + date.toUTCString();
-      document.cookie = COOKIE_PREFIX + name + "=" + value + ";" + expires + ";path=/";
-    }
-
-    function getCookie(name) {
-      const fullName = COOKIE_PREFIX + name;
-      const cookies = document.cookie.split(';');
-      for (let cookie of cookies) {
-        cookie = cookie.trim();
-        if (cookie.startsWith(fullName + '=')) {
-          return cookie.substring(fullName.length + 1);
-        }
-      }
-      return null;
-    }
-
-    function acceptCookies() {
-      setCookie('cookie_consent', 'true');
-      document.getElementById('cookieBanner').style.display = 'none';
-    }
-
-    // Content Filter Functions
-    function containsBadWords(text) {
-      const lowerText = text.toLowerCase();
-      return badWords.some(word => lowerText.includes(word.toLowerCase()));
-    }
-
-    function showWarning(message) {
-      const warningDiv = document.getElementById('contentWarning');
-      document.getElementById('warningMessage').textContent = message;
-      warningDiv.style.display = 'block';
-    }
-
-    function closeWarning() {
-      document.getElementById('contentWarning').style.display = 'none';
-    }
-
-    // Modified username validation
-    function validateUsername(username) {
-      if (containsBadWords(username)) {
-        showWarning('Your username contains inappropriate language. Please choose a different name.');
-        return false;
-      }
-      return true;
-    }
-
-    // Initialize cookie banner
-    window.onload = function() {
-      if (!getCookie('cookie_consent')) {
-        document.getElementById('cookieBanner').style.display = 'block';
-      }
-    };
-
     startBtn.addEventListener('click', () => {
       username = usernameInput.value.trim();
       if (!username) return;
-
-      if (!validateUsername(username)) {
-        return;
-      }
 
       startScreen.style.display = 'none';
       canvas.style.display = 'block';
@@ -309,7 +167,7 @@
       // Start the game loop locally
       startGame();
 
-      // Tell the server who we are
+      // Tell the server who we are (after user interaction to satisfy autoplay restrictions)
       socket.emit('register', { username, color: blob.color });
 
       // Start background music
@@ -582,15 +440,6 @@
         resizeCanvas();
         updateCamera();
       }
-    });
-
-    // Add chat message filtering
-    socket.on('chatMessage', (data) => {
-      if (containsBadWords(data.message)) {
-        showWarning('A message was blocked for containing inappropriate language.');
-        return;
-      }
-      // Handle the message normally
     });
   </script>
 </body>
