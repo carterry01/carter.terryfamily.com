@@ -347,6 +347,29 @@
             color: #ffd700;
             font-weight: bold;
         }
+
+        .weekly-code-popup {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: #4CAF50;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 18px;
+            font-size: 20px;
+            z-index: 5000;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            font-weight: bold;
+            opacity: 0;
+            transition: transform 0.5s cubic-bezier(.4,2,.6,1), opacity 0.5s;
+        }
+        .weekly-code-popup.visible {
+            display: block;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -354,6 +377,7 @@
     <div class="container">
         <div class="header">
             <h1>Penguin Clicker</h1>
+            <div id="weeklyCode" style="margin-top: 10px; font-size: 16px; color: #ffd700;"></div>
         </div>
 
         <div class="click-area" id="clickArea">
@@ -443,6 +467,8 @@
         </div>
     </div>
 
+    <div id="weeklyCodePopup" class="weekly-code-popup">💬 This Week's Code: <span id="popupCode"></span></div>
+
     <script>
         let gameState = {
             penguins: 0,
@@ -519,7 +545,7 @@
                     perSecond: 0,
                     perSecond10: 0,
                     perSecond100: 0,
-                    clickPower2000: 0,
+
                     perSecond250k: 0,
                     perSecond5m: 0,
                     clickPower2m: 0,
@@ -592,7 +618,30 @@
         }, 1000);
 
         /* ---------------- Secret Code Pad Logic ---------------- */
-        const secretCode = '3695';
+        function generateWeeklyCode() {
+            const now = new Date();
+            const weekNumber = Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
+            // Generate a 4-digit code based on the week number
+            const baseCode = (weekNumber * 1234) % 10000;
+            return baseCode.toString().padStart(4, '0');
+        }
+
+        // Display the current week's code
+        function updateWeeklyCodeDisplay() {
+            const currentCode = generateWeeklyCode();
+            const weeklyCodeElement = document.getElementById('weeklyCode');
+            weeklyCodeElement.textContent = `This Week's Code: ${currentCode}`;
+
+            // Show animated popup notification like a text message
+            const popup = document.getElementById('weeklyCodePopup');
+            const popupCode = document.getElementById('popupCode');
+            popupCode.textContent = currentCode;
+            popup.classList.add('visible');
+            setTimeout(() => {
+                popup.classList.remove('visible');
+            }, 4000);
+        }
+
         let enteredCode = '';
 
         function toggleCodePad() {
@@ -617,7 +666,8 @@
         }
 
         function submitCode() {
-            if (enteredCode === secretCode) {
+            const currentCode = generateWeeklyCode();
+            if (enteredCode === currentCode) {
                 gameState.penguins += 1000000;
                 updateDisplay();
                 alert('Correct! You received 1,000,000 penguins!');
@@ -628,8 +678,33 @@
             }
         }
 
-        // Initialize display
+        // Initialize display and weekly code
         updateDisplay();
+        updateWeeklyCodeDisplay();
+
+        function showWeeklyCodeSystemNotification() {
+            const code = generateWeeklyCode();
+            if ("Notification" in window) {
+                if (Notification.permission === "granted") {
+                    new Notification("Penguin Clicker - Weekly Code", {
+                        body: `This week's code is: ${code}`,
+                        icon: "pen coin.png" // Optional: path to your icon
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification("Penguin Clicker - Weekly Code", {
+                                body: `This week's code is: ${code}`,
+                                icon: "pen coin.png"
+                            });
+                        }
+                    });
+                }
+            }
+        }
+
+        // Call this when the page loads
+        showWeeklyCodeSystemNotification();
     </script>
 </body>
 </html> 
