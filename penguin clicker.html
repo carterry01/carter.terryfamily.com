@@ -592,7 +592,14 @@
         }, 1000);
 
         /* ---------------- Secret Code Pad Logic ---------------- */
-        const secretCode = '905645';
+        function generateWeeklyCode() {
+            const now = new Date();
+            const weekNumber = Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
+            // Generate a 6-digit code based on the week number
+            const baseCode = (weekNumber * 12345) % 1000000;
+            return baseCode.toString().padStart(6, '0');
+        }
+
         let enteredCode = '';
 
         function toggleCodePad() {
@@ -602,7 +609,7 @@
         }
 
         function pressDigit(d) {
-            if (enteredCode.length >= 4) return;
+            if (enteredCode.length >= 6) return;
             enteredCode += d.toString();
             updateCodeDisplay();
         }
@@ -617,7 +624,8 @@
         }
 
         function submitCode() {
-            if (enteredCode === secretCode) {
+            const currentCode = generateWeeklyCode();
+            if (enteredCode === currentCode) {
                 gameState.penguins += 1000000;
                 updateDisplay();
                 alert('Correct! You received 1,000,000 penguins!');
