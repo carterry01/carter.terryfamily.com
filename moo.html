@@ -181,6 +181,10 @@
 
         const grass = [];
         const numGrass = 10;
+        let superGrassActive = false;
+        let superGrassTimer = 0;
+        let superGrassSpeed = 12;
+        let superGrassColor = '#FFD700';
 
         // Pen now encloses the whole field
         const pen = { x: 0, y: 0, width: canvas.width, height: canvas.height };
@@ -239,11 +243,15 @@
         startButton.addEventListener('click', startGame);
 
         function createGrass() {
+            // Only 1 super grass at a time
+            let canSpawnSuper = !grass.some(g => g.isSuper && !g.eaten) && !superGrassActive;
+            let isSuper = canSpawnSuper && Math.random() < 1/15;
             grass.push({
                 x: Math.random() * (canvas.width - 20),
                 y: Math.random() * (canvas.height - 20),
                 size: 20,
-                eaten: false
+                eaten: false,
+                isSuper
             });
         }
 
@@ -259,19 +267,19 @@
         function updateCow() {
             let moving = false;
             if (keys['ArrowUp'] || keys['w']) {
-                cow.y -= cow.speed;
+                cow.y -= (superGrassActive ? superGrassSpeed : cow.speed);
                 moving = true;
             }
             if (keys['ArrowDown'] || keys['s']) {
-                cow.y += cow.speed;
+                cow.y += (superGrassActive ? superGrassSpeed : cow.speed);
                 moving = true;
             }
             if (keys['ArrowLeft'] || keys['a']) {
-                cow.x -= cow.speed;
+                cow.x -= (superGrassActive ? superGrassSpeed : cow.speed);
                 moving = true;
             }
             if (keys['ArrowRight'] || keys['d']) {
-                cow.x += cow.speed;
+                cow.x += (superGrassActive ? superGrassSpeed : cow.speed);
                 moving = true;
             }
 
@@ -296,12 +304,27 @@
                     Math.abs(cow.x - g.x) < (cow.size/2 + g.size/2) &&
                     Math.abs(cow.y - g.y) < (cow.size/2 + g.size/2)) {
                     g.eaten = true;
-                    cow.score += 10;
-                    cow.size += 1; // grow with each meal
-                    scoreElement.textContent = `Score: ${cow.score}`;
+                    if (g.isSuper) {
+                        cow.score += 50;
+                        superGrassActive = true;
+                        superGrassTimer = 300; // 5 seconds at 60fps
+                        scoreElement.textContent = `Score: ${cow.score}`;
+                    } else {
+                        cow.score += 10;
+                        cow.size += 1; // grow with each meal
+                        scoreElement.textContent = `Score: ${cow.score}`;
+                    }
                     createGrass();
                 }
             });
+
+            // Super grass timer
+            if (superGrassActive) {
+                superGrassTimer--;
+                if (superGrassTimer <= 0) {
+                    superGrassActive = false;
+                }
+            }
 
             // Break the pen gate at 1,000 points
             if (!gateBroken && cow.score >= 1000) {
@@ -424,10 +447,28 @@
         function drawGrass() {
             grass.forEach(g => {
                 if (!g.eaten) {
-                    ctx.fillStyle = '#228B22';
+                    ctx.fillStyle = g.isSuper ? superGrassColor : '#228B22';
                     ctx.beginPath();
                     ctx.arc(g.x, g.y, g.size/2, 0, Math.PI * 2);
                     ctx.fill();
+                    if (g.isSuper) {
+                        // Draw a sparkle effect
+                        ctx.save();
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        for (let i = 0; i < 8; i++) {
+                            let angle = (Math.PI*2/8)*i + (Date.now()/200);
+                            let x1 = g.x + Math.cos(angle) * 2;
+                            let y1 = g.y + Math.sin(angle) * 2;
+                            let x2 = g.x + Math.cos(angle) * 10;
+                            let y2 = g.y + Math.sin(angle) * 10;
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+                    }
                 }
             });
         }
