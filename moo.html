@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Cow Escape</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #87CEEB;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid #333;
+            background-color: #90EE90;
+            display: none;
+        }
+        #gameContainer {
+            text-align: center;
+        }
+        #score {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: none;
+        }
+        #titleScreen {
+            text-align: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        #gameTitle {
+            font-size: 48px;
+            color: #8B4513;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        #startButton {
+            font-size: 24px;
+            padding: 15px 30px;
+            background-color: #90EE90;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #startButton:hover {
+            background-color: #228B22;
+            color: white;
+        }
+        #instructions {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        #prompt {
+            font-size: 20px;
+            margin-top: 10px;
+            color: #ffffff;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 16px;
+            border-radius: 6px;
+            display: none;
+        }
+        #followSign {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: 90%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 12px 32px;
+            border-radius: 10px;
+            z-index: 10;
+        }
+        #overlay {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            font-size: 2em;
+        }
+        #restartBtn {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 60%;
+            transform: translate(-50%,0);
+            z-index: 101;
+            font-size: 1.5em;
+            padding: 0.5em 2em;
+            border-radius: 10px;
+            border: none;
+            background: #90EE90;
+            color: #333;
+            cursor: pointer;
+        }
+        #howToBtn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 20;
+            font-size: 1em;
+            padding: 0.3em 1em;
+            border-radius: 8px;
+            border: none;
+            background: #fff;
+            color: #333;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="titleScreen">
+            <h1 id="gameTitle">The Great Cow Escape</h1>
+            <button id="startButton">Start Game</button>
+            <div id="instructions">
+                <p>Use arrow keys or WASD to move</p>
+                <p>Eat grass to score points!</p>
+            </div>
+        </div>
+        <div id="score">Score: 0</div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="prompt">Talk (press T)</div>
+        <div id="followSign" style="display:none;position:absolute;left:50%;top:90%;transform:translateX(-50%);font-size:32px;color:#fff;background:rgba(0,0,0,0.7);padding:12px 32px;border-radius:10px;z-index:10;">Follow the cows</div>
+        <div id="overlay" style="display:none;position:fixed;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);color:#fff;z-index:100;align-items:center;justify-content:center;flex-direction:column;font-size:2em;"></div>
+        <button id="restartBtn" style="display:none;position:fixed;left:50%;top:60%;transform:translate(-50%,0);z-index:101;font-size:1.5em;padding:0.5em 2em;border-radius:10px;border:none;background:#90EE90;color:#333;cursor:pointer;">Restart</button>
+        <button id="howToBtn" style="position:absolute;top:10px;right:10px;z-index:20;font-size:1em;padding:0.3em 1em;border-radius:8px;border:none;background:#fff;color:#333;cursor:pointer;">How to Play</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const titleScreen = document.getElementById('titleScreen');
+        const startButton = document.getElementById('startButton');
+        const promptDiv = document.getElementById('prompt');
+        const followSign = document.getElementById('followSign');
+        const overlay = document.getElementById('overlay');
+        const restartBtn = document.getElementById('restartBtn');
+        const howToBtn = document.getElementById('howToBtn');
+        let gameStarted = false;
+        let cameraMode = 'player'; // 'player' or 'npcCows'
+        let npcCowsEscaping = false;
+        let npcCowsReachedFarm = false;
+        let farmerActive = false;
+        let farmer = { x: 0, y: 0, targetCow: null, speed: 4, caught: 0 };
+        // Indices of cows to be taken by the farmer
+        const farmerTargets = [1, 2]; // 2nd and 3rd cows in npcCows
+        let gameEnded = false;
+        let win = false;
+        let showHowTo = false;
+
+        // Game objects
+        const cow = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            size: 40,
+            speed: 5,
+            score: 0,
+            frame: 0,
+            animTimer: 0,
+            caughtByFarmer: false
+        };
+
+        const grass = [];
+        const numGrass = 10;
+
+        // Pen now encloses the whole field
+        const pen = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+        let gateBroken = false;
+        let gateBreakMessageShown = false;
+        const npcCows = [
+            { x: 120, y: 470, size: 30, messages: [
+                "Moo there! Lovely day on the farm, isn't it?",
+                "The farmer is mean to me all the time, almost as mean as my mom!",
+                "I wish I could jump over the moon!"
+            ], msgIndex: 0 },
+            { x: 260, y: 450, size: 30, messages: [
+                "Have you tried the greener grass on the other side?",
+                "Sometimes I dream of being a horse.",
+                "Don't eat too much or you'll get stuck!"
+            ], msgIndex: 0 },
+            { x: 600, y: 480, size: 30, messages: [
+                "Just chilling in my pen!",
+                "Moo-ving is hard work.",
+                "I heard the barn is haunted at night."
+            ], msgIndex: 0 }
+        ];
+        let currentNpc = null;
+
+        function startGame() {
+            gameStarted = true;
+            titleScreen.style.display = 'none';
+            canvas.style.display = 'block';
+            scoreElement.style.display = 'block';
+            overlay.style.display = 'none';
+            restartBtn.style.display = 'none';
+            gameEnded = false;
+            win = false;
+            showHowTo = false;
+            farmerLeads = [];
+            farmerChaseStart = null;
+            cow.x = canvas.width / 2;
+            cow.y = canvas.height / 2;
+            cow.size = 40;
+            cow.score = 0;
+            cow.caughtByFarmer = false;
+            npcCows.forEach(npc => { npc.caughtByFarmer = false; npc.target = null; });
+            
+            // Reset game state
+            grass.length = 0;
+            
+            // Create initial grass patches
+            for (let i = 0; i < numGrass; i++) {
+                createGrass();
+            }
+            
+            // Start game loop
+            gameLoop();
+        }
+
+        startButton.addEventListener('click', startGame);
+
+        function createGrass() {
+            grass.push({
+                x: Math.random() * (canvas.width - 20),
+                y: Math.random() * (canvas.height - 20),
+                size: 20,
+                eaten: false
+            });
+        }
+
+        // Input handling
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        function updateCow() {
+            let moving = false;
+            if (keys['ArrowUp'] || keys['w']) {
+                cow.y -= cow.speed;
+                moving = true;
+            }
+            if (keys['ArrowDown'] || keys['s']) {
+                cow.y += cow.speed;
+                moving = true;
+            }
+            if (keys['ArrowLeft'] || keys['a']) {
+                cow.x -= cow.speed;
+                moving = true;
+            }
+            if (keys['ArrowRight'] || keys['d']) {
+                cow.x += cow.speed;
+                moving = true;
+            }
+
+            // Keep cow within pen, but allow escape through gate if broken
+            cow.x = Math.max(cow.size/2, Math.min(canvas.width - cow.size/2, cow.x));
+            let gateWidth = getGateWidth();
+            let gateX1 = pen.x + pen.width/2 - gateWidth/2;
+            let gateX2 = pen.x + pen.width/2 + gateWidth/2;
+            if (gateBroken && cow.x > gateX1 && cow.x < gateX2 && cow.y - cow.size/2 < pen.y + 10) {
+                // Allow escape upward through the gate
+                // No clamp on y
+                if (!gameEnded && !cow.caughtByFarmer) {
+                    endGame(true);
+                }
+            } else {
+                cow.y = Math.max(cow.size/2, Math.min(canvas.height - cow.size/2, cow.y));
+            }
+
+            // Check for grass collision
+            grass.forEach(g => {
+                if (!g.eaten && 
+                    Math.abs(cow.x - g.x) < (cow.size/2 + g.size/2) &&
+                    Math.abs(cow.y - g.y) < (cow.size/2 + g.size/2)) {
+                    g.eaten = true;
+                    cow.score += 10;
+                    cow.size += 1; // grow with each meal
+                    scoreElement.textContent = `Score: ${cow.score}`;
+                    createGrass();
+                }
+            });
+
+            // Break the pen gate at 1,000 points
+            if (!gateBroken && cow.score >= 1000) {
+                gateBroken = true;
+                gateBreakMessageShown = false;
+                npcCowsEscaping = true;
+                cameraMode = 'npcCows';
+                followSign.style.display = 'block';
+                // Activate farmer
+                farmerActive = true;
+                // Start farmer at left edge, center y of pen
+                farmer.x = pen.x - 40;
+                farmer.y = pen.y + pen.height/2;
+                farmer.targetCow = null;
+                farmer.caught = 0;
+            }
+
+            // Handle walking animation
+            if (moving) {
+                cow.animTimer += 1;
+                if (cow.animTimer > 8) { // change every few frames
+                    cow.frame = (cow.frame + 1) % 2;
+                    cow.animTimer = 0;
+                }
+            } else {
+                cow.frame = 0; // reset when not moving
+            }
+        }
+
+        function drawCow() {
+            drawShadow(cow.x, cow.y, cow.size);
+            const bodyWidth = cow.size;
+            const bodyHeight = cow.size * 0.6;
+            const legLength = cow.size * 0.8;
+            const legWidth = cow.size * 0.13;
+            const legOffsetY = bodyHeight / 2;
+            const legSpacing = bodyWidth / 4;
+            const frame = cow.frame;
+
+            // Tail
+            ctx.strokeStyle = '#a36d32';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(cow.x - bodyWidth/2 + 5, cow.y + 10);
+            ctx.lineTo(cow.x - bodyWidth/2 - 15, cow.y + 30 + Math.sin(Date.now()/200)*5);
+            ctx.stroke();
+
+            // Body
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(cow.x, cow.y, bodyWidth/2, bodyHeight/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head (oval, brown)
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(cow.x, cow.y - bodyHeight/2 - 10, bodyWidth*0.28, bodyHeight*0.38, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Face (white)
+            ctx.fillStyle = '#fffbe9';
+            ctx.beginPath();
+            ctx.ellipse(cow.x, cow.y - bodyHeight/2 - 2, bodyWidth*0.18, bodyHeight*0.28, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ears
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(cow.x - bodyWidth*0.22, cow.y - bodyHeight/2 - 18, bodyWidth*0.09, bodyHeight*0.13, 0, 0, Math.PI*2);
+            ctx.ellipse(cow.x + bodyWidth*0.22, cow.y - bodyHeight/2 - 18, bodyWidth*0.09, bodyHeight*0.13, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(cow.x - bodyWidth*0.07, cow.y - bodyHeight/2 - 10, 3, 0, Math.PI*2);
+            ctx.arc(cow.x + bodyWidth*0.07, cow.y - bodyHeight/2 - 10, 3, 0, Math.PI*2);
+            ctx.fill();
+
+            // Nostrils
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(cow.x - 5, cow.y - bodyHeight/2 + 10, 2, 4, 0, 0, Math.PI*2);
+            ctx.ellipse(cow.x + 5, cow.y - bodyHeight/2 + 10, 2, 4, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Snout (pink)
+            ctx.fillStyle = '#f7c6b7';
+            ctx.beginPath();
+            ctx.ellipse(cow.x, cow.y - bodyHeight/2 + 12, bodyWidth*0.11, bodyHeight*0.13, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Legs (animate alternate steps)
+            ctx.fillStyle = '#fffbe9';
+            // Front-left
+            const flX = cow.x - legSpacing;
+            const flY = cow.y + legOffsetY + (frame === 0 ? 2 : -2);
+            ctx.fillRect(flX - legWidth/2, flY, legWidth, legLength);
+            // Front-right
+            const frX = cow.x + legSpacing;
+            const frY = cow.y + legOffsetY + (frame === 1 ? 2 : -2);
+            ctx.fillRect(frX - legWidth/2, frY, legWidth, legLength);
+            // Back-left
+            const blX = cow.x - legSpacing/2;
+            const blY = cow.y + legOffsetY + (frame === 1 ? 2 : -2);
+            ctx.fillRect(blX - legWidth/2, blY, legWidth, legLength);
+            // Back-right
+            const brX = cow.x + legSpacing/2;
+            const brY = cow.y + legOffsetY + (frame === 0 ? 2 : -2);
+            ctx.fillRect(brX - legWidth/2, brY, legWidth, legLength);
+
+            // Spots on body
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(cow.x - 10, cow.y - 5, 5, 0, Math.PI * 2);
+            ctx.arc(cow.x + 10, cow.y + 5, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawGrass() {
+            grass.forEach(g => {
+                if (!g.eaten) {
+                    ctx.fillStyle = '#228B22';
+                    ctx.beginPath();
+                    ctx.arc(g.x, g.y, g.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function getGateWidth() {
+            return Math.max(80, cow.size + 40);
+        }
+        function drawPen() {
+            ctx.save();
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 6;
+            // Top with gate
+            const gateWidth = getGateWidth();
+            const gateX1 = pen.x + pen.width/2 - gateWidth/2;
+            const gateX2 = pen.x + pen.width/2 + gateWidth/2;
+            ctx.beginPath();
+            // Left
+            ctx.moveTo(pen.x, pen.y);
+            ctx.lineTo(pen.x, pen.y + pen.height);
+            // Right
+            ctx.moveTo(pen.x + pen.width, pen.y);
+            ctx.lineTo(pen.x + pen.width, pen.y + pen.height);
+            // Bottom
+            ctx.moveTo(pen.x, pen.y + pen.height);
+            ctx.lineTo(pen.x + pen.width, pen.y + pen.height);
+            // Top with gate
+            if (!gateBroken) {
+                ctx.moveTo(pen.x, pen.y);
+                ctx.lineTo(gateX1, pen.y);
+                ctx.moveTo(gateX2, pen.y);
+                ctx.lineTo(pen.x + pen.width, pen.y);
+                ctx.stroke();
+                ctx.strokeStyle = '#a0522d';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                ctx.moveTo(gateX1, pen.y);
+                ctx.lineTo(gateX2, pen.y);
+                ctx.stroke();
+            } else {
+                ctx.moveTo(pen.x, pen.y);
+                ctx.lineTo(gateX1, pen.y);
+                ctx.moveTo(gateX2, pen.y);
+                ctx.lineTo(pen.x + pen.width, pen.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // Draw a simple farm (barn) outside the pen on the right
+        function drawFarm() {
+            const barnX = pen.x + pen.width + 30;
+            const barnY = pen.y + pen.height - 200;
+            // Barn base
+            ctx.fillStyle = '#b22222';
+            ctx.fillRect(barnX, barnY, 100, 100);
+            // Roof
+            ctx.fillStyle = '#8b0000';
+            ctx.beginPath();
+            ctx.moveTo(barnX - 10, barnY);
+            ctx.lineTo(barnX + 50, barnY - 50);
+            ctx.lineTo(barnX + 110, barnY);
+            ctx.closePath();
+            ctx.fill();
+            // Door
+            ctx.fillStyle = '#fff8dc';
+            ctx.fillRect(barnX + 35, barnY + 50, 30, 50);
+        }
+
+        function updatePrompt() {
+            currentNpc = null;
+            promptDiv.style.display = 'none';
+
+            npcCows.forEach(npc => {
+                const dx = cow.x - npc.x;
+                const dy = cow.y - npc.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < (cow.size/2 + npc.size/2 + 10)) {
+                    currentNpc = npc;
+                }
+            });
+
+            if (currentNpc) {
+                promptDiv.style.display = 'block';
+            }
+        }
+
+        function updateNpcCows() {
+            if (npcCowsEscaping && !npcCowsReachedFarm) {
+                let allAtFarm = true;
+                npcCows.forEach((npc, i) => {
+                    // Only allow the first NPC cow to escape
+                    if (i === 0) {
+                        if (!npc.target) {
+                            // Set target just outside the right pen (barn area)
+                            npc.target = { x: pen.x + pen.width + 80, y: pen.y + pen.height - 150 };
+                        }
+                        // Move toward the gate, then out
+                        let gateWidth = getGateWidth();
+                        let gateX1 = pen.x + pen.width/2 - gateWidth/2;
+                        let gateX2 = pen.x + pen.width/2 + gateWidth/2;
+                        // If not out, move toward center of gate
+                        if (npc.x < gateX1 || npc.x > gateX2 || npc.y > pen.y + 10) {
+                            const target = { x: (gateX1 + gateX2)/2, y: pen.y - 40 };
+                            const dx = target.x - npc.x;
+                            const dy = target.y - npc.y;
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist > 2) {
+                                const speed = 3;
+                                npc.x += (dx/dist) * speed;
+                                npc.y += (dy/dist) * speed;
+                                allAtFarm = false;
+                                return;
+                            }
+                        }
+                        // After out, move to farm
+                        const dx = npc.target.x - npc.x;
+                        const dy = npc.target.y - npc.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist > 2) {
+                            const speed = 3;
+                            npc.x += (dx/dist) * speed;
+                            npc.y += (dy/dist) * speed;
+                            allAtFarm = false;
+                        }
+                    }
+                });
+                if (allAtFarm || (npcCows.length === 1 && farmerActive)) {
+                    npcCowsReachedFarm = true;
+                    cameraMode = 'player';
+                    followSign.style.display = 'none';
+                }
+            }
+        }
+
+        function getCameraTarget() {
+            if (cameraMode === 'npcCows' && npcCows.length > 0) {
+                // Follow the average position of escaping cows
+                let sumX = 0, sumY = 0;
+                npcCows.forEach(npc => { sumX += npc.x; sumY += npc.y; });
+                return { x: sumX / npcCows.length, y: sumY / npcCows.length };
+            } else {
+                // Follow player
+                return { x: cow.x, y: cow.y };
+            }
+        }
+
+        // Farmer logic: chase all cows, catch two, keep chasing for 30s, then leave
+        let farmerLeads = [];
+        let farmerChaseStart = null;
+        function updateFarmer() {
+            if (!farmerActive) return;
+            // Start timer on first activation
+            if (!farmerChaseStart) farmerChaseStart = Date.now();
+            // If caught less than 2, chase nearest uncaught cow
+            if (farmer.caught < 2) {
+                // Find nearest uncaught cow (player or NPC)
+                let targets = [cow, ...npcCows.filter(npc => !npc.caughtByFarmer)];
+                let minDist = Infinity, target = null;
+                for (let t of targets) {
+                    if (t.caughtByFarmer) continue;
+                    let dx = t.x - farmer.x, dy = t.y - farmer.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < minDist) { minDist = dist; target = t; }
+                }
+                if (target) {
+                    // Move toward target
+                    const dx = target.x - farmer.x;
+                    const dy = target.y - farmer.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist > 5) {
+                        farmer.x += (dx/dist) * farmer.speed;
+                        farmer.y += (dy/dist) * farmer.speed;
+                    } else {
+                        // Catch this cow (put on lead)
+                        target.caughtByFarmer = true;
+                        farmerLeads.push(target);
+                        farmer.caught++;
+                        if (target === cow && !gameEnded) {
+                            endGame(false);
+                        }
+                    }
+                }
+            } else {
+                // After catching 2, keep chasing remaining cows for 30s
+                let elapsed = (Date.now() - farmerChaseStart) / 1000;
+                if (elapsed < 30) {
+                    // Chase nearest remaining cow (player or NPC)
+                    let targets = [cow, ...npcCows.filter(npc => !npc.caughtByFarmer)];
+                    let minDist = Infinity, target = null;
+                    for (let t of targets) {
+                        if (t.caughtByFarmer) continue;
+                        let dx = t.x - farmer.x, dy = t.y - farmer.y;
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < minDist) { minDist = dist; target = t; }
+                    }
+                    if (target) {
+                        const dx = target.x - farmer.x;
+                        const dy = target.y - farmer.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist > 5) {
+                            farmer.x += (dx/dist) * farmer.speed;
+                            farmer.y += (dy/dist) * farmer.speed;
+                        }
+                    }
+                } else {
+                    // Farmer leaves (goes back off screen)
+                    const dx = -100 - farmer.x;
+                    const dy = (pen.y + pen.height/2) - farmer.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist > 5) {
+                        farmer.x += (dx/dist) * farmer.speed;
+                        farmer.y += (dy/dist) * farmer.speed;
+                    } else {
+                        farmerActive = false;
+                    }
+                }
+            }
+        }
+
+        // Draw leads for caught cows
+        function drawFarmerLeads() {
+            if (!farmerActive) return;
+            ctx.save();
+            ctx.strokeStyle = '#964B00';
+            ctx.lineWidth = 3;
+            for (let t of farmerLeads) {
+                ctx.beginPath();
+                ctx.moveTo(farmer.x, farmer.y);
+                ctx.lineTo(t.x, t.y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawFarmer() {
+            drawShadow(farmer.x, farmer.y, 36);
+            if (!farmerActive) return;
+            ctx.save();
+            // Body
+            ctx.fillStyle = '#deb887';
+            ctx.beginPath();
+            ctx.arc(farmer.x, farmer.y, 18, 0, Math.PI*2);
+            ctx.fill();
+            // Head
+            ctx.fillStyle = '#ffe0b3';
+            ctx.beginPath();
+            ctx.arc(farmer.x, farmer.y-22, 12, 0, Math.PI*2);
+            ctx.fill();
+            // Hat
+            ctx.fillStyle = '#964B00';
+            ctx.fillRect(farmer.x-13, farmer.y-32, 26, 8);
+            ctx.fillRect(farmer.x-8, farmer.y-40, 16, 10);
+            // Eyes
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(farmer.x-4, farmer.y-24, 2, 0, Math.PI*2);
+            ctx.arc(farmer.x+4, farmer.y-24, 2, 0, Math.PI*2);
+            ctx.fill();
+            // Arms
+            ctx.strokeStyle = '#964B00';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(farmer.x-15, farmer.y-5);
+            ctx.lineTo(farmer.x-30, farmer.y+15);
+            ctx.moveTo(farmer.x+15, farmer.y-5);
+            ctx.lineTo(farmer.x+30, farmer.y+15);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function gameLoop() {
+            if (!gameStarted) return;
+            updateFarmer();
+            updateNpcCows();
+            updateCow();
+            // Camera logic
+            const cam = getCameraTarget();
+            const viewW = canvas.width, viewH = canvas.height;
+            ctx.setTransform(1,0,0,1,0,0); // reset
+            ctx.clearRect(0, 0, viewW, viewH);
+            ctx.save();
+            ctx.translate(viewW/2-cam.x, viewH/2-cam.y);
+            drawGrass();
+            drawPen();
+            drawFarm();
+            npcCows.forEach(drawNpcCow);
+            drawFarmerLeads();
+            drawFarmer();
+            drawCow();
+            // Draw speech bubble if talking
+            if (talkingNpc) {
+                drawSpeechBubble(talkingNpc.npc.x, talkingNpc.npc.y, talkingNpc.text);
+            }
+            ctx.restore();
+            updatePrompt();
+            if (gateBroken && !gateBreakMessageShown) {
+                setTimeout(() => {
+                    alert('You have grown so strong! The pen gate breaks open!');
+                }, 100);
+                gateBreakMessageShown = true;
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 't' || e.key === 'T') {
+                if (currentNpc) {
+                    showSpeech(currentNpc, currentNpc.messages[currentNpc.msgIndex]);
+                    currentNpc.msgIndex = (currentNpc.msgIndex + 1) % currentNpc.messages.length;
+                }
+            }
+        });
+
+        // Improved NPC cow drawing
+        function drawNpcCow(npc) {
+            drawShadow(npc.x, npc.y, npc.size);
+            // Tail
+            ctx.strokeStyle = '#a36d32';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(npc.x - npc.size/2 + 3, npc.y + 7);
+            ctx.lineTo(npc.x - npc.size/2 - 10, npc.y + 18 + Math.sin(Date.now()/200)*3);
+            ctx.stroke();
+
+            // Body
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(npc.x, npc.y, npc.size/2, npc.size*0.3, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Head (oval, brown)
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(npc.x, npc.y - npc.size*0.3, npc.size*0.28, npc.size*0.38, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Face (white)
+            ctx.fillStyle = '#fffbe9';
+            ctx.beginPath();
+            ctx.ellipse(npc.x, npc.y - npc.size*0.22, npc.size*0.18, npc.size*0.28, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Ears
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(npc.x - npc.size*0.22, npc.y - npc.size*0.38, npc.size*0.09, npc.size*0.13, 0, 0, Math.PI*2);
+            ctx.ellipse(npc.x + npc.size*0.22, npc.y - npc.size*0.38, npc.size*0.09, npc.size*0.13, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Eyes
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.arc(npc.x - npc.size*0.07, npc.y - npc.size*0.3, 2, 0, Math.PI*2);
+            ctx.arc(npc.x + npc.size*0.07, npc.y - npc.size*0.3, 2, 0, Math.PI*2);
+            ctx.fill();
+
+            // Nostrils
+            ctx.fillStyle = '#a36d32';
+            ctx.beginPath();
+            ctx.ellipse(npc.x - 3, npc.y - npc.size*0.18, 1.2, 2, 0, 0, Math.PI*2);
+            ctx.ellipse(npc.x + 3, npc.y - npc.size*0.18, 1.2, 2, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Snout (pink)
+            ctx.fillStyle = '#f7c6b7';
+            ctx.beginPath();
+            ctx.ellipse(npc.x, npc.y - npc.size*0.13, npc.size*0.11, npc.size*0.13, 0, 0, Math.PI*2);
+            ctx.fill();
+
+            // Legs
+            ctx.fillStyle = '#fffbe9';
+            ctx.fillRect(npc.x - npc.size*0.2, npc.y + npc.size*0.3, npc.size*0.1, npc.size*0.6);
+            ctx.fillRect(npc.x + npc.size*0.1, npc.y + npc.size*0.3, npc.size*0.1, npc.size*0.6);
+
+            // Spots
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.arc(npc.x - 7, npc.y - 2, 3, 0, Math.PI * 2);
+            ctx.arc(npc.x + 7, npc.y + 3, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Player cow can only escape through the gate if big enough
+        function canCowEscapeGate() {
+            if (!gateBroken) return false;
+            let gateWidth = getGateWidth();
+            let gateX1 = pen.x + pen.width/2 - gateWidth/2;
+            let gateX2 = pen.x + pen.width/2 + gateWidth/2;
+            // Check if cow is at the gate
+            return (cow.x > gateX1 && cow.x < gateX2 && cow.y - cow.size/2 < pen.y + 10);
+        }
+
+        function endGame(didWin) {
+            gameEnded = true;
+            win = didWin;
+            overlay.style.display = 'flex';
+            overlay.innerHTML = didWin ? 'You Escaped! 🎉' : 'You Got Caught! 😢';
+            restartBtn.style.display = 'block';
+        }
+
+        restartBtn.onclick = () => { location.reload(); };
+        howToBtn.onclick = () => {
+            overlay.style.display = 'flex';
+            overlay.innerHTML = '<div style="max-width:600px;text-align:center;">'
+                + '<h2>How to Play</h2>'
+                + '<ul style="text-align:left;font-size:0.7em;line-height:1.5em;">'
+                + '<li>Eat grass to grow and score points.</li>'
+                + '<li>At 1,000 points, the pen gate breaks open.</li>'
+                + '<li>Escape through the gate before the farmer catches you!</li>'
+                + '<li>Talk to other cows with T.</li>'
+                + '<li>Use arrow keys or WASD to move.</li>'
+                + '</ul>'
+                + '<br><button onclick="overlay.style.display=\'none\'" style="font-size:1em;padding:0.3em 1em;border-radius:8px;border:none;background:#fff;color:#333;cursor:pointer;">Close</button>'
+                + '</div>';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.flexDirection = 'column';
+            overlay.style.zIndex = 100;
+        };
+
+        // Show speech bubble for current NPC if talking
+        let talkingNpc = null;
+        let talkingTimeout = null;
+        function showSpeech(npc, text) {
+            talkingNpc = { npc, text };
+            if (talkingTimeout) clearTimeout(talkingTimeout);
+            talkingTimeout = setTimeout(() => { talkingNpc = null; }, 2000);
+        }
+
+        // Draw a shadow under a character
+        function drawShadow(x, y, size) {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#222';
+            ctx.beginPath();
+            ctx.ellipse(x, y + size*0.35, size*0.45, size*0.18, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        }
+
+        // Draw speech bubble for dialog
+        function drawSpeechBubble(x, y, text) {
+            ctx.save();
+            ctx.font = '18px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            let w = ctx.measureText(text).width + 30;
+            let h = 40;
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(x, y - 50, w/2, h/2, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#333';
+            ctx.fillText(text, x, y - 55 + h/2);
+            ctx.restore();
+        }
+    </script>
+</body>
+</html>
