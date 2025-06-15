@@ -10,8 +10,8 @@
 }
 
 .notification {
-    --bg: rgba(255, 255, 255, 0.85);
-    --text: #000;
+    --bg: rgba(9, 0, 0, 0.85);
+    --text: #fc0606;
     --duration: 4s; /* default duration overwritten by inline style */
 
     min-width: 280px;
