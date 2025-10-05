@@ -170,13 +170,9 @@
         let dy = 0;
         let score = 0;
         let highscore = parseInt(localStorage.getItem('snakeHighscore') || '0');
-        let gameSpeed = 100; // milliseconds per tick
+        let gameLoop;
+        let gameSpeed = 100;
         let soundOn = true;
-
-        // requestAnimationFrame state
-        let animationId;
-        let lastTimestamp = 0;
-        let accumulatedMs = 0;
 
         // Sound effects (placeholders)
         const eatSound = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YYQAAAD//w==');
@@ -412,6 +408,8 @@
                 // Increase speed every 5 points
                 if (score % 5 === 0) {
                     gameSpeed = Math.max(50, gameSpeed - 10);
+                    clearInterval(gameLoop);
+                    gameLoop = setInterval(gameUpdate, gameSpeed);
                 }
             } else {
                 snake.pop();
@@ -423,37 +421,8 @@
             drawGame();
         }
 
-        function animationLoop(timestamp) {
-            if (!lastTimestamp) {
-                lastTimestamp = timestamp;
-            }
-            const delta = timestamp - lastTimestamp;
-            lastTimestamp = timestamp;
-
-            accumulatedMs += delta;
-            // Run fixed-step updates in case of slow frames
-            while (accumulatedMs >= gameSpeed) {
-                moveSnake();
-                accumulatedMs -= gameSpeed;
-            }
-
-            // Draw every frame for smoother visuals
-            drawGame();
-
-            animationId = requestAnimationFrame(animationLoop);
-        }
-
-        function startAnimation() {
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-            lastTimestamp = 0;
-            accumulatedMs = 0;
-            animationId = requestAnimationFrame(animationLoop);
-        }
-
         function gameOver() {
-            cancelAnimationFrame(animationId);
+            clearInterval(gameLoop);
             finalScoreElement.textContent = score;
             gameOverElement.style.display = 'block';
             playSound(gameOverSound);
@@ -461,7 +430,7 @@
 
         function restartGame() {
             initGame();
-            startAnimation();
+            gameLoop = setInterval(gameUpdate, gameSpeed);
         }
 
         // Handle keyboard controls
@@ -511,7 +480,7 @@
         // Initialize
         highscoreElement.textContent = highscore;
         initGame();
-        startAnimation();
+        gameLoop = setInterval(gameUpdate, gameSpeed);
     </script>
 </body>
 </html>
