@@ -206,101 +206,6 @@
             color: #4CAF50;
         }
 
-        /* Secret code button (replaces back button) */
-        .code-button {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .code-button:hover {
-            background: #45a049;
-        }
-
-        /* Code pad overlay */
-        .code-pad-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 3000;
-        }
-
-        .code-pad-overlay.visible {
-            display: flex;
-        }
-
-        .code-pad {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 20px;
-            border-radius: 10px;
-            width: 260px;
-            text-align: center;
-            position: relative;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .code-display {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 10px;
-            margin-bottom: 15px;
-            font-size: 24px;
-            letter-spacing: 8px;
-            color: #4CAF50;
-            border-radius: 5px;
-            min-height: 38px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .code-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-
-        .code-buttons button {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            padding: 15px;
-            font-size: 18px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .code-buttons button:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .close-code {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 22px;
-            cursor: pointer;
-        }
-
-        .close-code:hover {
-            color: #4CAF50;
-        }
 
         /* Prestige button */
         .prestige-button {
@@ -348,36 +253,120 @@
             font-weight: bold;
         }
 
-        .weekly-code-popup {
-            display: none;
+        /* Achievement system */
+        .achievement-popup {
             position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            background: #4CAF50;
-            color: white;
-            padding: 20px 40px;
-            border-radius: 18px;
-            font-size: 20px;
-            z-index: 5000;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            right: 20px;
+            background: linear-gradient(45deg, #ffd700, #ffed4a);
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 10px;
             font-weight: bold;
-            opacity: 0;
-            transition: transform 0.5s cubic-bezier(.4,2,.6,1), opacity 0.5s;
+            font-size: 16px;
+            z-index: 4000;
+            transform: translateX(400px);
+            transition: transform 0.5s ease;
+            box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+            border: 2px solid #ffd700;
         }
-        .weekly-code-popup.visible {
-            display: block;
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+
+        .achievement-popup.visible {
+            transform: translateX(0);
         }
+
+        .achievement-popup::before {
+            content: '🏆';
+            margin-right: 8px;
+        }
+
+        /* Golden penguin event */
+        .golden-penguin {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #ffd700, #ffed4a);
+            border-radius: 50%;
+            animation: golden-glow 2s ease-in-out infinite;
+            cursor: pointer;
+            z-index: 2000;
+        }
+
+        @keyframes golden-glow {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px #ffd700; }
+            50% { transform: scale(1.1); box-shadow: 0 0 30px #ffd700; }
+        }
+
+        /* Statistics panel */
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stats-panel h3 {
+            margin: 0 0 10px 0;
+            color: #ffd700;
+            font-size: 18px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        /* Particle effects */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            animation: particle-float 2s ease-out forwards;
+        }
+
+        @keyframes particle-float {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Enhanced click effect */
+        .mega-click-effect {
+            position: absolute;
+            pointer-events: none;
+            animation: mega-float 1.5s ease-out forwards;
+            color: #ffd700;
+            font-weight: bold;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        @keyframes mega-float {
+            0% {
+                transform: translateY(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-80px) scale(2) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
     </style>
 </head>
 <body>
-    <button class="code-button" onclick="toggleCodePad()">🔒 Secret Code</button>
     <div class="container">
         <div class="header">
             <h1>Penguin Clicker</h1>
-            <div id="weeklyCode" style="margin-top: 10px; font-size: 16px; color: #ffd700;"></div>
         </div>
 
         <div class="click-area" id="clickArea">
@@ -389,6 +378,27 @@
             <div class="stat">Per Click: <span id="perClick">1</span> <span class="multiplier">(x<span id="multiplier">1</span>)</span></div>
             <div class="stat">Per Second: <span id="perSecond">0</span></div>
             <div class="stat">Prestige Level: <span id="prestigeLevel">0</span></div>
+        </div>
+
+        <!-- Statistics Panel -->
+        <div class="stats-panel">
+            <h3>📊 Statistics</h3>
+            <div class="stat-item">
+                <span>Total Clicks:</span>
+                <span id="totalClicks">0</span>
+            </div>
+            <div class="stat-item">
+                <span>Penguins Earned:</span>
+                <span id="totalEarned">0</span>
+            </div>
+            <div class="stat-item">
+                <span>Golden Penguins:</span>
+                <span id="goldenPenguins">0</span>
+            </div>
+            <div class="stat-item">
+                <span>Achievements:</span>
+                <span id="achievementCount">0</span>
+            </div>
         </div>
 
         <button class="prestige-button" onclick="prestige()" id="prestigeButton" style="display: none;">🌟 Prestige</button>
@@ -445,29 +455,11 @@
         </div>
     </div>
 
-    <!-- Secret code pad overlay -->
-    <div class="code-pad-overlay" id="codePadOverlay">
-        <div class="code-pad">
-            <button class="close-code" onclick="toggleCodePad()">×</button>
-            <div class="code-display" id="codeDisplay"></div>
-            <div class="code-buttons">
-                <button onclick="pressDigit(1)">1</button>
-                <button onclick="pressDigit(2)">2</button>
-                <button onclick="pressDigit(3)">3</button>
-                <button onclick="pressDigit(4)">4</button>
-                <button onclick="pressDigit(5)">5</button>
-                <button onclick="pressDigit(6)">6</button>
-                <button onclick="pressDigit(7)">7</button>
-                <button onclick="pressDigit(8)">8</button>
-                <button onclick="pressDigit(9)">9</button>
-                <button onclick="clearCode()">C</button>
-                <button onclick="pressDigit(0)">0</button>
-                <button onclick="submitCode()">↵</button>
-            </div>
-        </div>
-    </div>
+    <!-- Achievement Popup -->
+    <div id="achievementPopup" class="achievement-popup"></div>
 
-    <div id="weeklyCodePopup" class="weekly-code-popup">💬 This Week's Code: <span id="popupCode"></span></div>
+    <!-- Golden Penguin Event -->
+    <div id="goldenPenguin" class="golden-penguin" style="display: none;"></div>
 
     <script>
         let gameState = {
@@ -476,6 +468,10 @@
             perSecond: 0,
             multiplier: 1,
             prestigeLevel: 0,
+            totalClicks: 0,
+            totalEarned: 0,
+            goldenPenguins: 0,
+            achievements: [],
             upgrades: {
                 clickPower: 0,
                 perSecond: 0,
@@ -513,13 +509,20 @@
             document.getElementById('perSecond').textContent = gameState.perSecond;
             document.getElementById('multiplier').textContent = gameState.multiplier.toFixed(1);
             document.getElementById('prestigeLevel').textContent = gameState.prestigeLevel;
+            document.getElementById('totalClicks').textContent = gameState.totalClicks;
+            document.getElementById('totalEarned').textContent = Math.floor(gameState.totalEarned);
+            document.getElementById('goldenPenguins').textContent = gameState.goldenPenguins;
+            document.getElementById('achievementCount').textContent = gameState.achievements.length;
             
             // Show/hide prestige button
             document.getElementById('prestigeButton').style.display = 
                 gameState.penguins >= 1000000000 ? 'block' : 'none';
+                
+            // Check for achievements
+            checkAchievements();
         }
 
-        // Create click effect
+        // Create enhanced click effect
         function createClickEffect(x, y, amount) {
             const effect = document.createElement('div');
             effect.className = 'click-effect';
@@ -528,8 +531,30 @@
             effect.style.top = `${y}px`;
             document.body.appendChild(effect);
             
+            // Create particles for large amounts
+            if (amount >= 1000) {
+                createParticles(x, y, amount);
+            }
+            
             // Remove effect after animation
             setTimeout(() => effect.remove(), 1000);
+        }
+
+        // Create particle effects
+        function createParticles(x, y, amount) {
+            const particleCount = Math.min(10, Math.floor(amount / 1000));
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${x + (Math.random() - 0.5) * 100}px`;
+                particle.style.top = `${y + (Math.random() - 0.5) * 100}px`;
+                particle.style.width = `${Math.random() * 8 + 4}px`;
+                particle.style.height = particle.style.width;
+                particle.style.background = `hsl(${Math.random() * 60 + 30}, 100%, 50%)`;
+                document.body.appendChild(particle);
+                
+                setTimeout(() => particle.remove(), 2000);
+            }
         }
 
         // Prestige system
@@ -562,6 +587,8 @@
         document.getElementById('clickArea').addEventListener('click', (e) => {
             const clickAmount = Math.floor(gameState.perClick * gameState.multiplier);
             gameState.penguins += clickAmount;
+            gameState.totalClicks++;
+            gameState.totalEarned += clickAmount;
             createClickEffect(e.clientX, e.clientY, clickAmount);
             updateDisplay();
         });
@@ -611,100 +638,94 @@
             }
         }
 
+        // Achievement system
+        function checkAchievements() {
+            const achievements = [
+                { id: 'first_click', name: 'First Click', desc: 'Click your first penguin!', condition: () => gameState.totalClicks >= 1 },
+                { id: 'hundred_clicks', name: 'Click Master', desc: 'Click 100 times!', condition: () => gameState.totalClicks >= 100 },
+                { id: 'thousand_clicks', name: 'Click Legend', desc: 'Click 1,000 times!', condition: () => gameState.totalClicks >= 1000 },
+                { id: 'first_upgrade', name: 'Upgrade Time', desc: 'Buy your first upgrade!', condition: () => Object.values(gameState.upgrades).some(count => count > 0) },
+                { id: 'million_penguins', name: 'Millionaire', desc: 'Earn 1,000,000 penguins!', condition: () => gameState.totalEarned >= 1000000 },
+                { id: 'billion_penguins', name: 'Billionaire', desc: 'Earn 1,000,000,000 penguins!', condition: () => gameState.totalEarned >= 1000000000 },
+                { id: 'first_prestige', name: 'Prestige Master', desc: 'Complete your first prestige!', condition: () => gameState.prestigeLevel >= 1 },
+                { id: 'golden_hunter', name: 'Golden Hunter', desc: 'Catch 10 golden penguins!', condition: () => gameState.goldenPenguins >= 10 }
+            ];
+
+            achievements.forEach(achievement => {
+                if (!gameState.achievements.includes(achievement.id) && achievement.condition()) {
+                    gameState.achievements.push(achievement.id);
+                    showAchievement(achievement.name, achievement.desc);
+                }
+            });
+        }
+
+        function showAchievement(name, desc) {
+            const popup = document.getElementById('achievementPopup');
+            popup.innerHTML = `<strong>${name}</strong><br>${desc}`;
+            popup.classList.add('visible');
+            
+            setTimeout(() => {
+                popup.classList.remove('visible');
+            }, 3000);
+        }
+
+        // Golden penguin events
+        function spawnGoldenPenguin() {
+            const goldenPenguin = document.getElementById('goldenPenguin');
+            const container = document.querySelector('.container');
+            const containerRect = container.getBoundingClientRect();
+            
+            const x = Math.random() * (containerRect.width - 60) + containerRect.left;
+            const y = Math.random() * (containerRect.height - 60) + containerRect.top;
+            
+            goldenPenguin.style.left = `${x}px`;
+            goldenPenguin.style.top = `${y}px`;
+            goldenPenguin.style.display = 'block';
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                goldenPenguin.style.display = 'none';
+            }, 5000);
+        }
+
+        // Golden penguin click handler
+        document.getElementById('goldenPenguin').addEventListener('click', () => {
+            const bonus = Math.floor(gameState.perClick * gameState.multiplier * 10);
+            gameState.penguins += bonus;
+            gameState.goldenPenguins++;
+            gameState.totalEarned += bonus;
+            
+            // Create mega effect
+            const effect = document.createElement('div');
+            effect.className = 'mega-click-effect';
+            effect.textContent = `+${bonus} GOLDEN!`;
+            effect.style.left = `${event.clientX}px`;
+            effect.style.top = `${event.clientY}px`;
+            document.body.appendChild(effect);
+            
+            setTimeout(() => effect.remove(), 1500);
+            
+            document.getElementById('goldenPenguin').style.display = 'none';
+            updateDisplay();
+        });
+
+        // Random golden penguin spawns
+        setInterval(() => {
+            if (Math.random() < 0.1) { // 10% chance every interval
+                spawnGoldenPenguin();
+            }
+        }, 10000); // Every 10 seconds
+
         // Passive income
         setInterval(() => {
-            gameState.penguins += gameState.perSecond * gameState.multiplier;
+            const passiveIncome = gameState.perSecond * gameState.multiplier;
+            gameState.penguins += passiveIncome;
+            gameState.totalEarned += passiveIncome;
             updateDisplay();
         }, 1000);
 
-        /* ---------------- Secret Code Pad Logic ---------------- */
-        function generateWeeklyCode() {
-            const now = new Date();
-            const weekNumber = Math.floor(now.getTime() / (7 * 24 * 60 * 60 * 1000));
-            // Generate a 4-digit code based on the week number
-            const baseCode = (weekNumber * 1234) % 10000;
-            return baseCode.toString().padStart(4, '0');
-        }
-
-        // Display the current week's code
-        function updateWeeklyCodeDisplay() {
-            const currentCode = generateWeeklyCode();
-            const weeklyCodeElement = document.getElementById('weeklyCode');
-            weeklyCodeElement.textContent = `This Week's Code: ${currentCode}`;
-
-            // Show animated popup notification like a text message
-            const popup = document.getElementById('weeklyCodePopup');
-            const popupCode = document.getElementById('popupCode');
-            popupCode.textContent = currentCode;
-            popup.classList.add('visible');
-            setTimeout(() => {
-                popup.classList.remove('visible');
-            }, 4000);
-        }
-
-        let enteredCode = '';
-
-        function toggleCodePad() {
-            const overlay = document.getElementById('codePadOverlay');
-            overlay.classList.toggle('visible');
-            clearCode();
-        }
-
-        function pressDigit(d) {
-            if (enteredCode.length >= 4) return;
-            enteredCode += d.toString();
-            updateCodeDisplay();
-        }
-
-        function clearCode() {
-            enteredCode = '';
-            updateCodeDisplay();
-        }
-
-        function updateCodeDisplay() {
-            document.getElementById('codeDisplay').textContent = enteredCode.split('').join(' ');
-        }
-
-        function submitCode() {
-            const currentCode = generateWeeklyCode();
-            if (enteredCode === currentCode) {
-                gameState.penguins += 1000000;
-                updateDisplay();
-                alert('Correct! You received 1,000,000 penguins!');
-                toggleCodePad();
-            } else {
-                alert('Incorrect code!');
-                clearCode();
-            }
-        }
-
-        // Initialize display and weekly code
+        // Initialize display
         updateDisplay();
-        updateWeeklyCodeDisplay();
-
-        function showWeeklyCodeSystemNotification() {
-            const code = generateWeeklyCode();
-            if ("Notification" in window) {
-                if (Notification.permission === "granted") {
-                    new Notification("Penguin Clicker - Weekly Code", {
-                        body: `This week's code is: ${code}`,
-                        icon: "pen coin.png" // Optional: path to your icon
-                    });
-                } else if (Notification.permission !== "denied") {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === "granted") {
-                            new Notification("Penguin Clicker - Weekly Code", {
-                                body: `This week's code is: ${code}`,
-                                icon: "pen coin.png"
-                            });
-                        }
-                    });
-                }
-            }
-        }
-
-        // Call this when the page loads
-        showWeeklyCodeSystemNotification();
     </script>
 </body>
 </html> 

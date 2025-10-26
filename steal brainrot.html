@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steal Brainrot Online</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            font-family: 'Orbitron', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(52, 152, 219, 0.1) 0%, transparent 50%),
+                linear-gradient(45deg, #0a0a0a, #1a1a2e, #16213e);
+            cursor: crosshair;
+            filter: contrast(1.1) brightness(0.9);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 20, 0.9));
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+        }
+        
+        #money {
+            font-size: 20px;
+            font-weight: 900;
+            color: #f1c40f;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #f1c40f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #brainrots {
+            font-size: 18px;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #ff6b6b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #status {
+            font-size: 16px;
+            color: #2ecc71;
+            text-shadow: 0 0 5px #2ecc71;
+            font-weight: 700;
+        }
+        
+        #protection {
+            font-size: 16px;
+            color: #f39c12;
+            text-shadow: 0 0 10px #f39c12;
+            font-weight: 700;
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(243, 156, 18, 0.2);
+            border-radius: 8px;
+            border: 1px solid #f39c12;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.8));
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            border: 1px solid #3498db;
+            backdrop-filter: blur(5px);
+        }
+        
+        #controls div {
+            margin: 5px 0;
+            color: #ecf0f1;
+            font-weight: 600;
+        }
+        
+        .brainrot {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle, #ff6b6b, #ee5a24);
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 0 15px #ff6b6b, inset 0 0 10px rgba(255, 255, 255, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .base {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 3px solid #3498db;
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
+        }
+        
+        .base.enemy {
+            border-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.2);
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.3);
+        }
+        
+        .base.locked {
+            border-color: #f39c12;
+            background: rgba(243, 156, 18, 0.2);
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.5);
+        }
+        
+        .pillar {
+            position: absolute;
+            width: 20px;
+            height: 40px;
+            background: linear-gradient(to top, #8b4513, #a0522d);
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 0 10px rgba(139, 69, 19, 0.5);
+        }
+        
+        .player {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #3498db, inset 0 0 10px rgba(255, 255, 255, 0.2);
+            animation: playerGlow 3s infinite;
+        }
+        
+        @keyframes playerGlow {
+            0%, 100% { box-shadow: 0 0 15px #3498db, inset 0 0 10px rgba(255, 255, 255, 0.2); }
+            50% { box-shadow: 0 0 25px #3498db, inset 0 0 15px rgba(255, 255, 255, 0.3); }
+        }
+        
+        .stealing {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            animation: stealPulse 0.5s infinite;
+        }
+        
+        @keyframes stealPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        .notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, rgba(231, 76, 60, 0.9), rgba(192, 57, 43, 0.9));
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #fff;
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.8);
+            z-index: 1000;
+            animation: notificationSlide 0.5s ease-out;
+        }
+        
+        @keyframes notificationSlide {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .leaderboard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 20, 0.9));
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #f39c12;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+        }
+        
+        .leaderboard h3 {
+            margin: 0 0 15px 0;
+            color: #f39c12;
+            text-shadow: 0 0 10px #f39c12;
+            font-size: 18px;
+        }
+        
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <div id="money">💰 Money: $1000</div>
+            <div id="brainrots">🧠 Brainrots: 0</div>
+            <div id="status">Status: Safe</div>
+            <div id="protection" style="display: none;">🛡️ Protection: <span id="protectionTime">60</span>s</div>
+        </div>
+        
+        <div id="controls">
+            <div>WASD - Move</div>
+            <div>Space - Jump</div>
+            <div>E - Interact</div>
+            <div>G - Go Home</div>
+        </div>
+        
+        <div class="leaderboard">
+            <h3>🏆 Leaderboard</h3>
+            <div class="leaderboard-entry">
+                <span>You</span>
+                <span id="playerScore">0 Brainrots</span>
+            </div>
+            <div class="leaderboard-entry">
+                <span>Enemy 1</span>
+                <span>3 Brainrots</span>
+            </div>
+            <div class="leaderboard-entry">
+                <span>Enemy 2</span>
+                <span>2 Brainrots</span>
+            </div>
+            <div class="leaderboard-entry">
+                <span>Enemy 3</span>
+                <span>1 Brainrot</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Game state
+        let gameState = {
+            money: 1000,
+            brainrots: 0,
+            player: {
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                width: 20,
+                height: 20,
+                speed: 3,
+                jumpSpeed: 8,
+                color: '#3498db',
+                velocityX: 0,
+                velocityY: 0,
+                onGround: false,
+                isJumping: false,
+                carryingBrainrot: null
+            },
+            bases: [],
+            brainrotItems: [],
+            keys: {
+                w: false,
+                a: false,
+                s: false,
+                d: false,
+                space: false,
+                e: false,
+                g: false
+            },
+            gravity: 0.5,
+            friction: 0.8,
+            protectionTimer: 60,
+            protectionActive: false,
+            lastProtectionTime: 0,
+            brainrotTypes: [
+                { name: "Tralalero Tralala", color: "#ff6b6b", value: 100, rarity: "common" },
+                { name: "Cappuccino Assassino", color: "#8b4513", value: 200, rarity: "uncommon" },
+                { name: "Golden Brainrot", color: "#f1c40f", value: 500, rarity: "rare" },
+                { name: "Diamond Brainrot", color: "#3498db", value: 1000, rarity: "epic" },
+                { name: "Legendary Brainrot", color: "#9b59b6", value: 2500, rarity: "legendary" }
+            ],
+            collectionAnimations: []
+        };
+        
+        // Get random brainrot type based on rarity
+        function getRandomBrainrotType() {
+            const rand = Math.random();
+            if (rand < 0.5) return gameState.brainrotTypes[0]; // Common - 50%
+            if (rand < 0.75) return gameState.brainrotTypes[1]; // Uncommon - 25%
+            if (rand < 0.9) return gameState.brainrotTypes[2]; // Rare - 15%
+            if (rand < 0.98) return gameState.brainrotTypes[3]; // Epic - 8%
+            return gameState.brainrotTypes[4]; // Legendary - 2%
+        }
+        
+        // Add collection animation
+        function addCollectionAnimation(x, y, brainrotType) {
+            gameState.collectionAnimations.push({
+                x: x,
+                y: y,
+                type: brainrotType,
+                life: 60, // 1 second at 60fps
+                maxLife: 60,
+                velocityY: -2,
+                alpha: 1
+            });
+        }
+        
+        // Update collection animations
+        function updateCollectionAnimations() {
+            gameState.collectionAnimations = gameState.collectionAnimations.filter(anim => {
+                anim.life--;
+                anim.y += anim.velocityY;
+                anim.alpha = anim.life / anim.maxLife;
+                return anim.life > 0;
+            });
+        }
+        
+        // Darken a color by a percentage
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace("#", ""), 16);
+            const amt = Math.round(2.55 * percent * 100);
+            const R = (num >> 16) - amt;
+            const G = (num >> 8 & 0x00FF) - amt;
+            const B = (num & 0x0000FF) - amt;
+            return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+        }
+        
+        // Get border color based on rarity
+        function getRarityBorderColor(rarity) {
+            const colors = {
+                common: '#fff',
+                uncommon: '#00ff00',
+                rare: '#ffff00',
+                epic: '#0099ff',
+                legendary: '#ff00ff'
+            };
+            return colors[rarity] || '#fff';
+        }
+        
+        // Initialize game
+        function initGame() {
+            // Create player base with pillars
+            const playerBase = {
+                x: 50,
+                y: canvas.height - 150,
+                width: 120,
+                height: 100,
+                owner: 'player',
+                locked: false,
+                brainrots: [],
+                pillars: []
+            };
+            
+            // Add pillars to player base
+            for (let i = 0; i < 4; i++) {
+                playerBase.pillars.push({
+                    x: playerBase.x + 20 + (i * 25),
+                    y: playerBase.y + 20,
+                    width: 15,
+                    height: 30,
+                    hasBrainrot: false
+                });
+            }
+            
+            gameState.bases.push(playerBase);
+            
+            // Create enemy bases with strategic positioning
+            const enemyPositions = [
+                { x: canvas.width - 200, y: canvas.height - 150 },
+                { x: canvas.width/2 - 60, y: 100 },
+                { x: 200, y: 200 },
+                { x: canvas.width - 300, y: 300 }
+            ];
+            
+            enemyPositions.forEach((pos, index) => {
+                const enemyBase = {
+                    x: pos.x,
+                    y: pos.y,
+                    width: 120,
+                    height: 100,
+                    owner: 'enemy',
+                    locked: Math.random() > 0.6,
+                    brainrots: [],
+                    pillars: [],
+                    name: `Enemy ${index + 1}`
+                };
+                
+                // Add pillars to enemy base
+                for (let i = 0; i < 4; i++) {
+                    enemyBase.pillars.push({
+                        x: enemyBase.x + 20 + (i * 25),
+                        y: enemyBase.y + 20,
+                        width: 15,
+                        height: 30,
+                        hasBrainrot: false
+                    });
+                }
+                
+                // Add some brainrots to enemy bases with different types
+                const brainrotCount = Math.floor(Math.random() * 4) + 1;
+                for (let i = 0; i < brainrotCount; i++) {
+                    if (i < enemyBase.pillars.length) {
+                        enemyBase.pillars[i].hasBrainrot = true;
+                        
+                        // Randomly select brainrot type based on rarity
+                        const randomType = getRandomBrainrotType();
+                        
+                        enemyBase.brainrots.push({
+                            x: enemyBase.pillars[i].x + enemyBase.pillars[i].width/2,
+                            y: enemyBase.pillars[i].y - 10,
+                            id: Math.random(),
+                            pillarIndex: i,
+                            type: randomType,
+                            name: randomType.name,
+                            color: randomType.color,
+                            value: randomType.value,
+                            rarity: randomType.rarity
+                        });
+                    }
+                }
+                
+                gameState.bases.push(enemyBase);
+            });
+            
+            // Add some decorative elements
+            gameState.decorations = [
+                { x: 100, y: canvas.height - 200, type: 'tree', size: 40 },
+                { x: canvas.width - 150, y: canvas.height - 180, type: 'tree', size: 35 },
+                { x: 300, y: 150, type: 'rock', size: 25 },
+                { x: canvas.width - 100, y: 250, type: 'rock', size: 30 }
+            ];
+        }
+        
+        // Handle keyboard input
+        function handleInput() {
+            // Horizontal movement
+            if (gameState.keys.a) {
+                gameState.player.velocityX = -gameState.player.speed;
+            } else if (gameState.keys.d) {
+                gameState.player.velocityX = gameState.player.speed;
+            } else {
+                gameState.player.velocityX *= gameState.friction;
+            }
+            
+            // Jumping
+            if (gameState.keys.space && gameState.player.onGround) {
+                gameState.player.velocityY = -gameState.player.jumpSpeed;
+                gameState.player.onGround = false;
+                gameState.player.isJumping = true;
+            }
+            
+            // Apply gravity
+            if (!gameState.player.onGround) {
+                gameState.player.velocityY += gameState.gravity;
+            }
+            
+            // Update position
+            gameState.player.x += gameState.player.velocityX;
+            gameState.player.y += gameState.player.velocityY;
+            
+            // Ground collision
+            const groundY = canvas.height - 50;
+            if (gameState.player.y + gameState.player.height >= groundY) {
+                gameState.player.y = groundY - gameState.player.height;
+                gameState.player.velocityY = 0;
+                gameState.player.onGround = true;
+                gameState.player.isJumping = false;
+            }
+            
+            // Base collision (can't walk through bases)
+            gameState.bases.forEach(base => {
+                if (gameState.player.x < base.x + base.width &&
+                    gameState.player.x + gameState.player.width > base.x &&
+                    gameState.player.y < base.y + base.height &&
+                    gameState.player.y + gameState.player.height > base.y) {
+                    
+                    // Push player out of base
+                    if (gameState.player.x < base.x + base.width/2) {
+                        gameState.player.x = base.x - gameState.player.width;
+                    } else {
+                        gameState.player.x = base.x + base.width;
+                    }
+                    gameState.player.velocityX = 0;
+                }
+            });
+            
+            // Wall collision
+            if (gameState.player.x < 0) {
+                gameState.player.x = 0;
+                gameState.player.velocityX = 0;
+            }
+            if (gameState.player.x + gameState.player.width > canvas.width) {
+                gameState.player.x = canvas.width - gameState.player.width;
+                gameState.player.velocityX = 0;
+            }
+            
+            // Handle interactions
+            if (gameState.keys.e) {
+                handleInteraction();
+            }
+            
+            if (gameState.keys.g) {
+                goHome();
+            }
+        }
+        
+        // Handle player interactions
+        function handleInteraction() {
+            // Check if player is near a base
+            gameState.bases.forEach(base => {
+                const distance = Math.sqrt(
+                    Math.pow(gameState.player.x - (base.x + base.width/2), 2) + 
+                    Math.pow(gameState.player.y - (base.y + base.height/2), 2)
+                );
+                
+                if (distance < 80) {
+                    if (base.owner === 'player') {
+                        // Player's own base - place brainrot if carrying one
+                        if (gameState.player.carryingBrainrot) {
+                            // Find empty pillar
+                            const emptyPillar = base.pillars.find(pillar => !pillar.hasBrainrot);
+                            if (emptyPillar) {
+                                emptyPillar.hasBrainrot = true;
+                                const brainrot = {
+                                    x: emptyPillar.x + emptyPillar.width/2,
+                                    y: emptyPillar.y - 10,
+                                    id: gameState.player.carryingBrainrot.id,
+                                    pillarIndex: base.pillars.indexOf(emptyPillar),
+                                    type: gameState.player.carryingBrainrot.type,
+                                    name: gameState.player.carryingBrainrot.name,
+                                    color: gameState.player.carryingBrainrot.color,
+                                    value: gameState.player.carryingBrainrot.value,
+                                    rarity: gameState.player.carryingBrainrot.rarity
+                                };
+                                base.brainrots.push(brainrot);
+                                
+                                // Add money based on brainrot value
+                                gameState.money += brainrot.value;
+                                
+                                // Add collection animation
+                                addCollectionAnimation(brainrot.x, brainrot.y, brainrot.type);
+                                
+                                gameState.player.carryingBrainrot = null;
+                                gameState.brainrots++;
+                                
+                                // Show rarity-based notification
+                                const rarityEmoji = {
+                                    common: "⚪",
+                                    uncommon: "🟢", 
+                                    rare: "🟡",
+                                    epic: "🔵",
+                                    legendary: "🟣"
+                                };
+                                
+                                showNotification(
+                                    `${rarityEmoji[brainrot.rarity]} ${brainrot.name} Collected!`, 
+                                    `+$${brainrot.value} | ${brainrot.rarity.toUpperCase()}`
+                                );
+                            } else {
+                                showNotification("Base Full!", "No empty pillars available!");
+                            }
+                        } else {
+                            showNotification("No Brainrot!", "You need to steal one first!");
+                        }
+                    } else {
+                        // Enemy base - try to steal brainrot
+                        if (!base.locked && base.brainrots.length > 0 && !gameState.player.carryingBrainrot) {
+                            const brainrot = base.brainrots.pop();
+                            const pillarIndex = brainrot.pillarIndex;
+                            if (base.pillars[pillarIndex]) {
+                                base.pillars[pillarIndex].hasBrainrot = false;
+                            }
+                            gameState.player.carryingBrainrot = brainrot;
+                            showNotification("Brainrot Stolen!", "Get back to your base!");
+                        } else if (base.locked) {
+                            showNotification("Base Locked!", "This base is protected!");
+                        } else if (gameState.player.carryingBrainrot) {
+                            showNotification("Already Carrying!", "Return to your base first!");
+                        } else {
+                            showNotification("No Brainrots!", "This base is empty!");
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Go home function
+        function goHome() {
+            const playerBase = gameState.bases.find(base => base.owner === 'player');
+            if (playerBase) {
+                gameState.player.x = playerBase.x + playerBase.width/2 - gameState.player.width/2;
+                gameState.player.y = playerBase.y + playerBase.height/2 - gameState.player.height/2;
+                gameState.player.velocityX = 0;
+                gameState.player.velocityY = 0;
+                showNotification("Teleported Home!", "Safe in your base!");
+            }
+        }
+        
+        // Show notification
+        function showNotification(title, message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `<strong>${title}</strong><br>${message}`;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Handle protection timer
+        function updateProtectionTimer() {
+            const currentTime = Date.now();
+            
+            if (!gameState.protectionActive) {
+                // Start protection if enough time has passed
+                if (currentTime - gameState.lastProtectionTime > 30000) { // 30 seconds between protections
+                    gameState.protectionActive = true;
+                    gameState.protectionTimer = 60;
+                    gameState.lastProtectionTime = currentTime;
+                    
+                    // Lock all enemy bases
+                    gameState.bases.forEach(base => {
+                        if (base.owner === 'enemy') {
+                            base.locked = true;
+                        }
+                    });
+                    
+                    showNotification("🛡️ Protection Active!", "All enemy bases are locked for 60 seconds!");
+                }
+            } else {
+                // Countdown protection timer
+                gameState.protectionTimer -= 1/60; // Assuming 60 FPS
+                
+                if (gameState.protectionTimer <= 0) {
+                    gameState.protectionActive = false;
+                    gameState.protectionTimer = 0;
+                    
+                    // Unlock all enemy bases
+                    gameState.bases.forEach(base => {
+                        if (base.owner === 'enemy') {
+                            base.locked = false;
+                        }
+                    });
+                    
+                    showNotification("🔓 Protection Ended!", "Enemy bases are now vulnerable!");
+                }
+            }
+        }
+        
+        // Game loop
+        function gameLoop() {
+            // Handle input
+            handleInput();
+            
+            // Update protection timer
+            updateProtectionTimer();
+            
+            // Update collection animations
+            updateCollectionAnimations();
+            
+            // Clear canvas with ground
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw ground
+            const groundY = canvas.height - 50;
+            const groundGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+            groundGradient.addColorStop(0, '#8b4513');
+            groundGradient.addColorStop(1, '#654321');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, groundY, canvas.width, 50);
+            
+            // Draw ground texture
+            ctx.fillStyle = '#a0522d';
+            for (let i = 0; i < canvas.width; i += 20) {
+                ctx.fillRect(i, groundY, 2, 50);
+            }
+            
+            // Draw decorations first (background elements)
+            if (gameState.decorations) {
+                gameState.decorations.forEach(decoration => {
+                    if (decoration.type === 'tree') {
+                        // Draw tree
+                        ctx.fillStyle = '#8b4513';
+                        ctx.fillRect(decoration.x, decoration.y, 8, decoration.size);
+                        ctx.fillStyle = '#228b22';
+                        ctx.beginPath();
+                        ctx.arc(decoration.x + 4, decoration.y - 5, decoration.size/2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (decoration.type === 'rock') {
+                        // Draw rock
+                        ctx.fillStyle = '#696969';
+                        ctx.beginPath();
+                        ctx.arc(decoration.x, decoration.y, decoration.size/2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+            }
+            
+            // Draw bases with enhanced styling
+            gameState.bases.forEach(base => {
+                // Base background with gradient
+                const gradient = ctx.createLinearGradient(base.x, base.y, base.x + base.width, base.y + base.height);
+                if (base.owner === 'player') {
+                    gradient.addColorStop(0, 'rgba(52, 152, 219, 0.4)');
+                    gradient.addColorStop(1, 'rgba(41, 128, 185, 0.2)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(231, 76, 60, 0.4)');
+                    gradient.addColorStop(1, 'rgba(192, 57, 43, 0.2)');
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(base.x, base.y, base.width, base.height);
+                
+                // Base border with glow effect
+                ctx.strokeStyle = base.owner === 'player' ? '#3498db' : '#e74c3c';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(base.x, base.y, base.width, base.height);
+                
+                // Add glow effect
+                ctx.shadowColor = base.owner === 'player' ? '#3498db' : '#e74c3c';
+                ctx.shadowBlur = 20;
+                ctx.strokeRect(base.x, base.y, base.width, base.height);
+                ctx.shadowBlur = 0;
+                
+                // Draw pillars
+                if (base.pillars) {
+                    base.pillars.forEach(pillar => {
+                        // Pillar base
+                        ctx.fillStyle = '#8b4513';
+                        ctx.fillRect(pillar.x, pillar.y, pillar.width, pillar.height);
+                        
+                        // Pillar top
+                        ctx.fillStyle = '#a0522d';
+                        ctx.fillRect(pillar.x, pillar.y, pillar.width, pillar.height/3);
+                        
+                        // Pillar border
+                        ctx.strokeStyle = '#654321';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(pillar.x, pillar.y, pillar.width, pillar.height);
+                    });
+                }
+                
+                // Draw brainrots on pillars with pulsing effect
+                base.brainrots.forEach((brainrot, index) => {
+                    const time = Date.now() * 0.002;
+                    const pulse = Math.sin(time + index) * 0.1 + 1;
+                    const size = 12 * pulse;
+                    
+                    // Outer glow with brainrot-specific color
+                    ctx.shadowColor = brainrot.color || '#ff6b6b';
+                    ctx.shadowBlur = 15;
+                    ctx.fillStyle = brainrot.color || '#ff6b6b';
+                    ctx.beginPath();
+                    ctx.arc(brainrot.x, brainrot.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Inner circle with darker shade
+                    ctx.shadowBlur = 0;
+                    const darkerColor = darkenColor(brainrot.color || '#ff6b6b', 0.3);
+                    ctx.fillStyle = darkerColor;
+                    ctx.beginPath();
+                    ctx.arc(brainrot.x, brainrot.y, size * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Rarity-based border
+                    const borderColor = getRarityBorderColor(brainrot.rarity);
+                    ctx.strokeStyle = borderColor;
+                    ctx.lineWidth = brainrot.rarity === 'legendary' ? 3 : 2;
+                    ctx.stroke();
+                    
+                    // Draw rarity indicator for legendary/epic
+                    if (brainrot.rarity === 'legendary' || brainrot.rarity === 'epic') {
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '10px Orbitron';
+                        ctx.textAlign = 'center';
+                        const raritySymbol = brainrot.rarity === 'legendary' ? '★' : '◆';
+                        ctx.fillText(raritySymbol, brainrot.x, brainrot.y - size - 5);
+                    }
+                });
+                
+                // Draw base name
+                ctx.fillStyle = '#fff';
+                ctx.font = '12px Orbitron';
+                ctx.textAlign = 'center';
+                const baseName = base.owner === 'player' ? 'Your Base' : base.name || 'Enemy Base';
+                ctx.fillText(baseName, base.x + base.width/2, base.y - 10);
+                
+                // Draw lock indicator
+                if (base.locked) {
+                    ctx.fillStyle = '#f39c12';
+                    ctx.font = '16px Orbitron';
+                    ctx.fillText('🔒', base.x + base.width - 15, base.y + 20);
+                    
+                    // Draw protection shield effect
+                    if (gameState.protectionActive && base.owner === 'enemy') {
+                        ctx.strokeStyle = '#f39c12';
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([5, 5]);
+                        ctx.strokeRect(base.x - 5, base.y - 5, base.width + 10, base.height + 10);
+                        ctx.setLineDash([]);
+                        
+                        // Draw shield icon
+                        ctx.fillStyle = '#f39c12';
+                        ctx.font = '20px Orbitron';
+                        ctx.fillText('🛡️', base.x + base.width/2 - 10, base.y + base.height/2 + 5);
+                    }
+                }
+            });
+            
+            // Draw player with enhanced styling
+            const playerGradient = ctx.createRadialGradient(
+                gameState.player.x + gameState.player.width/2, 
+                gameState.player.y + gameState.player.height/2, 
+                0,
+                gameState.player.x + gameState.player.width/2, 
+                gameState.player.y + gameState.player.height/2, 
+                gameState.player.width/2
+            );
+            
+            // Change color if carrying brainrot
+            if (gameState.player.carryingBrainrot) {
+                playerGradient.addColorStop(0, '#e74c3c');
+                playerGradient.addColorStop(1, '#c0392b');
+            } else {
+                playerGradient.addColorStop(0, '#3498db');
+                playerGradient.addColorStop(1, '#2980b9');
+            }
+            
+            ctx.fillStyle = playerGradient;
+            ctx.beginPath();
+            ctx.arc(gameState.player.x + gameState.player.width/2, gameState.player.y + gameState.player.height/2, gameState.player.width/2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Player glow
+            ctx.shadowColor = gameState.player.carryingBrainrot ? '#e74c3c' : '#3498db';
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // Draw carried brainrot above player
+            if (gameState.player.carryingBrainrot) {
+                const brainrotX = gameState.player.x + gameState.player.width/2;
+                const brainrotY = gameState.player.y - 10;
+                
+                // Brainrot glow with type-specific color
+                ctx.shadowColor = gameState.player.carryingBrainrot.color || '#ff6b6b';
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = gameState.player.carryingBrainrot.color || '#ff6b6b';
+                ctx.beginPath();
+                ctx.arc(brainrotX, brainrotY, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Inner brainrot with darker shade
+                ctx.shadowBlur = 0;
+                const darkerColor = darkenColor(gameState.player.carryingBrainrot.color || '#ff6b6b', 0.3);
+                ctx.fillStyle = darkerColor;
+                ctx.beginPath();
+                ctx.arc(brainrotX, brainrotY, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Rarity-based border
+                const borderColor = getRarityBorderColor(gameState.player.carryingBrainrot.rarity);
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = gameState.player.carryingBrainrot.rarity === 'legendary' ? 2 : 1;
+                ctx.stroke();
+            }
+            
+            // Draw collection animations
+            gameState.collectionAnimations.forEach(anim => {
+                ctx.globalAlpha = anim.alpha;
+                ctx.fillStyle = anim.type.color;
+                ctx.font = '16px Orbitron';
+                ctx.textAlign = 'center';
+                ctx.fillText(anim.type.name, anim.x, anim.y);
+                ctx.globalAlpha = 1;
+            });
+            
+            // Update UI
+            document.getElementById('money').textContent = `💰 Money: $${gameState.money}`;
+            document.getElementById('brainrots').textContent = `🧠 Brainrots: ${gameState.brainrots}`;
+            document.getElementById('playerScore').textContent = `${gameState.brainrots} Brainrots`;
+            
+            // Update protection timer display
+            const protectionElement = document.getElementById('protection');
+            const protectionTimeElement = document.getElementById('protectionTime');
+            
+            if (gameState.protectionActive) {
+                protectionElement.style.display = 'block';
+                protectionTimeElement.textContent = Math.ceil(gameState.protectionTimer);
+            } else {
+                protectionElement.style.display = 'none';
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Keyboard event listeners
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            switch(key) {
+                case 'w':
+                    gameState.keys.w = true;
+                    break;
+                case 'a':
+                    gameState.keys.a = true;
+                    break;
+                case 's':
+                    gameState.keys.s = true;
+                    break;
+                case 'd':
+                    gameState.keys.d = true;
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    gameState.keys.space = true;
+                    break;
+                case 'e':
+                    gameState.keys.e = true;
+                    break;
+                case 'g':
+                    gameState.keys.g = true;
+                    break;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            switch(key) {
+                case 'w':
+                    gameState.keys.w = false;
+                    break;
+                case 'a':
+                    gameState.keys.a = false;
+                    break;
+                case 's':
+                    gameState.keys.s = false;
+                    break;
+                case 'd':
+                    gameState.keys.d = false;
+                    break;
+                case ' ':
+                    gameState.keys.space = false;
+                    break;
+                case 'e':
+                    gameState.keys.e = false;
+                    break;
+                case 'g':
+                    gameState.keys.g = false;
+                    break;
+            }
+        });
+        
+        // Start the game
+        initGame();
+        gameLoop();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>

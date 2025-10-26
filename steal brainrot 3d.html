@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steal Brainrot Online - 3D Edition</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e, #16213e, #0f3460);
+            color: white;
+            font-family: 'Orbitron', monospace;
+            overflow: hidden;
+            user-select: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(52, 152, 219, 0.1) 0%, transparent 50%),
+                linear-gradient(45deg, #0a0a0a, #1a1a2e, #16213e);
+            cursor: crosshair;
+            filter: contrast(1.1) brightness(0.9);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 20, 0.9));
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.3);
+            backdrop-filter: blur(10px);
+            min-width: 250px;
+        }
+        
+        #money {
+            font-size: 20px;
+            font-weight: 900;
+            color: #f1c40f;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #f1c40f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #brainrots {
+            font-size: 18px;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #ff6b6b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        #status {
+            font-size: 16px;
+            color: #2ecc71;
+            text-shadow: 0 0 5px #2ecc71;
+            font-weight: 700;
+        }
+        
+        #protection {
+            font-size: 16px;
+            color: #f39c12;
+            text-shadow: 0 0 10px #f39c12;
+            font-weight: 700;
+            margin-top: 10px;
+            padding: 8px;
+            background: rgba(243, 156, 18, 0.2);
+            border-radius: 8px;
+            border: 1px solid #f39c12;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.8), rgba(20, 20, 20, 0.8));
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            border: 1px solid #3498db;
+            backdrop-filter: blur(5px);
+        }
+        
+        #controls div {
+            margin: 5px 0;
+            color: #ecf0f1;
+            font-weight: 600;
+        }
+        
+        .leaderboard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 20, 0.9));
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #f39c12;
+            box-shadow: 0 0 20px rgba(243, 156, 18, 0.3);
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+        }
+        
+        .leaderboard h3 {
+            margin: 0 0 15px 0;
+            color: #f39c12;
+            text-shadow: 0 0 10px #f39c12;
+            font-size: 18px;
+        }
+        
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .notification {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, rgba(231, 76, 60, 0.9), rgba(192, 57, 43, 0.9));
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #fff;
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.8);
+            z-index: 1000;
+            animation: notificationSlide 0.5s ease-out;
+        }
+        
+        @keyframes notificationSlide {
+            from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        .minimap {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .inventory {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.95), rgba(20, 20, 20, 0.95));
+            padding: 30px;
+            border-radius: 20px;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+            backdrop-filter: blur(15px);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .inventory h3 {
+            color: #ff6b6b;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .inventory-slot {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .inventory-slot:hover {
+            background: rgba(52, 152, 219, 0.3);
+            transform: scale(1.1);
+        }
+        
+        .inventory-slot.occupied {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <div id="money">💰 Money: $1000</div>
+            <div id="brainrots">🧠 Brainrots: 0</div>
+            <div id="status">Status: Safe</div>
+            <div id="protection" style="display: none;">🛡️ Protection: <span id="protectionTime">60</span>s</div>
+        </div>
+        
+        <div id="controls">
+            <div>WASD - Move</div>
+            <div>Space - Jump</div>
+            <div>E - Interact</div>
+            <div>G - Go Home</div>
+            <div>I - Inventory</div>
+            <div>Mouse - Look Around</div>
+        </div>
+        
+        <div class="leaderboard">
+            <h3>🏆 Leaderboard</h3>
+            <div class="leaderboard-entry">
+                <span>You</span>
+                <span id="playerScore">0 Brainrots</span>
+            </div>
+            <div class="leaderboard-entry">
+                <span>Enemy 1</span>
+                <span>3 Brainrots</span>
+            </div>
+            <div class="leaderboard-entry">
+                <span>Enemy 2</span>
+                <span>2 Brainrots</span>
+            </div>
+            <div class="leaderboard-entry">
+                <span>Enemy 3</span>
+                <span>1 Brainrot</span>
+            </div>
+        </div>
+        
+        <div class="minimap">
+            <canvas id="minimapCanvas" width="200" height="150"></canvas>
+        </div>
+        
+        <div class="inventory" id="inventory">
+            <h3>🎒 Inventory</h3>
+            <div class="inventory-grid" id="inventoryGrid">
+                <!-- Inventory slots will be generated here -->
+            </div>
+            <button onclick="closeInventory()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // 3D Game Engine
+        class Game3D {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.minimapCanvas = document.getElementById('minimapCanvas');
+                this.minimapCtx = this.minimapCanvas.getContext('2d');
+                
+                // Set canvas size
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                
+                // 3D Camera
+                this.camera = {
+                    x: 0,
+                    y: 0,
+                    z: 0,
+                    angleX: 0,
+                    angleY: 0,
+                    fov: 60,
+                    near: 0.1,
+                    far: 1000
+                };
+                
+                // Game state
+                this.gameState = {
+                    money: 1000,
+                    brainrots: 0,
+                    player: {
+                        x: 0,
+                        y: 2,
+                        z: 0,
+                        width: 1,
+                        height: 2,
+                        depth: 1,
+                        speed: 0.2,
+                        jumpSpeed: 0.4,
+                        velocityX: 0,
+                        velocityY: 0,
+                        velocityZ: 0,
+                        onGround: true,
+                        isJumping: false,
+                        carryingBrainrot: null,
+                        inventory: []
+                    },
+                    bases: [],
+                    brainrotItems: [],
+                    keys: {
+                        w: false,
+                        a: false,
+                        s: false,
+                        d: false,
+                        space: false,
+                        e: false,
+                        g: false,
+                        i: false
+                    },
+                    gravity: 0.015,
+                    friction: 0.85,
+                    protectionTimer: 60,
+                    protectionActive: false,
+                    lastProtectionTime: 0,
+                    brainrotTypes: [
+                        { name: "Tralalero Tralala", color: "#ff6b6b", value: 100, rarity: "common" },
+                        { name: "Cappuccino Assassino", color: "#8b4513", value: 200, rarity: "uncommon" },
+                        { name: "Golden Brainrot", color: "#f1c40f", value: 500, rarity: "rare" },
+                        { name: "Diamond Brainrot", color: "#3498db", value: 1000, rarity: "epic" },
+                        { name: "Legendary Brainrot", color: "#9b59b6", value: 2500, rarity: "legendary" }
+                    ],
+                    collectionAnimations: [],
+                    particles: [],
+                    mouseX: this.canvas.width / 2,
+                    mouseY: this.canvas.height / 2,
+                    isMouseDown: false,
+                    lastMouseX: this.canvas.width / 2,
+                    lastMouseY: this.canvas.height / 2
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.generateWorld();
+                this.gameLoop();
+            }
+            
+            setupEventListeners() {
+                // Keyboard events
+                document.addEventListener('keydown', (e) => {
+                    const key = e.key.toLowerCase();
+                    switch(key) {
+                        case 'w': this.gameState.keys.w = true; break;
+                        case 'a': this.gameState.keys.a = true; break;
+                        case 's': this.gameState.keys.s = true; break;
+                        case 'd': this.gameState.keys.d = true; break;
+                        case ' ': e.preventDefault(); this.gameState.keys.space = true; break;
+                        case 'e': this.gameState.keys.e = true; break;
+                        case 'g': this.gameState.keys.g = true; break;
+                        case 'i': this.gameState.keys.i = true; break;
+                    }
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    const key = e.key.toLowerCase();
+                    switch(key) {
+                        case 'w': this.gameState.keys.w = false; break;
+                        case 'a': this.gameState.keys.a = false; break;
+                        case 's': this.gameState.keys.s = false; break;
+                        case 'd': this.gameState.keys.d = false; break;
+                        case ' ': this.gameState.keys.space = false; break;
+                        case 'e': this.gameState.keys.e = false; break;
+                        case 'g': this.gameState.keys.g = false; break;
+                        case 'i': this.gameState.keys.i = false; break;
+                    }
+                });
+                
+                // Mouse events
+                this.canvas.addEventListener('mousemove', (e) => {
+                    this.gameState.lastMouseX = this.gameState.mouseX;
+                    this.gameState.lastMouseY = this.gameState.mouseY;
+                    this.gameState.mouseX = e.clientX;
+                    this.gameState.mouseY = e.clientY;
+                });
+                
+                this.canvas.addEventListener('mousedown', () => {
+                    this.gameState.isMouseDown = true;
+                });
+                
+                this.canvas.addEventListener('mouseup', (e) => {
+                    this.gameState.isMouseDown = false;
+                    this.handleClick(e);
+                });
+                
+                // Window resize
+                window.addEventListener('resize', () => {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                });
+            }
+            
+            generateWorld() {
+                // Create voxel-style brainrot characters
+                this.gameState.brainrotCharacters = [
+                    {
+                        name: "Tralalero Tralala",
+                        title: "Brainrot God",
+                        x: -30,
+                        y: 0,
+                        z: 0,
+                        width: 4,
+                        height: 6,
+                        depth: 4,
+                        color: "#87CEEB", // Light blue
+                        rate: 50000,
+                        cost: 10000000,
+                        collectValue: 1500000000,
+                        type: "shark",
+                        owner: 'enemy'
+                    },
+                    {
+                        name: "Cappuccino Assassino",
+                        title: "Brainrot God", 
+                        x: 0,
+                        y: 0,
+                        z: 0,
+                        width: 4,
+                        height: 6,
+                        depth: 4,
+                        color: "#FF8C00", // Orange
+                        rate: 75000,
+                        cost: 15000000,
+                        collectValue: 1100000000,
+                        type: "muscular",
+                        owner: 'enemy'
+                    },
+                    {
+                        name: "Cocofanto Elefanto",
+                        title: "Brainrot God",
+                        x: 30,
+                        y: 0,
+                        z: 0,
+                        width: 6,
+                        height: 8,
+                        depth: 6,
+                        color: "#D3D3D3", // Light gray
+                        rate: 10000,
+                        cost: 5000000,
+                        collectValue: 1400000,
+                        type: "elephant",
+                        owner: 'enemy'
+                    }
+                ];
+                
+                // Create red carpet
+                this.gameState.redCarpet = {
+                    x: -50,
+                    y: -0.1,
+                    z: -20,
+                    width: 100,
+                    height: 0.2,
+                    depth: 40,
+                    color: "#DC143C"
+                };
+                
+                // Create collection platforms
+                this.gameState.platforms = [];
+                this.gameState.brainrotCharacters.forEach((char, index) => {
+                    this.gameState.platforms.push({
+                        x: char.x,
+                        y: -0.5,
+                        z: char.z,
+                        width: 8,
+                        height: 1,
+                        depth: 8,
+                        color: "#696969"
+                    });
+                });
+            }
+            
+            getRandomBrainrotType() {
+                const rand = Math.random();
+                if (rand < 0.5) return this.gameState.brainrotTypes[0];
+                if (rand < 0.75) return this.gameState.brainrotTypes[1];
+                if (rand < 0.9) return this.gameState.brainrotTypes[2];
+                if (rand < 0.98) return this.gameState.brainrotTypes[3];
+                return this.gameState.brainrotTypes[4];
+            }
+            
+            // 3D Projection
+            project3D(x, y, z) {
+                const fov = this.camera.fov;
+                const scale = 1 / Math.tan(fov * Math.PI / 360);
+                const aspect = this.canvas.width / this.canvas.height;
+                
+                // Translate to camera space
+                const tx = x - this.camera.x;
+                const ty = y - this.camera.y;
+                const tz = z - this.camera.z;
+                
+                // Apply camera rotation
+                const cosX = Math.cos(this.camera.angleX);
+                const sinX = Math.sin(this.camera.angleX);
+                const cosY = Math.cos(this.camera.angleY);
+                const sinY = Math.sin(this.camera.angleY);
+                
+                // Rotate around Y axis first
+                const rx = tx * cosY - tz * sinY;
+                const rz = tx * sinY + tz * cosY;
+                
+                // Then rotate around X axis
+                const ry = ty * cosX - rz * sinX;
+                const rz_final = ty * sinX + rz * cosX;
+                
+                if (rz_final <= 0.1) return null; // Behind camera or too close
+                
+                const px = (rx * scale * aspect) / rz_final;
+                const py = (ry * scale) / rz_final;
+                
+                return {
+                    x: px + this.canvas.width / 2,
+                    y: py + this.canvas.height / 2,
+                    z: rz_final
+                };
+            }
+            
+            // Voxel-style cube rendering
+            drawVoxelCube(x, y, z, width, height, depth, color, isVoxel = false) {
+                if (isVoxel) {
+                    // Draw individual voxel blocks
+                    for (let vx = 0; vx < width; vx++) {
+                        for (let vy = 0; vy < height; vy++) {
+                            for (let vz = 0; vz < depth; vz++) {
+                                this.drawSingleVoxel(x + vx, y + vy, z + vz, color);
+                            }
+                        }
+                    }
+                } else {
+                    // Regular cube rendering
+                    this.drawCube3D(x, y, z, width, height, depth, color);
+                }
+            }
+            
+            // Draw single voxel block
+            drawSingleVoxel(x, y, z, color) {
+                const vertices = [
+                    [x, y, z],
+                    [x + 1, y, z],
+                    [x + 1, y + 1, z],
+                    [x, y + 1, z],
+                    [x, y, z + 1],
+                    [x + 1, y, z + 1],
+                    [x + 1, y + 1, z + 1],
+                    [x, y + 1, z + 1]
+                ];
+                
+                const faces = [
+                    { indices: [0, 1, 2, 3], name: 'front', color: this.lightenColor(color, 0.3) },
+                    { indices: [4, 7, 6, 5], name: 'back', color: this.darkenColor(color, 0.2) },
+                    { indices: [0, 4, 5, 1], name: 'bottom', color: this.darkenColor(color, 0.4) },
+                    { indices: [2, 6, 7, 3], name: 'top', color: this.lightenColor(color, 0.2) },
+                    { indices: [0, 3, 7, 4], name: 'left', color: this.darkenColor(color, 0.1) },
+                    { indices: [1, 5, 6, 2], name: 'right', color: this.lightenColor(color, 0.1) }
+                ];
+                
+                const projected = vertices.map(v => this.project3D(v[0], v[1], v[2]));
+                if (projected.some(p => !p)) return;
+                
+                // Draw faces with flat shading
+                faces.forEach(face => {
+                    const points = face.indices.map(i => projected[i]);
+                    if (points.every(p => p)) {
+                        this.ctx.fillStyle = face.color;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(points[0].x, points[0].y);
+                        for (let i = 1; i < points.length; i++) {
+                            this.ctx.lineTo(points[i].x, points[i].y);
+                        }
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        
+                        // Add voxel border
+                        this.ctx.strokeStyle = '#000';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.stroke();
+                    }
+                });
+            }
+            
+            // 3D Cube rendering (original method)
+            drawCube3D(x, y, z, width, height, depth, color) {
+                const vertices = [
+                    [x, y, z],
+                    [x + width, y, z],
+                    [x + width, y + height, z],
+                    [x, y + height, z],
+                    [x, y, z + depth],
+                    [x + width, y, z + depth],
+                    [x + width, y + height, z + depth],
+                    [x, y + height, z + depth]
+                ];
+                
+                const faces = [
+                    { indices: [0, 1, 2, 3], name: 'front', color: this.lightenColor(color, 0.2) },
+                    { indices: [4, 7, 6, 5], name: 'back', color: this.darkenColor(color, 0.3) },
+                    { indices: [0, 4, 5, 1], name: 'bottom', color: this.darkenColor(color, 0.4) },
+                    { indices: [2, 6, 7, 3], name: 'top', color: this.lightenColor(color, 0.1) },
+                    { indices: [0, 3, 7, 4], name: 'left', color: this.darkenColor(color, 0.2) },
+                    { indices: [1, 5, 6, 2], name: 'right', color: this.lightenColor(color, 0.1) }
+                ];
+                
+                const projected = vertices.map(v => this.project3D(v[0], v[1], v[2]));
+                if (projected.some(p => !p)) return;
+                
+                // Calculate face depths for sorting
+                const faceDepths = faces.map(face => {
+                    const points = face.indices.map(i => projected[i]);
+                    const avgZ = points.reduce((sum, p) => sum + p.z, 0) / points.length;
+                    return { face, depth: avgZ };
+                });
+                
+                // Sort faces by depth (back to front)
+                faceDepths.sort((a, b) => b.depth - a.depth);
+                
+                // Draw faces
+                faceDepths.forEach(({ face, depth }) => {
+                    const points = face.indices.map(i => projected[i]);
+                    if (points.every(p => p)) {
+                        this.ctx.fillStyle = face.color;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(points[0].x, points[0].y);
+                        for (let i = 1; i < points.length; i++) {
+                            this.ctx.lineTo(points[i].x, points[i].y);
+                        }
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        
+                        this.ctx.strokeStyle = '#fff';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.stroke();
+                    }
+                });
+            }
+            
+            // Color utility functions
+            lightenColor(color, amount) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * amount * 100);
+                const R = Math.min(255, (num >> 16) + amt);
+                const G = Math.min(255, (num >> 8 & 0x00FF) + amt);
+                const B = Math.min(255, (num & 0x0000FF) + amt);
+                return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+            }
+            
+            darkenColor(color, amount) {
+                const num = parseInt(color.replace("#", ""), 16);
+                const amt = Math.round(2.55 * amount * 100);
+                const R = Math.max(0, (num >> 16) - amt);
+                const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
+                const B = Math.max(0, (num & 0x0000FF) - amt);
+                return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+            }
+            
+            // 3D Sphere rendering
+            drawSphere3D(x, y, z, radius, color) {
+                const projected = this.project3D(x, y, z);
+                if (!projected) return;
+                
+                const screenRadius = (radius * 200) / projected.z;
+                if (screenRadius < 1) return;
+                
+                // Create radial gradient for 3D effect
+                const gradient = this.ctx.createRadialGradient(
+                    projected.x - screenRadius/3, projected.y - screenRadius/3, 0,
+                    projected.x, projected.y, screenRadius
+                );
+                gradient.addColorStop(0, this.lightenColor(color, 0.3));
+                gradient.addColorStop(0.7, color);
+                gradient.addColorStop(1, this.darkenColor(color, 0.3));
+                
+                this.ctx.fillStyle = gradient;
+                this.ctx.beginPath();
+                this.ctx.arc(projected.x, projected.y, screenRadius, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                this.ctx.strokeStyle = '#fff';
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+            }
+            
+            // Draw ground plane
+            drawGround() {
+                const size = 200;
+                const segments = 40;
+                
+                for (let i = -segments; i < segments; i++) {
+                    for (let j = -segments; j < segments; j++) {
+                        const x1 = i * (size / segments);
+                        const z1 = j * (size / segments);
+                        const x2 = (i + 1) * (size / segments);
+                        const z2 = (j + 1) * (size / segments);
+                        
+                        const p1 = this.project3D(x1, 0, z1);
+                        const p2 = this.project3D(x2, 0, z1);
+                        const p3 = this.project3D(x2, 0, z2);
+                        const p4 = this.project3D(x1, 0, z2);
+                        
+                        if (p1 && p2 && p3 && p4) {
+                            // Create checkerboard pattern
+                            const isEven = (i + j) % 2 === 0;
+                            const color = isEven ? '#2c3e50' : '#34495e';
+                            
+                            this.ctx.fillStyle = color;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(p1.x, p1.y);
+                            this.ctx.lineTo(p2.x, p2.y);
+                            this.ctx.lineTo(p3.x, p3.y);
+                            this.ctx.lineTo(p4.x, p4.y);
+                            this.ctx.closePath();
+                            this.ctx.fill();
+                        }
+                    }
+                }
+            }
+            
+            handleInput() {
+                // Reset velocities
+                this.gameState.player.velocityX *= this.gameState.friction;
+                this.gameState.player.velocityZ *= this.gameState.friction;
+                
+                // Movement based on camera direction
+                const cosY = Math.cos(this.camera.angleY);
+                const sinY = Math.sin(this.camera.angleY);
+                
+                if (this.gameState.keys.w) {
+                    this.gameState.player.velocityX = -sinY * this.gameState.player.speed;
+                    this.gameState.player.velocityZ = -cosY * this.gameState.player.speed;
+                }
+                if (this.gameState.keys.s) {
+                    this.gameState.player.velocityX = sinY * this.gameState.player.speed;
+                    this.gameState.player.velocityZ = cosY * this.gameState.player.speed;
+                }
+                if (this.gameState.keys.a) {
+                    this.gameState.player.velocityX = -cosY * this.gameState.player.speed;
+                    this.gameState.player.velocityZ = sinY * this.gameState.player.speed;
+                }
+                if (this.gameState.keys.d) {
+                    this.gameState.player.velocityX = cosY * this.gameState.player.speed;
+                    this.gameState.player.velocityZ = -sinY * this.gameState.player.speed;
+                }
+                
+                // Jumping
+                if (this.gameState.keys.space && this.gameState.player.onGround) {
+                    this.gameState.player.velocityY = this.gameState.player.jumpSpeed;
+                    this.gameState.player.onGround = false;
+                }
+                
+                // Apply gravity
+                if (!this.gameState.player.onGround) {
+                    this.gameState.player.velocityY -= this.gameState.gravity;
+                }
+                
+                // Update position
+                this.gameState.player.x += this.gameState.player.velocityX;
+                this.gameState.player.y += this.gameState.player.velocityY;
+                this.gameState.player.z += this.gameState.player.velocityZ;
+                
+                // Ground collision
+                if (this.gameState.player.y <= 0) {
+                    this.gameState.player.y = 0;
+                    this.gameState.player.velocityY = 0;
+                    this.gameState.player.onGround = true;
+                }
+                
+                // Camera follows player
+                this.camera.x = this.gameState.player.x;
+                this.camera.y = this.gameState.player.y + 5;
+                this.camera.z = this.gameState.player.z;
+                
+                // Mouse look
+                const deltaX = (this.gameState.mouseX - this.gameState.lastMouseX) * 0.003;
+                const deltaY = (this.gameState.mouseY - this.gameState.lastMouseY) * 0.003;
+                
+                this.camera.angleY += deltaX;
+                this.camera.angleX += deltaY;
+                this.camera.angleX = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.angleX));
+                
+                // Interactions
+                if (this.gameState.keys.e) {
+                    this.handleInteraction();
+                }
+                
+                if (this.gameState.keys.g) {
+                    this.goHome();
+                }
+                
+                if (this.gameState.keys.i) {
+                    this.toggleInventory();
+                }
+            }
+            
+            handleClick(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Check if click is on collection buttons
+                if (this.gameState.brainrotCharacters) {
+                    this.gameState.brainrotCharacters.forEach((character, index) => {
+                        const buttonX = 50 + (index * 200);
+                        const buttonY = this.canvas.height - 150;
+                        
+                        if (x >= buttonX && x <= buttonX + 150 && y >= buttonY && y <= buttonY + 50) {
+                            this.collectFromCharacter(character);
+                        }
+                    });
+                }
+            }
+            
+            collectFromCharacter(character) {
+                // Add money based on character's collect value
+                this.gameState.money += character.collectValue;
+                this.gameState.brainrots++;
+                
+                // Add particle effect
+                this.addParticleEffect(character.x + character.width/2, character.y + character.height, character.z + character.depth/2);
+                
+                // Show collection notification
+                this.showNotification(
+                    `${character.name} Collected!`, 
+                    `+$${character.collectValue.toLocaleString()}`
+                );
+            }
+            
+            addParticleEffect(x, y, z) {
+                for (let i = 0; i < 10; i++) {
+                    this.gameState.particles.push({
+                        x: x,
+                        y: y,
+                        z: z,
+                        velocityX: (Math.random() - 0.5) * 0.2,
+                        velocityY: Math.random() * 0.3 + 0.1,
+                        velocityZ: (Math.random() - 0.5) * 0.2,
+                        life: 60,
+                        maxLife: 60,
+                        color: '#f1c40f',
+                        size: Math.random() * 3 + 1
+                    });
+                }
+            }
+            
+            updateParticles() {
+                this.gameState.particles = this.gameState.particles.filter(particle => {
+                    particle.x += particle.velocityX;
+                    particle.y += particle.velocityY;
+                    particle.z += particle.velocityZ;
+                    particle.velocityY -= 0.01; // gravity
+                    particle.life--;
+                    
+                    return particle.life > 0;
+                });
+            }
+            
+            drawParticles() {
+                this.gameState.particles.forEach(particle => {
+                    const projected = this.project3D(particle.x, particle.y, particle.z);
+                    if (projected) {
+                        const alpha = particle.life / particle.maxLife;
+                        this.ctx.globalAlpha = alpha;
+                        this.ctx.fillStyle = particle.color;
+                        this.ctx.beginPath();
+                        this.ctx.arc(projected.x, projected.y, particle.size, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.globalAlpha = 1;
+                    }
+                });
+            }
+            
+            handleInteraction() {
+                // Check if player is near a character
+                if (this.gameState.brainrotCharacters) {
+                    this.gameState.brainrotCharacters.forEach(character => {
+                        const distance = Math.sqrt(
+                            Math.pow(this.gameState.player.x - (character.x + character.width/2), 2) + 
+                            Math.pow(this.gameState.player.z - (character.z + character.depth/2), 2)
+                        );
+                        
+                        if (distance < 10) {
+                            this.collectFromCharacter(character);
+                        }
+                    });
+                }
+            }
+            
+            goHome() {
+                const playerBase = this.gameState.bases.find(base => base.owner === 'player');
+                if (playerBase) {
+                    this.gameState.player.x = playerBase.x + playerBase.width/2;
+                    this.gameState.player.y = playerBase.y + playerBase.height;
+                    this.gameState.player.z = playerBase.z + playerBase.depth/2;
+                    this.gameState.player.velocityX = 0;
+                    this.gameState.player.velocityY = 0;
+                    this.gameState.player.velocityZ = 0;
+                    this.showNotification("Teleported Home!", "Safe in your base!");
+                }
+            }
+            
+            toggleInventory() {
+                const inventory = document.getElementById('inventory');
+                inventory.style.display = inventory.style.display === 'none' ? 'block' : 'none';
+                this.updateInventory();
+            }
+            
+            updateInventory() {
+                const grid = document.getElementById('inventoryGrid');
+                grid.innerHTML = '';
+                
+                for (let i = 0; i < 16; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'inventory-slot';
+                    if (this.gameState.player.inventory[i]) {
+                        slot.textContent = '🧠';
+                        slot.classList.add('occupied');
+                    }
+                    grid.appendChild(slot);
+                }
+            }
+            
+            showNotification(title, message) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.innerHTML = `<strong>${title}</strong><br>${message}`;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+            
+            drawMinimap() {
+                this.minimapCtx.clearRect(0, 0, 200, 150);
+                this.minimapCtx.fillStyle = '#2c3e50';
+                this.minimapCtx.fillRect(0, 0, 200, 150);
+                
+                // Draw bases
+                this.gameState.bases.forEach(base => {
+                    const x = (base.x + 100) * 0.5;
+                    const z = (base.z + 100) * 0.5;
+                    const color = base.owner === 'player' ? '#3498db' : '#e74c3c';
+                    
+                    this.minimapCtx.fillStyle = color;
+                    this.minimapCtx.fillRect(x, z, 10, 10);
+                });
+                
+                // Draw player
+                const playerX = (this.gameState.player.x + 100) * 0.5;
+                const playerZ = (this.gameState.player.z + 100) * 0.5;
+                this.minimapCtx.fillStyle = '#fff';
+                this.minimapCtx.beginPath();
+                this.minimapCtx.arc(playerX, playerZ, 3, 0, Math.PI * 2);
+                this.minimapCtx.fill();
+            }
+            
+            gameLoop() {
+                this.handleInput();
+                
+                // Update particles
+                this.updateParticles();
+                
+                // Clear canvas
+                this.ctx.fillStyle = '#1a1a2e';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // Draw ground first
+                this.drawGround();
+                
+                // Draw red carpet
+                if (this.gameState.redCarpet) {
+                    this.drawCube3D(
+                        this.gameState.redCarpet.x, 
+                        this.gameState.redCarpet.y, 
+                        this.gameState.redCarpet.z,
+                        this.gameState.redCarpet.width,
+                        this.gameState.redCarpet.height,
+                        this.gameState.redCarpet.depth,
+                        this.gameState.redCarpet.color
+                    );
+                }
+                
+                // Draw platforms
+                if (this.gameState.platforms) {
+                    this.gameState.platforms.forEach(platform => {
+                        this.drawCube3D(platform.x, platform.y, platform.z, platform.width, platform.height, platform.depth, platform.color);
+                    });
+                }
+                
+                // Draw voxel-style brainrot characters
+                if (this.gameState.brainrotCharacters) {
+                    this.gameState.brainrotCharacters.forEach(character => {
+                        // Draw character body
+                        this.drawVoxelCube(character.x, character.y, character.z, character.width, character.height, character.depth, character.color, true);
+                        
+                        // Add character-specific details
+                        this.drawCharacterDetails(character);
+                    });
+                }
+                
+                // Draw player
+                this.drawVoxelCube(
+                    this.gameState.player.x, 
+                    this.gameState.player.y, 
+                    this.gameState.player.z, 
+                    this.gameState.player.width, 
+                    this.gameState.player.height, 
+                    this.gameState.player.depth, 
+                    this.gameState.player.carryingBrainrot ? '#e74c3c' : '#3498db',
+                    true
+                );
+                
+                // Draw particles
+                this.drawParticles();
+                
+                // Draw collection UI
+                this.drawCollectionUI();
+                
+                // Update UI
+                document.getElementById('money').textContent = `💰 Cash: $${this.gameState.money.toFixed(2)}M`;
+                document.getElementById('brainrots').textContent = `🧠 Brainrots: ${this.gameState.brainrots}`;
+                document.getElementById('playerScore').textContent = `${this.gameState.brainrots} Brainrots`;
+                
+                // Draw minimap
+                this.drawMinimap();
+                
+                requestAnimationFrame(() => this.gameLoop());
+            }
+            
+            // Draw character-specific details
+            drawCharacterDetails(character) {
+                const projected = this.project3D(character.x + character.width/2, character.y + character.height + 1, character.z + character.depth/2);
+                if (!projected) return;
+                
+                // Draw character name and stats
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '16px Orbitron';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(character.name, projected.x, projected.y - 20);
+                this.ctx.fillText(character.title, projected.x, projected.y - 5);
+                this.ctx.fillText(`$${character.rate.toLocaleString()}/s`, projected.x, projected.y + 10);
+                this.ctx.fillText(`$${character.cost.toLocaleString()}`, projected.x, projected.y + 25);
+            }
+            
+            // Draw collection UI
+            drawCollectionUI() {
+                if (!this.gameState.brainrotCharacters) return;
+                
+                this.gameState.brainrotCharacters.forEach((character, index) => {
+                    const buttonX = 50 + (index * 200);
+                    const buttonY = this.canvas.height - 150;
+                    
+                    // Draw collect button with gradient
+                    const gradient = this.ctx.createLinearGradient(buttonX, buttonY, buttonX, buttonY + 50);
+                    gradient.addColorStop(0, '#fff');
+                    gradient.addColorStop(1, '#f0f0f0');
+                    
+                    this.ctx.fillStyle = gradient;
+                    this.ctx.fillRect(buttonX, buttonY, 150, 50);
+                    
+                    // Add button border
+                    this.ctx.strokeStyle = '#ccc';
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeRect(buttonX, buttonY, 150, 50);
+                    
+                    // Draw button text
+                    this.ctx.fillStyle = '#000';
+                    this.ctx.font = 'bold 16px Orbitron';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('Collect', buttonX + 75, buttonY + 20);
+                    
+                    this.ctx.font = '14px Orbitron';
+                    this.ctx.fillText(`$${character.collectValue.toLocaleString()}`, buttonX + 75, buttonY + 40);
+                });
+            }
+            
+            getDepth(x, y, z) {
+                const tx = x - this.camera.x;
+                const ty = y - this.camera.y;
+                const tz = z - this.camera.z;
+                return Math.sqrt(tx*tx + ty*ty + tz*tz);
+            }
+        }
+        
+        // Close inventory function
+        function closeInventory() {
+            document.getElementById('inventory').style.display = 'none';
+        }
+        
+        // Start the game
+        const game = new Game3D();
+    </script>
+</body>
+</html>
