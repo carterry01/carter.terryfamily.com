@@ -5,7 +5,7 @@ Auto select the new input device for them (and make it obvious youdid that)
 
 User authentication for high score board (clerk?)
 
-legal@beatfrenzy.io
+legal@beatfrenzy2.io
 
 After auth:
 Need a like feature so people can like songs they like.
