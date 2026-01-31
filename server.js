@@ -7,8 +7,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve static files (the client) from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the project root (index.html, games, assets)
+app.use(express.static(__dirname));
 
 // ------ In-memory game state (simple & volatile) ------
 // Map of socket.id -> player state
