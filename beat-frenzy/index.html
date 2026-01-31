@@ -21,7 +21,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Rubik+Glitch&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -35,6 +35,14 @@
         --bg-panel: #12121a;
         --accent: #a855f7;
         --accent-glow: rgba(168, 85, 247, 0.4);
+        --text-gradient: linear-gradient(
+          45deg,
+          #ffc000,
+          #ff8c00,
+          #e00000,
+          #a00060,
+          #007fff
+        );
       }
 
       * {
@@ -49,8 +57,20 @@
         height: 100%;
         overflow: hidden;
         background: #000; /* Black letterbox background */
-        font-family: "Rajdhani", sans-serif;
+        font-family: "Rubik Glitch", sans-serif;
         color: #fff;
+      }
+
+      /* Gradient text for all words (from image: yellow → orange → red → magenta → blue) */
+      #app,
+      #app * {
+        background: var(--text-gradient);
+        background-attachment: fixed;
+        background-size: 100% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
       }
 
       /* App scaler - handles fixed resolution scaling */
@@ -289,10 +309,11 @@
       }
 
       #logo h1 {
-        font-family: "Orbitron", sans-serif;
+        font-family: "Rubik Glitch", sans-serif;
         font-size: 1.8em;
         font-weight: 900;
-        background: linear-gradient(135deg, var(--accent), #ec4899);
+        background: var(--text-gradient);
+        background-attachment: fixed;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -528,12 +549,18 @@
         text-align: center;
       }
 
-      /* Song List */
+      /* Song List (use readable font, not Rubik Glitch) */
       #songList {
         flex: 1;
         overflow-y: auto;
         overflow-x: hidden;
         padding: 16px;
+        font-family: "Rajdhani", sans-serif;
+      }
+
+      #songList,
+      #songList * {
+        font-family: "Rajdhani", sans-serif;
       }
 
       #songList::-webkit-scrollbar {
@@ -2470,9 +2497,15 @@
         background: rgba(239, 68, 68, 0.3);
       }
 
-      /* Empty State - Get Songs Info */
+      /* Empty State - Get Songs Info (use readable font, not Rubik Glitch) */
       #emptyState {
         padding: 8px 0;
+        font-family: "Rajdhani", sans-serif;
+      }
+
+      #emptyState,
+      #emptyState * {
+        font-family: "Rajdhani", sans-serif;
       }
 
       #emptyState.hidden {
@@ -2929,6 +2962,27 @@
       #scoreSection.hidden,
       #statsSection.hidden {
         display: none;
+      }
+
+      /* Restore visible backgrounds for form/UI elements while keeping gradient text */
+      #searchInput,
+      #searchInput:focus {
+        background: rgba(255, 255, 255, 0.05), var(--text-gradient);
+        background-attachment: scroll, fixed;
+        background-clip: border-box, text;
+        -webkit-background-clip: border-box, text;
+      }
+      #searchInput:focus {
+        background: rgba(168, 85, 247, 0.1), var(--text-gradient);
+        background-attachment: scroll, fixed;
+        background-clip: border-box, text;
+        -webkit-background-clip: border-box, text;
+      }
+      #app select {
+        background: var(--bg-panel), var(--text-gradient);
+        background-attachment: scroll, fixed;
+        background-clip: border-box, text;
+        -webkit-background-clip: border-box, text;
       }
     </style>
   </head>
