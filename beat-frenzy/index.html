@@ -35,14 +35,6 @@
         --bg-panel: #12121a;
         --accent: #a855f7;
         --accent-glow: rgba(168, 85, 247, 0.4);
-        --text-gradient: linear-gradient(
-          45deg,
-          #ffc000,
-          #ff8c00,
-          #e00000,
-          #a00060,
-          #007fff
-        );
       }
 
       * {
@@ -59,18 +51,6 @@
         background: #000; /* Black letterbox background */
         font-family: "Rubik Glitch", sans-serif;
         color: #fff;
-      }
-
-      /* Gradient text for all words (from image: yellow → orange → red → magenta → blue) */
-      #app,
-      #app * {
-        background: var(--text-gradient);
-        background-attachment: fixed;
-        background-size: 100% 100%;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        color: transparent;
       }
 
       /* App scaler - handles fixed resolution scaling */
@@ -256,6 +236,12 @@
         box-shadow: inset 0 0 300px rgba(255, 255, 255, 0.4);
       }
 
+      /* Maxed (combo 300+): Rainbow / intense white */
+      #videoGlow.glow-maxed.pulse {
+        box-shadow: inset 0 0 400px rgba(255, 255, 255, 0.5),
+          inset 0 0 200px rgba(168, 85, 247, 0.3);
+      }
+
       /* Video badge indicator */
       .video-badge {
         display: inline-block;
@@ -312,8 +298,7 @@
         font-family: "Rubik Glitch", sans-serif;
         font-size: 1.8em;
         font-weight: 900;
-        background: var(--text-gradient);
-        background-attachment: fixed;
+        background: linear-gradient(135deg, var(--accent), #ec4899);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -549,7 +534,7 @@
         text-align: center;
       }
 
-      /* Song List (use readable font, not Rubik Glitch) */
+      /* Song List (use readable font, not Rubik Glitch; gradient scrolls with each row) */
       #songList {
         flex: 1;
         overflow-y: auto;
@@ -1126,6 +1111,55 @@
         color: #888;
         margin-bottom: 6px;
         text-align: center;
+      }
+
+      /* Play Mode: Normal / Practice / Restart on miss */
+      #playModeRow {
+        margin-bottom: 12px;
+      }
+
+      #playModeLabel {
+        font-size: 0.7em;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #888;
+        margin-bottom: 6px;
+        text-align: center;
+      }
+
+      #playModeSelect {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+
+      .play-mode-btn {
+        padding: 6px 4px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        color: #aaa;
+        border-radius: 6px;
+        font-family: "Rajdhani", sans-serif;
+        font-weight: 600;
+        font-size: 0.7em;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .play-mode-btn:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+      }
+
+      .play-mode-btn.selected {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      .play-mode-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
       }
 
       /* Difficulty Selection */
@@ -2964,26 +2998,6 @@
         display: none;
       }
 
-      /* Restore visible backgrounds for form/UI elements while keeping gradient text */
-      #searchInput,
-      #searchInput:focus {
-        background: rgba(255, 255, 255, 0.05), var(--text-gradient);
-        background-attachment: scroll, fixed;
-        background-clip: border-box, text;
-        -webkit-background-clip: border-box, text;
-      }
-      #searchInput:focus {
-        background: rgba(168, 85, 247, 0.1), var(--text-gradient);
-        background-attachment: scroll, fixed;
-        background-clip: border-box, text;
-        -webkit-background-clip: border-box, text;
-      }
-      #app select {
-        background: var(--bg-panel), var(--text-gradient);
-        background-attachment: scroll, fixed;
-        background-clip: border-box, text;
-        -webkit-background-clip: border-box, text;
-      }
     </style>
   </head>
   <body>
@@ -3164,7 +3178,7 @@
             <div id="comboDisplay">
               <span class="multiplier-badge" id="comboMultiplier"></span>
               <div class="combo-number" id="comboNumber">0</div>
-              <div class="combo-label">COMBO</div>
+              <div class="combo-label" id="comboLabel">COMBO</div>
             </div>
             <div id="comboParticles"></div>
 
@@ -3369,6 +3383,15 @@
                 <button class="lane-btn" data-lanes="3">3</button>
                 <button class="lane-btn" data-lanes="4">4</button>
                 <button class="lane-btn selected" data-lanes="5">5</button>
+              </div>
+
+              <div id="playModeRow">
+                <div id="playModeLabel">Play Mode</div>
+                <div id="playModeSelect">
+                  <button type="button" class="play-mode-btn selected" data-mode="normal" title="Standard: misses count">Normal</button>
+                  <button type="button" class="play-mode-btn" data-mode="practice" title="On miss: rewind to note, hit notes cleared, missed stays">Practice</button>
+                  <button type="button" class="play-mode-btn" data-mode="restart" title="One miss restarts the song">Restart</button>
+                </div>
               </div>
 
               <div id="playControls">
@@ -3713,6 +3736,7 @@
         currentLyricIndex: -1,
         currentLyricGroupKey: null,
         lyricsBuilt: false,
+        playMode: "normal", // "normal" | "practice" | "restart"
       };
 
       // ============================================
@@ -6136,6 +6160,9 @@
         for (const note of gameState.activeNotes) {
           if (note.missed) continue;
 
+          // In practice mode, all hit notes disappear immediately
+          if (gameState.playMode === "practice" && note.hit) continue;
+
           // Check if this is a sustained note that was hit and is being held
           const isSustain = note.durationMs > 50; // More than 50ms = sustained note
           const isBeingHeld =
@@ -6568,11 +6595,14 @@
           "glow-unstoppable",
           "glow-legendary",
           "glow-godlike",
-          "glow-perfection"
+          "glow-perfection",
+          "glow-maxed"
         );
 
         // Apply appropriate tier class based on combo
-        if (combo >= 200) {
+        if (combo >= 300) {
+          videoGlow.classList.add("glow-maxed");
+        } else if (combo >= 200) {
           videoGlow.classList.add("glow-perfection");
         } else if (combo >= 150) {
           videoGlow.classList.add("glow-godlike");
@@ -7306,6 +7336,10 @@
         playBtn.classList.remove("playing", "paused");
         miniPlayBtn.classList.remove("playing", "paused");
 
+        document.querySelectorAll(".play-mode-btn").forEach((btn) => {
+          btn.disabled = gameState.isPlaying;
+        });
+
         if (!gameState.isPlaying) {
           playBtn.textContent = "PLAY";
           miniPlayBtn.textContent = "▶";
@@ -7530,10 +7564,8 @@
 
         if (bestNote) {
           handleHit(bestNote, bestDiff);
-        } else {
-          // Overstrum penalty - pressed a lane with no note
-          handleOverstrum(lane);
         }
+        // No note in window: do nothing — combo is preserved (no overstrum penalty)
       }
 
       function handleHit(note, timeDiff) {
@@ -7564,8 +7596,14 @@
           gameState.maxCombo = gameState.combo;
         }
 
-        // Update multiplier
-        if (gameState.combo >= 40) gameState.multiplier = 4;
+        // Update multiplier (more tiers, up to 10x)
+        if (gameState.combo >= 300) gameState.multiplier = 10;
+        else if (gameState.combo >= 200) gameState.multiplier = 9;
+        else if (gameState.combo >= 150) gameState.multiplier = 8;
+        else if (gameState.combo >= 100) gameState.multiplier = 7;
+        else if (gameState.combo >= 80) gameState.multiplier = 6;
+        else if (gameState.combo >= 60) gameState.multiplier = 5;
+        else if (gameState.combo >= 40) gameState.multiplier = 4;
         else if (gameState.combo >= 20) gameState.multiplier = 3;
         else if (gameState.combo >= 10) gameState.multiplier = 2;
         else gameState.multiplier = 1;
@@ -7597,10 +7635,125 @@
         // Add lane flash effect
         laneFlashes[note.lane] = { time: Date.now(), color: colorRgb };
 
+        // In practice mode, delete hit notes from the list (short notes now; sustains removed on complete)
+        if (gameState.playMode === "practice") {
+          const isSustain = note.durationMs > 50;
+          if (!isSustain) {
+            gameState.activeNotes = gameState.activeNotes.filter((n) => n !== note);
+          }
+        }
+
+        updateUI();
+      }
+
+      function practiceRewind(note) {
+        // Rewind to just before the missed note so it stays visible (more buffer = more time to see it coming)
+        const REWIND_BUFFER_MS = 1200;
+        const rewindTimeMs = Math.max(0, note.time - REWIND_BUFFER_MS);
+        const rewindTimeSec = rewindTimeMs / 1000;
+
+        // Reset score and stats from this point so practice run is clean
+        gameState.score = 0;
+        gameState.combo = 0;
+        gameState.maxCombo = 0;
+        gameState.multiplier = 1;
+        gameState.perfectCount = 0;
+        gameState.goodCount = 0;
+        gameState.okCount = 0;
+        gameState.missedCount = 0;
+
+        // Keep volume and video at full in practice – no punishment on rewind
+        if (gameState.audioElement) {
+          resetVolume();
+          updateVolume();
+        }
+
+        if (gameState.audioElement) {
+          gameState.audioElement.currentTime = rewindTimeSec;
+        }
+        if (gameState.videoElement && gameState.currentSong) {
+          const videoOffset = (gameState.currentSong.videoStartTime || 0) / 1000;
+          gameState.videoElement.currentTime = Math.max(0, rewindTimeSec - videoOffset);
+        }
+
+        gameState.activeNotes = gameState.notes
+          .filter((n) => n.time >= rewindTimeMs)
+          .map((n) => ({
+            ...n,
+            hit: false,
+            missed: false,
+          }));
+
+        hitEffects = [];
+        laneFlashes = {};
+        hitEffects.push({
+          lane: note.lane,
+          time: Date.now(),
+          text: "REWIND",
+          color: "255, 180, 80",
+          type: "miss",
+        });
+        laneFlashes[note.lane] = { time: Date.now(), color: "255, 180, 80" };
+
+        const comboDisplay = document.getElementById("comboDisplay");
+        if (comboDisplay) comboDisplay.classList.remove("visible", "breaking", "bump");
+        updateUI();
+      }
+
+      function restartFromBeginning() {
+        // One miss = restart whole song from start
+        const startSec = gameState.skipToTime || 0;
+
+        gameState.score = 0;
+        gameState.combo = 0;
+        gameState.maxCombo = 0;
+        gameState.multiplier = 1;
+        gameState.perfectCount = 0;
+        gameState.goodCount = 0;
+        gameState.okCount = 0;
+        gameState.missedCount = 0;
+        gameState.activeNotes = gameState.notes.map((n) => ({
+          ...n,
+          hit: false,
+          missed: false,
+        }));
+
+        onNoteMiss();
+        updateVideoIntensity();
+
+        if (gameState.audioElement) {
+          gameState.audioElement.currentTime = startSec;
+        }
+        if (gameState.videoElement && gameState.currentSong) {
+          const videoOffset = (gameState.currentSong.videoStartTime || 0) / 1000;
+          gameState.videoElement.currentTime = Math.max(0, startSec - videoOffset);
+        }
+
+        hitEffects = [];
+        laneFlashes = {};
+        hitEffects.push({
+          lane: 0,
+          time: Date.now(),
+          text: "RESTART",
+          color: "239, 68, 68",
+          type: "miss",
+        });
+
+        const comboDisplay = document.getElementById("comboDisplay");
+        if (comboDisplay) comboDisplay.classList.remove("visible", "breaking", "bump");
         updateUI();
       }
 
       function handleMiss(note) {
+        if (gameState.playMode === "practice") {
+          practiceRewind(note);
+          return;
+        }
+        if (gameState.playMode === "restart") {
+          restartFromBeginning();
+          return;
+        }
+
         gameState.missedCount++;
         gameState.combo = 0;
         gameState.multiplier = 1;
@@ -7667,10 +7820,24 @@
         // Add golden flash effect
         laneFlashes[note.lane] = { time: Date.now(), color: "255, 215, 0" };
 
+        // In practice mode, delete the sustain from the list once it's complete
+        if (gameState.playMode === "practice") {
+          gameState.activeNotes = gameState.activeNotes.filter((n) => n !== note);
+        }
+
         updateUI();
       }
 
       function handleSustainRelease(note) {
+        if (gameState.playMode === "practice") {
+          practiceRewind(note);
+          return;
+        }
+        if (gameState.playMode === "restart") {
+          restartFromBeginning();
+          return;
+        }
+
         // Handle early release of sustained note
         note.releasedEarly = true;
 
@@ -7770,6 +7937,24 @@
         // Update the number
         comboNumber.textContent = combo;
 
+        // Update combo message (more tiers)
+        const comboLabelEl = document.getElementById("comboLabel");
+        if (comboLabelEl) {
+          if (combo >= 300) comboLabelEl.textContent = "MAXED OUT!";
+          else if (combo >= 200) comboLabelEl.textContent = "LEGEND!";
+          else if (combo >= 150) comboLabelEl.textContent = "PERFECTION!";
+          else if (combo >= 100) comboLabelEl.textContent = "GODLIKE!";
+          else if (combo >= 75) comboLabelEl.textContent = "LEGENDARY!";
+          else if (combo >= 50) comboLabelEl.textContent = "UNSTOPPABLE!";
+          else if (combo >= 35) comboLabelEl.textContent = "BLAZING!";
+          else if (combo >= 25) comboLabelEl.textContent = "ON FIRE!";
+          else if (combo >= 20) comboLabelEl.textContent = "SICK!";
+          else if (combo >= 15) comboLabelEl.textContent = "AWESOME!";
+          else if (combo >= 10) comboLabelEl.textContent = "GREAT!";
+          else if (combo >= 5) comboLabelEl.textContent = "NICE!";
+          else comboLabelEl.textContent = "COMBO";
+        }
+
         // Update multiplier badge
         if (gameState.multiplier > 1) {
           comboMultiplier.textContent = gameState.multiplier + "x";
@@ -7784,21 +7969,16 @@
           void comboDisplay.offsetWidth; // Force reflow
           comboDisplay.classList.add("bump");
 
-          // Spawn particles on milestone combos
+          // Spawn particles on milestone combos (more milestones)
           if (
             combo % 10 === 0 ||
-            combo === 25 ||
-            combo === 50 ||
-            combo === 75 ||
-            combo === 100 ||
-            combo === 150 ||
-            combo === 200
+            [25, 50, 75, 100, 125, 150, 175, 200, 250, 300].includes(combo)
           ) {
             spawnComboParticles(combo);
           }
 
           // Trigger milestone effects for specific combos
-          if ([25, 50, 75, 100, 150, 200].includes(combo)) {
+          if ([25, 50, 75, 100, 150, 200, 300].includes(combo)) {
             triggerMilestoneEffect(combo);
           }
         }
@@ -8083,6 +8263,18 @@
           if (!gameState.isPlaying) {
             drawStaticScreen();
           }
+        });
+      });
+
+      // Play mode: Normal / Practice / Restart
+      document.querySelectorAll(".play-mode-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (gameState.isPlaying) return;
+          const mode = btn.dataset.mode;
+          gameState.playMode = mode;
+          document.querySelectorAll(".play-mode-btn").forEach((b) => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          trackEvent("play_mode_change", { mode });
         });
       });
 
