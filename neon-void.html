@@ -25,7 +25,7 @@
     z-index: 0;
   }
   @keyframes drift { from { transform: translate(-1.5%,-1%) scale(1);} to { transform: translate(1.5%,2%) scale(1.07);} }
-  #game { position: fixed; inset: 0; display: block; z-index: 1; cursor: crosshair; }
+  #game { position: fixed; inset: 0; display: block; z-index: 1; }
 
   #hud {
     position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
@@ -180,8 +180,8 @@
 
 <div id="toast"></div>
 
-<button id="bomb-btn" title="Bomb (B / right-click)">💥<small id="bomb-count">x1</small></button>
-<div id="pause-hint">WASD / arrows / mouse to move &nbsp;•&nbsp; SPACE dash &nbsp;•&nbsp; B bomb &nbsp;•&nbsp; P pause</div>
+<button id="bomb-btn" title="Bomb (B)">💥<small id="bomb-count">x1</small></button>
+<div id="pause-hint">WASD / arrows to move &nbsp;•&nbsp; SPACE dash &nbsp;•&nbsp; B bomb &nbsp;•&nbsp; P pause</div>
 
 <div id="overlay">
   <div id="card">
@@ -200,7 +200,7 @@
       <div>🛡 <b>SHD</b> — shield (1 hit)</div>
       <div>💣 <b>+BOMB</b> — clears screen</div>
     </div>
-    <p style="margin-top:10px"><kbd>WASD</kbd> <kbd>←↑↓→</kbd> <kbd>mouse</kbd> move &nbsp; <kbd>SPACE</kbd> dash &nbsp; <kbd>B</kbd>/<kbd>right-click</kbd> bomb &nbsp; <kbd>P</kbd> pause</p>
+    <p style="margin-top:10px"><kbd>WASD</kbd> <kbd>←↑↓→</kbd> move &nbsp; <kbd>SPACE</kbd> dash &nbsp; <kbd>B</kbd> bomb &nbsp; <kbd>P</kbd> pause</p>
     <button class="big" id="ov-go">▶ LAUNCH</button>
     <div id="mute-row">Sound on recommended 🔊 — press M to mute</div>
   </div>
@@ -283,7 +283,7 @@ const P = {
 };
 
 const keys = {};
-const mouse = { x: 0, y: 0, active: false, down: false };
+const touch = { x: 0, y: 0, active: false };
 
 function resetWorld() {
   G.score = 0; G.wave = 1; G.kills = 0; G.combo = 1; G.comboTimer = 0;
@@ -294,7 +294,7 @@ function resetWorld() {
   P.hp = 3; P.alive = true; P.fireT = 0; P.fireRate = 0.16;
   P.tripleT = 0; P.rapidT = 0; P.shieldT = 0; P.shieldHits = 0;
   P.inv = 2; P.bombs = 1; P.dashCD = 0;
-  mouse.x = P.x; mouse.y = P.y - 120;
+  touch.x = P.x; touch.y = P.y - 120; touch.active = false;
   buildStars();
 }
 
@@ -574,24 +574,21 @@ window.addEventListener("keydown", (e) => {
   if (k === "enter") { if (G.mode !== "play") startGame(); else if (G.mode === "pause") togglePause(); }
 });
 window.addEventListener("keyup", (e) => { keys[e.key.toLowerCase()] = false; });
-canvas.addEventListener("pointermove", (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; });
-canvas.addEventListener("pointerdown", (e) => {
-  ac();
-  mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; mouse.down = true;
-  if (e.button === 2) doBomb();
-});
-window.addEventListener("pointerup", () => { mouse.down = false; });
+// No mouse controls: keyboard only on desktop. Touch drag only on mobile.
+canvas.addEventListener("pointerdown", (e) => { ac(); });
 canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 canvas.addEventListener("touchstart", (e) => {
   ac();
   const t = e.touches[0];
-  mouse.x = t.clientX; mouse.y = t.clientY; mouse.active = true;
+  touch.x = t.clientX; touch.y = t.clientY; touch.active = true;
 }, { passive: true });
 canvas.addEventListener("touchmove", (e) => {
   e.preventDefault();
   const t = e.touches[0];
-  mouse.x = t.clientX; mouse.y = t.clientY; mouse.active = true;
+  touch.x = t.clientX; touch.y = t.clientY; touch.active = true;
 }, { passive: false });
+canvas.addEventListener("touchend", () => { touch.active = false; });
+canvas.addEventListener("touchcancel", () => { touch.active = false; });
 function doDash() {
   if (G.mode !== "play" || !P.alive || P.dashCD > 0) return;
   let dx = 0, dy = -1;
@@ -645,7 +642,7 @@ function update(dt) {
   if (P.muzzle > 0) P.muzzle -= dt;
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 30);
 
-  // --- player movement: keyboard + mouse blend ---
+  // --- player movement: keyboard (+ touch drag on mobile), no mouse ---
   const ACC = 2400, MAXV = 430;
   let ax = 0, ay = 0;
   if (keys["a"] || keys["arrowleft"]) ax -= 1;
@@ -656,10 +653,10 @@ function update(dt) {
     const l = Math.hypot(ax, ay);
     P.vx += (ax / l) * ACC * dt;
     P.vy += (ay / l) * ACC * dt;
-    mouse.active = false;
-  } else if (mouse.active && P.dashT <= 0) {
-    // glide toward cursor
-    const dx = mouse.x - P.x, dy = mouse.y - 40 - P.y;
+    touch.active = false;
+  } else if (touch.active && P.dashT <= 0) {
+    // glide toward touch point (mobile only)
+    const dx = touch.x - P.x, dy = touch.y - 40 - P.y;
     const d = Math.hypot(dx, dy);
     if (d > 6) {
       const pull = clamp(d * 6, 0, ACC);
