@@ -178,18 +178,18 @@
     </div>
 
     <div class="factory-layout" id="factory-layout">
-      <!-- mines appear here once bought. Click a mine to collect +1 -->
+      <!-- mines appear here once bought. Click a mine to collect -->
     </div>
 
     <div class="buttons" id="buttons">
-      <!-- Manual gathering: click to get +1 free -->
-      <button class="overworld-btn" onclick="gather('wood')">🪓 Chop Wood (+1)</button>
-      <button class="overworld-btn" onclick="gather('water')">💧 Collect Water (+1)</button>
-      <button class="overworld-btn" onclick="gather('stone')">🪨 Gather Stone (+1)</button>
-      <button class="overworld-btn" onclick="gather('lava')">🌋 Scoop Lava (+1)</button>
-      <button onclick="gather('ore')">⛏️ Dig Ore (+1)</button>
-      <button class="gold-btn" onclick="gather('gold')">🥇 Pick Gold (+1)</button>
-      <button class="diamond-btn" onclick="gather('diamond')">💎 Hunt Diamond (+1)</button>
+      <!-- Click to collect: needs the mine, gives +1 per mine owned -->
+      <button class="overworld-btn" id="gatherWoodBtn" onclick="gather('wood')">🪓 Chop Wood</button>
+      <button class="overworld-btn" id="gatherWaterBtn" onclick="gather('water')">💧 Collect Water</button>
+      <button class="overworld-btn" id="gatherStoneBtn" onclick="gather('stone')">🪨 Gather Stone</button>
+      <button class="overworld-btn" id="gatherLavaBtn" onclick="gather('lava')">🌋 Scoop Lava</button>
+      <button id="gatherOreBtn" onclick="gather('ore')">⛏️ Dig Ore</button>
+      <button class="gold-btn" id="gatherGoldBtn" onclick="gather('gold')">🥇 Pick Gold</button>
+      <button class="diamond-btn" id="gatherDiamondBtn" onclick="gather('diamond')">💎 Hunt Diamond</button>
       <!-- Overworld sells (price = label) -->
       <button class="overworld-btn" onclick="sellWater()">Sell Water (+$400 each)</button>
       <button class="overworld-btn" onclick="sellWood()">Sell Wood (+$100 each)</button>
@@ -222,7 +222,7 @@
     let goldMines = 0;
     let diamondMines = 0;
 
-    let money = 0;
+    let money = 100;
 
     // Base costs — each extra mine of the same type costs more (base * (owned + 1))
     const BASE_COST = { water: 10, wood: 100, stone: 500, lava: 1000, ore: 1500, gold: 5500, diamond: 15000 };
@@ -258,18 +258,39 @@
       else if (type === 'stone') stone += n;
     }
 
-    // Manual click: +1 of that resource, no mine needed
+    // Manual click: only works if you own the mine; gives +1 per mine owned
     function gather(type) {
-      addResource(type, 1);
+      const n = ownedCount(type);
+      if (n <= 0) return;
+      addResource(type, n);
       updateUI();
     }
 
-    // Click a mine tile to collect +1 immediately (mines also auto-generate)
+    // Click a mine tile to collect: +1 per mine you own of that type
     function clickMine(index) {
       const mine = factoryLayout[index];
       if (!mine) return;
-      addResource(mine.type, 1);
+      const n = ownedCount(mine.type);
+      if (n <= 0) return;
+      addResource(mine.type, n);
       updateUI();
+    }
+
+    function updateGatherLabels() {
+      const set = (id, label, enabled) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = label;
+        el.disabled = !enabled;
+        el.style.opacity = enabled ? '1' : '0.5';
+      };
+      const names = { wood: '🪓 Chop Wood', water: '💧 Collect Water', stone: '🪨 Gather Stone', lava: '🌋 Scoop Lava', ore: '⛏️ Dig Ore', gold: '🥇 Pick Gold', diamond: '💎 Hunt Diamond' };
+      const ids = { wood: 'gatherWoodBtn', water: 'gatherWaterBtn', stone: 'gatherStoneBtn', lava: 'gatherLavaBtn', ore: 'gatherOreBtn', gold: 'gatherGoldBtn', diamond: 'gatherDiamondBtn' };
+      for (const type of Object.keys(names)) {
+        const n = ownedCount(type);
+        const label = n > 0 ? `${names[type]} (+${n})` : `${names[type]} (need mine)`;
+        set(ids[type], label, n > 0);
+      }
     }
 
     function updateBuyLabels() {
@@ -304,13 +325,14 @@
 
       updateFactoryLayout();
       updateBuyLabels();
+      updateGatherLabels();
     }
 
     function updateFactoryLayout() {
       const layout = document.getElementById("factory-layout");
       layout.innerHTML = '';
       if (factoryLayout.length === 0) {
-        layout.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:14px;">No mines yet — gather by hand, sell, then buy a mine to auto-generate. Click a mine to collect +1.</div>';
+        layout.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:14px;">No mines yet — buy one below to auto-generate. You start with $100. Clicking collects +1 per mine you own.</div>';
         return;
       }
       factoryLayout.forEach((mine, i) => {
@@ -330,7 +352,7 @@
         else if (mine.type === 'lava') mineDiv.textContent = '🌋';
         else if (mine.type === 'water') mineDiv.textContent = '💧';
         else if (mine.type === 'stone') mineDiv.textContent = '🪨';
-        mineDiv.title = 'Click to collect +1';
+        mineDiv.title = `Click to collect +${ownedCount(mine.type)}`;
         mineDiv.onclick = () => clickMine(i);
         layout.appendChild(mineDiv);
       });
