@@ -364,6 +364,7 @@
     </style>
 </head>
 <body>
+    <a class="back-button" href="../index.html">← Back</a>
     <div class="container">
         <div class="header">
             <h1>Penguin Clicker</h1>
@@ -570,7 +571,7 @@
                     perSecond: 0,
                     perSecond10: 0,
                     perSecond100: 0,
-
+                    clickPower2000: 0,
                     perSecond250k: 0,
                     perSecond5m: 0,
                     clickPower2m: 0,
@@ -689,7 +690,7 @@
         }
 
         // Golden penguin click handler
-        document.getElementById('goldenPenguin').addEventListener('click', () => {
+        document.getElementById('goldenPenguin').addEventListener('click', (e) => {
             const bonus = Math.floor(gameState.perClick * gameState.multiplier * 10);
             gameState.penguins += bonus;
             gameState.goldenPenguins++;
@@ -699,8 +700,8 @@
             const effect = document.createElement('div');
             effect.className = 'mega-click-effect';
             effect.textContent = `+${bonus} GOLDEN!`;
-            effect.style.left = `${event.clientX}px`;
-            effect.style.top = `${event.clientY}px`;
+            effect.style.left = `${e.clientX}px`;
+            effect.style.top = `${e.clientY}px`;
             document.body.appendChild(effect);
             
             setTimeout(() => effect.remove(), 1500);

@@ -1,7 +1,7 @@
 {
-  "name": "blob-eater-online",
+  "name": "carter-games",
   "version": "1.0.0",
-  "description": "Multiplayer Blob Eater game using Socket.IO",
+  "description": "Carter's Games site — static games homepage with optional Node static server",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
