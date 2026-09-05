@@ -284,6 +284,63 @@
       background: linear-gradient(90deg, #4a588a, #2c3766);
       box-shadow: 0 0 22px rgba(0, 255, 204, 0.45);
     }
+
+    /* Full-screen, no page scroll */
+    html, body { height: 100dvh; overflow: hidden; }
+    body { padding: 10px 12px; justify-content: flex-start; }
+    h1 { font-size: 24px; margin: 2px 0 2px; }
+    .subtitle { display: none; }
+    .back-link { margin-bottom: 6px; font-size: 14px; }
+    .game-container {
+      width: min(1180px, 98vw);
+      height: calc(100dvh - 64px);
+      display: grid;
+      grid-template-columns: 290px 190px 1fr;
+      gap: 12px;
+      overflow: hidden;
+      padding: 14px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 0;
+      overflow: hidden;
+      align-content: start;
+    }
+    .stat { padding: 6px 8px; font-size: 12px; border-radius: 8px; }
+    .factory-layout {
+      margin: 0;
+      overflow: hidden;
+      grid-template-columns: repeat(2, 1fr);
+      align-content: start;
+      min-height: 0;
+    }
+    .mine { height: 52px; font-size: 22px; }
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      align-content: start;
+      min-height: 0;
+      padding-right: 2px;
+    }
+    .section-label { grid-column: 1 / -1; margin: 4px 2px 0; font-size: 11px; }
+    .buttons button { padding: 8px 6px; font-size: 12px; border-radius: 10px; }
+    @media (max-width: 900px) {
+      .game-container { grid-template-columns: 1fr 1fr; }
+      .buttons { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 20px; }
+      .game-container { grid-template-columns: 1fr; height: calc(100dvh - 58px); }
+      .stats { grid-template-columns: 1fr 1fr; }
+      .factory-layout { grid-template-columns: repeat(3, 1fr); }
+      .buttons { grid-column: auto; grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
