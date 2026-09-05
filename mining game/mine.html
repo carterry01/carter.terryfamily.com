@@ -5,108 +5,222 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Idle Mining Empire</title>
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #1a1a1a;
-      color: #ffffff;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #eaf6ff;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 30px;
+      padding: 30px 16px 60px;
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(1000px 500px at 15% -5%, rgba(0, 255, 200, 0.14), transparent 60%),
+        radial-gradient(900px 500px at 85% 10%, rgba(180, 80, 255, 0.16), transparent 60%),
+        radial-gradient(700px 700px at 50% 110%, rgba(255, 120, 40, 0.12), transparent 60%),
+        linear-gradient(180deg, #070b18 0%, #0b1030 45%, #120a2e 100%);
+      position: relative;
+      overflow-x: hidden;
+    }
+    /* mine tunnel glow + floating embers */
+    body::before {
+      content: '⛏️ 💎 🪨 💰 ⛏️ 💎 🪙 🌋';
+      position: fixed;
+      inset: auto 0 -30px 0;
+      text-align: center;
+      font-size: 64px;
+      letter-spacing: 30px;
+      opacity: 0.10;
+      filter: blur(1px) saturate(1.4);
+      pointer-events: none;
+      animation: bgDrift 14s ease-in-out infinite alternate;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(2px 2px at 20% 30%, #00ffcc, transparent),
+        radial-gradient(2px 2px at 70% 20%, #b450ff, transparent),
+        radial-gradient(2px 2px at 40% 70%, #ffd700, transparent),
+        radial-gradient(2px 2px at 85% 65%, #00e6ff, transparent),
+        radial-gradient(2px 2px at 10% 80%, #ff7f50, transparent);
+      background-size: 320px 320px;
+      opacity: 0.5;
+      animation: emberFloat 9s linear infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes bgDrift {
+      from { transform: translateX(-20px); }
+      to { transform: translateX(20px); }
+    }
+    @keyframes emberFloat {
+      from { background-position: 0 0; }
+      to { background-position: 0 -320px; }
     }
 
+    .back-link {
+      color: #00ffcc;
+      margin-bottom: 12px;
+      text-decoration: none;
+      text-shadow: 0 0 12px rgba(0, 255, 204, 0.8);
+      z-index: 1;
+    }
+    .back-link:hover { text-decoration: underline; }
+
     h1 {
-      color: #00ff99;
-      margin-bottom: 10px;
+      margin: 6px 0 18px;
+      font-size: 34px;
+      letter-spacing: 1px;
+      color: #fff;
+      text-shadow:
+        0 0 8px #00ffcc,
+        0 0 24px #00ffcc,
+        0 0 60px rgba(0, 255, 204, 0.6);
+      animation: neonFlicker 4s infinite;
+      z-index: 1;
+      text-align: center;
+    }
+    @keyframes neonFlicker {
+      0%, 100% { opacity: 1; }
+      92% { opacity: 1; }
+      93% { opacity: 0.75; }
+      94% { opacity: 1; }
+      96% { opacity: 0.85; }
+      97% { opacity: 1; }
+    }
+    .subtitle {
+      color: #9fd8ff;
+      margin: -10px 0 18px;
+      font-size: 14px;
+      text-shadow: 0 0 10px rgba(0, 230, 255, 0.7);
+      z-index: 1;
     }
 
     .game-container {
-      background: #2a2a2a;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0, 255, 153, 0.2);
-      width: 320px;
+      background: rgba(12, 16, 38, 0.78);
+      backdrop-filter: blur(10px);
+      padding: 22px;
+      border-radius: 18px;
+      border: 1px solid rgba(0, 255, 204, 0.35);
+      box-shadow:
+        0 0 24px rgba(0, 255, 204, 0.25),
+        0 0 80px rgba(180, 80, 255, 0.18),
+        inset 0 0 40px rgba(0, 255, 204, 0.05);
+      width: 360px;
+      max-width: 94vw;
+      z-index: 1;
+      animation: fadeSlideIn 0.7s ease both;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .stats {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 18px;
     }
-
     .stat {
       display: flex;
       justify-content: space-between;
-      background: #333;
-      padding: 10px;
-      border-radius: 5px;
+      background: linear-gradient(90deg, rgba(0,255,204,0.08), rgba(180,80,255,0.08));
+      border: 1px solid rgba(0, 255, 204, 0.16);
+      border-left: 3px solid #00ffcc;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      animation: fadeSlideIn 0.5s ease both;
+    }
+    .stat span:last-child {
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(0, 255, 204, 0.9);
     }
 
     .factory-layout {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
+      min-height: 60px;
     }
 
     .mine {
-      width: 50px;
-      height: 50px;
-      background-color: #555;
+      height: 62px;
+      font-size: 26px;
+      background: linear-gradient(145deg, #1a2145, #0d1230);
+      border: 1px solid rgba(0, 255, 204, 0.4);
       display: flex;
       justify-content: center;
       align-items: center;
-      border-radius: 5px;
+      border-radius: 12px;
       cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 14px rgba(0, 255, 204, 0.25);
+      animation: minePop 0.35s ease both, glowPulse 2.6s ease-in-out infinite;
     }
-
-    .mine.active {
-      background-color: #00ff99;
+    .mine:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 0 22px rgba(0, 255, 204, 0.65);
     }
+    .mine:active { transform: scale(0.92); }
+    @keyframes minePop {
+      from { opacity: 0; transform: scale(0.6); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes glowPulse {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.25); }
+    }
+    .mine.active { outline: 1px solid rgba(255,255,255,0.25); }
     .mine.gold {
-      background-color: #ffd700;
+      border-color: rgba(255, 215, 0, 0.7);
+      box-shadow: 0 0 18px rgba(255, 215, 0, 0.55);
       color: #222;
-    }
-    .mine.gold.active {
-      background-color: #ffe066;
     }
     .mine.diamond {
-      background-color: #00e6ff;
+      border-color: rgba(0, 230, 255, 0.8);
+      box-shadow: 0 0 18px rgba(0, 230, 255, 0.6);
       color: #222;
     }
-    .mine.diamond.active {
-      background-color: #b3f0ff;
-    }
-
-    /* Overworld mine styles */
     .mine.wood {
-      background-color: #8B5A2B;
+      border-color: rgba(0, 255, 150, 0.55);
+      box-shadow: 0 0 16px rgba(0, 255, 150, 0.4);
       color: #fff;
-    }
-    .mine.wood.active {
-      background-color: #C19A6B;
     }
     .mine.lava {
-      background-color: #ff4500;
+      border-color: rgba(255, 90, 0, 0.8);
+      box-shadow: 0 0 20px rgba(255, 90, 0, 0.65);
+      animation: minePop 0.35s ease both, lavaGlow 1.8s ease-in-out infinite;
       color: #fff;
     }
-    .mine.lava.active {
-      background-color: #ff7f50;
+    @keyframes lavaGlow {
+      0%, 100% { box-shadow: 0 0 14px rgba(255,90,0,0.5); }
+      50% { box-shadow: 0 0 30px rgba(255,120,0,0.95); }
     }
     .mine.water {
-      background-color: #1e90ff;
+      border-color: rgba(30, 144, 255, 0.8);
+      box-shadow: 0 0 18px rgba(30, 144, 255, 0.6);
       color: #fff;
-    }
-    .mine.water.active {
-      background-color: #87cefa;
     }
     .mine.stone {
-      background-color: #888;
+      border-color: rgba(180, 190, 255, 0.5);
       color: #fff;
     }
-    .mine.stone.active {
-      background-color: #b0b0b0;
+
+    .section-label {
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #7df9ff;
+      text-shadow: 0 0 12px rgba(0, 230, 255, 0.8);
+      margin: 14px 2px 2px;
     }
 
     .buttons {
@@ -116,45 +230,66 @@
     }
 
     button {
-      padding: 10px;
-      background-color: #00ff99;
+      position: relative;
+      overflow: hidden;
+      padding: 11px;
+      background: linear-gradient(90deg, #00ffcc, #00b3ff);
       border: none;
-      border-radius: 5px;
-      color: #000;
-      font-weight: bold;
+      border-radius: 12px;
+      color: #02131a;
+      font-weight: 800;
       cursor: pointer;
-      transition: background-color 0.2s ease;
+      transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s ease;
+      box-shadow: 0 0 16px rgba(0, 255, 204, 0.45);
     }
-
-    button:hover {
-      background-color: #00cc7a;
+    button::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -60%;
+      width: 50%; height: 100%;
+      background: linear-gradient(100deg, transparent, rgba(255,255,255,0.55), transparent);
+      transform: skewX(-20deg);
+      animation: shimmer 3.2s ease-in-out infinite;
     }
+    @keyframes shimmer {
+      0%, 60% { left: -60%; }
+      100% { left: 130%; }
+    }
+    button:hover:not(:disabled) {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+      box-shadow: 0 0 26px rgba(0, 255, 204, 0.75);
+    }
+    button:active:not(:disabled) { transform: scale(0.97); }
+    button:disabled { cursor: not-allowed; }
     .gold-btn {
-      background-color: #ffd700;
-      color: #222;
+      background: linear-gradient(90deg, #ffe45e, #ff9d00);
+      box-shadow: 0 0 16px rgba(255, 200, 0, 0.5);
+      color: #231600;
     }
-    .gold-btn:hover {
-      background-color: #ffe066;
-    }
+    .gold-btn:hover:not(:disabled) { box-shadow: 0 0 26px rgba(255,200,0,0.8); }
     .diamond-btn {
-      background-color: #00e6ff;
-      color: #222;
+      background: linear-gradient(90deg, #7df9ff, #4d7cff);
+      box-shadow: 0 0 16px rgba(0, 200, 255, 0.55);
+      color: #04122b;
     }
-    .diamond-btn:hover {
-      background-color: #b3f0ff;
-    }
+    .diamond-btn:hover:not(:disabled) { box-shadow: 0 0 26px rgba(0,200,255,0.85); }
     .overworld-btn {
-      background-color: #888;
-      color: #fff;
+      background: linear-gradient(90deg, #3a4670, #232b52);
+      color: #dff6ff;
+      border: 1px solid rgba(0, 255, 204, 0.3);
+      box-shadow: 0 0 12px rgba(0, 255, 204, 0.2);
     }
-    .overworld-btn:hover {
-      background-color: #b0b0b0;
+    .overworld-btn:hover:not(:disabled) {
+      background: linear-gradient(90deg, #4a588a, #2c3766);
+      box-shadow: 0 0 22px rgba(0, 255, 204, 0.45);
     }
   </style>
 </head>
 <body>
-  <a href="../index.html" style="color:#00ff99;margin-bottom:12px;">← Back to Games</a>
-  <h1>🛠️ Idle Mining Empire</h1>
+  <a href="../index.html" class="back-link">← Back to Games</a>
+  <h1>⛏️ Mining Empire</h1>
+  <div class="subtitle">neon depths • click to extract • no auto-gen</div>
 
   <div class="game-container">
     <div class="stats" id="stats">
@@ -182,6 +317,7 @@
     </div>
 
     <div class="buttons" id="buttons">
+      <div class="section-label">✋ Collect</div>
       <!-- Click to collect: needs the mine, gives +1 per mine owned -->
       <button class="overworld-btn" id="gatherWoodBtn" onclick="gather('wood')">🪓 Chop Wood</button>
       <button class="overworld-btn" id="gatherWaterBtn" onclick="gather('water')">💧 Collect Water</button>
@@ -190,11 +326,13 @@
       <button id="gatherOreBtn" onclick="gather('ore')">⛏️ Dig Ore</button>
       <button class="gold-btn" id="gatherGoldBtn" onclick="gather('gold')">🥇 Pick Gold</button>
       <button class="diamond-btn" id="gatherDiamondBtn" onclick="gather('diamond')">💎 Hunt Diamond</button>
+      <div class="section-label">💰 Sell</div>
       <!-- Overworld sells (price = label) -->
       <button class="overworld-btn" onclick="sellWater()">Sell Water (+$1 each)</button>
       <button class="overworld-btn" onclick="sellWood()">Sell Wood (+$10 each)</button>
       <button class="overworld-btn" onclick="sellStone()">Sell Stone (+$100 each)</button>
       <button class="overworld-btn" onclick="sellLava()">Sell Lava (+$1,000 each)</button>
+      <div class="section-label">🏗️ Buy mines</div>
       <button class="overworld-btn" id="buyWaterMineBtn" onclick="buyWaterMine()">Buy Water Mine</button>
       <button class="overworld-btn" id="buyWoodMineBtn" onclick="buyWoodMine()">Buy Wood Mine</button>
       <button class="overworld-btn" id="buyLavaMineBtn" onclick="buyLavaMine()">Buy Lava Mine</button>
