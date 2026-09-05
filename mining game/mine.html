@@ -332,7 +332,7 @@
       const layout = document.getElementById("factory-layout");
       layout.innerHTML = '';
       if (factoryLayout.length === 0) {
-        layout.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:14px;">No mines yet — buy one below to auto-generate. You start with $100. Clicking collects +1 per mine you own.</div>';
+        layout.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:14px;">No mines yet — buy one below. You start with $100. Nothing auto-generates; clicking collects +1 per mine you own.</div>';
         return;
       }
       factoryLayout.forEach((mine, i) => {
@@ -477,22 +477,6 @@
         updateUI();
       }
     }
-
-    setInterval(() => {
-      // For each mine, if active, add resource
-      factoryLayout.forEach(mine => {
-        if (mine.active) {
-          if (mine.type === 'ore') ore += 1;
-          else if (mine.type === 'gold') gold += 1;
-          else if (mine.type === 'diamond') diamond += 1;
-          else if (mine.type === 'wood') wood += 1;
-          else if (mine.type === 'lava') lava += 1;
-          else if (mine.type === 'water') water += 1;
-          else if (mine.type === 'stone') stone += 1;
-        }
-      });
-      updateUI();
-    }, 1000);
 
     updateUI();
   </script>
