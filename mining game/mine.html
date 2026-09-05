@@ -191,10 +191,10 @@
       <button class="gold-btn" id="gatherGoldBtn" onclick="gather('gold')">🥇 Pick Gold</button>
       <button class="diamond-btn" id="gatherDiamondBtn" onclick="gather('diamond')">💎 Hunt Diamond</button>
       <!-- Overworld sells (price = label) -->
-      <button class="overworld-btn" onclick="sellWater()">Sell Water (+$400 each)</button>
-      <button class="overworld-btn" onclick="sellWood()">Sell Wood (+$100 each)</button>
-      <button class="overworld-btn" onclick="sellStone()">Sell Stone (+$800 each)</button>
-      <button class="overworld-btn" onclick="sellLava()">Sell Lava (+$200 each)</button>
+      <button class="overworld-btn" onclick="sellWater()">Sell Water (+$1 each)</button>
+      <button class="overworld-btn" onclick="sellWood()">Sell Wood (+$10 each)</button>
+      <button class="overworld-btn" onclick="sellStone()">Sell Stone (+$100 each)</button>
+      <button class="overworld-btn" onclick="sellLava()">Sell Lava (+$1,000 each)</button>
       <button class="overworld-btn" id="buyWaterMineBtn" onclick="buyWaterMine()">Buy Water Mine</button>
       <button class="overworld-btn" id="buyWoodMineBtn" onclick="buyWoodMine()">Buy Wood Mine</button>
       <button class="overworld-btn" id="buyLavaMineBtn" onclick="buyLavaMine()">Buy Lava Mine</button>
@@ -227,7 +227,7 @@
     // Base costs — each extra mine of the same type costs more (base * (owned + 1))
     const BASE_COST = { water: 10, wood: 100, stone: 500, lava: 1000, ore: 1500, gold: 5500, diamond: 15000 };
     // Sell prices — kept in one place so labels and logic always match
-    const SELL_PRICE = { wood: 100, lava: 200, water: 400, stone: 800, ore: 1000, gold: 5000, diamond: 10000 };
+    const SELL_PRICE = { wood: 10, lava: 1000, water: 1, stone: 100, ore: 1000, gold: 5000, diamond: 10000 };
 
     function ownedCount(type) {
       if (type === 'wood') return woodMines;
