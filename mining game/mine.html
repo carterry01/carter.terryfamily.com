@@ -163,7 +163,7 @@
       <div class="stat"><span>Lava:</span> <span id="lava">0</span></div>
       <div class="stat"><span>Water:</span> <span id="water">0</span></div>
       <div class="stat"><span>Stone:</span> <span id="stone">0</span></div>
-      <div class="stat"><span>Wood Mines:</span> <span id="woodMines">1</span></div>
+      <div class="stat"><span>Wood Mines:</span> <span id="woodMines">0</span></div>
       <div class="stat"><span>Lava Mines:</span> <span id="lavaMines">0</span></div>
       <div class="stat"><span>Water Mines:</span> <span id="waterMines">0</span></div>
       <div class="stat"><span>Stone Mines:</span> <span id="stoneMines">0</span></div>
@@ -178,33 +178,41 @@
     </div>
 
     <div class="factory-layout" id="factory-layout">
-      <div class="mine wood active" onclick="toggleMine(0)">🌲</div>
+      <!-- mines appear here once bought. Click a mine to collect +1 -->
     </div>
 
     <div class="buttons" id="buttons">
-      <!-- Overworld buttons first -->
+      <!-- Manual gathering: click to get +1 free -->
+      <button class="overworld-btn" onclick="gather('wood')">🪓 Chop Wood (+1)</button>
+      <button class="overworld-btn" onclick="gather('water')">💧 Collect Water (+1)</button>
+      <button class="overworld-btn" onclick="gather('stone')">🪨 Gather Stone (+1)</button>
+      <button class="overworld-btn" onclick="gather('lava')">🌋 Scoop Lava (+1)</button>
+      <button onclick="gather('ore')">⛏️ Dig Ore (+1)</button>
+      <button class="gold-btn" onclick="gather('gold')">🥇 Pick Gold (+1)</button>
+      <button class="diamond-btn" onclick="gather('diamond')">💎 Hunt Diamond (+1)</button>
+      <!-- Overworld sells (price = label) -->
       <button class="overworld-btn" onclick="sellWater()">Sell Water (+$400 each)</button>
       <button class="overworld-btn" onclick="sellWood()">Sell Wood (+$100 each)</button>
       <button class="overworld-btn" onclick="sellStone()">Sell Stone (+$800 each)</button>
       <button class="overworld-btn" onclick="sellLava()">Sell Lava (+$200 each)</button>
-      <button class="overworld-btn" onclick="buyWaterMine()">Buy Water Mine ($10)</button>
-      <button class="overworld-btn" onclick="buyWoodMine()">Buy Wood Mine ($100)</button>
-      <button class="overworld-btn" onclick="buyLavaMine()">Buy Lava Mine ($1000)</button>
-      <button class="overworld-btn" onclick="buyStoneMine()">Buy Stone Mine ($500)</button>
-      <!-- Underground buttons next -->
-      <button onclick="sellOre()">Sell Ore (+$1 each)</button>
-      <button class="gold-btn" onclick="sellGold()">Sell Gold (+$5 each)</button>
-      <button class="diamond-btn" onclick="sellDiamond()">Sell Diamond (+$20 each)</button>
-      <button onclick="buyMine()">Buy Ore Mine ($10)</button>
-      <button class="gold-btn" onclick="buyGoldMine()">Buy Gold Mine ($100)</button>
-      <button class="diamond-btn" onclick="buyDiamondMine()">Buy Diamond Mine ($1000)</button>
+      <button class="overworld-btn" id="buyWaterMineBtn" onclick="buyWaterMine()">Buy Water Mine</button>
+      <button class="overworld-btn" id="buyWoodMineBtn" onclick="buyWoodMine()">Buy Wood Mine</button>
+      <button class="overworld-btn" id="buyLavaMineBtn" onclick="buyLavaMine()">Buy Lava Mine</button>
+      <button class="overworld-btn" id="buyStoneMineBtn" onclick="buyStoneMine()">Buy Stone Mine</button>
+      <!-- Underground sells (price = label) -->
+      <button id="sellOreBtn" onclick="sellOre()">Sell Ore (+$1,000 each)</button>
+      <button class="gold-btn" id="sellGoldBtn" onclick="sellGold()">Sell Gold (+$5,000 each)</button>
+      <button class="diamond-btn" id="sellDiamondBtn" onclick="sellDiamond()">Sell Diamond (+$10,000 each)</button>
+      <button id="buyOreMineBtn" onclick="buyMine()">Buy Ore Mine</button>
+      <button class="gold-btn" id="buyGoldMineBtn" onclick="buyGoldMine()">Buy Gold Mine</button>
+      <button class="diamond-btn" id="buyDiamondMineBtn" onclick="buyDiamondMine()">Buy Diamond Mine</button>
     </div>
   </div>
 
   <script>
     // Overworld resources
     let wood = 0, lava = 0, water = 0, stone = 0;
-    let woodMines = 1, lavaMines = 0, waterMines = 0, stoneMines = 0;
+    let woodMines = 0, lavaMines = 0, waterMines = 0, stoneMines = 0;
 
     // Underground resources
     let ore = 0;
@@ -216,8 +224,64 @@
 
     let money = 0;
 
-    // Each mine is an object: {type: 'wood'|'lava'|'water'|'stone'|'ore'|'gold'|'diamond', active: true/false}
-    let factoryLayout = [{type: 'wood', active: true}];
+    // Base costs — each extra mine of the same type costs more (base * (owned + 1))
+    const BASE_COST = { water: 10, wood: 100, stone: 500, lava: 1000, ore: 1500, gold: 5500, diamond: 15000 };
+    // Sell prices — kept in one place so labels and logic always match
+    const SELL_PRICE = { wood: 100, lava: 200, water: 400, stone: 800, ore: 1000, gold: 5000, diamond: 10000 };
+
+    function ownedCount(type) {
+      if (type === 'wood') return woodMines;
+      if (type === 'lava') return lavaMines;
+      if (type === 'water') return waterMines;
+      if (type === 'stone') return stoneMines;
+      if (type === 'ore') return oreMines;
+      if (type === 'gold') return goldMines;
+      if (type === 'diamond') return diamondMines;
+      return 0;
+    }
+
+    function mineCost(type) {
+      return BASE_COST[type] * (ownedCount(type) + 1);
+    }
+
+    // No free mines: you only auto-generate what you buy.
+    // Each mine is an object: {type: 'wood'|'lava'|'water'|'stone'|'ore'|'gold'|'diamond', active: true}
+    let factoryLayout = [];
+
+    function addResource(type, n) {
+      if (type === 'ore') ore += n;
+      else if (type === 'gold') gold += n;
+      else if (type === 'diamond') diamond += n;
+      else if (type === 'wood') wood += n;
+      else if (type === 'lava') lava += n;
+      else if (type === 'water') water += n;
+      else if (type === 'stone') stone += n;
+    }
+
+    // Manual click: +1 of that resource, no mine needed
+    function gather(type) {
+      addResource(type, 1);
+      updateUI();
+    }
+
+    // Click a mine tile to collect +1 immediately (mines also auto-generate)
+    function clickMine(index) {
+      const mine = factoryLayout[index];
+      if (!mine) return;
+      addResource(mine.type, 1);
+      updateUI();
+    }
+
+    function updateBuyLabels() {
+      const set = (id, label) => { const el = document.getElementById(id); if (el) el.textContent = label; };
+      set('buyWaterMineBtn', `Buy Water Mine ($${mineCost('water').toLocaleString()})`);
+      set('buyWoodMineBtn', `Buy Wood Mine ($${mineCost('wood').toLocaleString()})`);
+      set('buyStoneMineBtn', `Buy Stone Mine ($${mineCost('stone').toLocaleString()})`);
+      set('buyLavaMineBtn', `Buy Lava Mine ($${mineCost('lava').toLocaleString()})`);
+      set('buyOreMineBtn', `Buy Ore Mine ($${mineCost('ore').toLocaleString()})`);
+      set('buyGoldMineBtn', `Buy Gold Mine ($${mineCost('gold').toLocaleString()})`);
+      set('buyDiamondMineBtn', `Buy Diamond Mine ($${mineCost('diamond').toLocaleString()})`);
+    }
 
     function updateUI() {
       // Overworld
@@ -239,11 +303,16 @@
       document.getElementById("diamondMines").textContent = diamondMines;
 
       updateFactoryLayout();
+      updateBuyLabels();
     }
 
     function updateFactoryLayout() {
       const layout = document.getElementById("factory-layout");
       layout.innerHTML = '';
+      if (factoryLayout.length === 0) {
+        layout.innerHTML = '<div style="grid-column:1/-1;color:#aaa;font-size:14px;">No mines yet — gather by hand, sell, then buy a mine to auto-generate. Click a mine to collect +1.</div>';
+        return;
+      }
       factoryLayout.forEach((mine, i) => {
         const mineDiv = document.createElement('div');
         mineDiv.classList.add('mine');
@@ -261,124 +330,127 @@
         else if (mine.type === 'lava') mineDiv.textContent = '🌋';
         else if (mine.type === 'water') mineDiv.textContent = '💧';
         else if (mine.type === 'stone') mineDiv.textContent = '🪨';
-        mineDiv.onclick = () => toggleMine(i);
+        mineDiv.title = 'Click to collect +1';
+        mineDiv.onclick = () => clickMine(i);
         layout.appendChild(mineDiv);
       });
     }
 
-    function toggleMine(index) {
-      factoryLayout[index].active = !factoryLayout[index].active;
-      updateUI();
-    }
-
-    // Overworld sell functions
+    // Overworld sell functions (price comes from SELL_PRICE so label == payout)
     function sellWood() {
       if (wood > 0) {
-        money += wood * 100;
+        money += wood * SELL_PRICE.wood;
         wood = 0;
         updateUI();
       }
     }
     function sellLava() {
       if (lava > 0) {
-        money += lava * 200;
+        money += lava * SELL_PRICE.lava;
         lava = 0;
         updateUI();
       }
     }
     function sellWater() {
       if (water > 0) {
-        money += water * 400;
+        money += water * SELL_PRICE.water;
         water = 0;
         updateUI();
       }
     }
     function sellStone() {
       if (stone > 0) {
-        money += stone * 800;
+        money += stone * SELL_PRICE.stone;
         stone = 0;
         updateUI();
       }
     }
 
-    // Underground sell functions
+    // Underground sell functions: ore $1,000 / gold $5,000 / diamond $10,000
     function sellOre() {
       if (ore > 0) {
-        money += ore;
+        money += ore * SELL_PRICE.ore;
         ore = 0;
         updateUI();
       }
     }
     function sellGold() {
       if (gold > 0) {
-        money += gold * 5;
+        money += gold * SELL_PRICE.gold;
         gold = 0;
         updateUI();
       }
     }
     function sellDiamond() {
       if (diamond > 0) {
-        money += diamond * 20;
+        money += diamond * SELL_PRICE.diamond;
         diamond = 0;
         updateUI();
       }
     }
 
-    // Overworld buy functions (new prices)
+    // Overworld buy functions — cost scales: base * (owned + 1)
     function buyWoodMine() {
-      if (money >= 100) {
+      const cost = mineCost('wood');
+      if (money >= cost) {
         woodMines += 1;
-        money -= 100;
+        money -= cost;
         factoryLayout.push({type: 'wood', active: true});
         updateUI();
       }
     }
     function buyLavaMine() {
-      if (money >= 1000) {
+      const cost = mineCost('lava');
+      if (money >= cost) {
         lavaMines += 1;
-        money -= 1000;
+        money -= cost;
         factoryLayout.push({type: 'lava', active: true});
         updateUI();
       }
     }
     function buyWaterMine() {
-      if (money >= 10) {
+      const cost = mineCost('water');
+      if (money >= cost) {
         waterMines += 1;
-        money -= 10;
+        money -= cost;
         factoryLayout.push({type: 'water', active: true});
         updateUI();
       }
     }
     function buyStoneMine() {
-      if (money >= 500) {
+      const cost = mineCost('stone');
+      if (money >= cost) {
         stoneMines += 1;
-        money -= 500;
+        money -= cost;
         factoryLayout.push({type: 'stone', active: true});
         updateUI();
       }
     }
 
-    // Underground buy functions (unchanged)
+    // Underground buy functions: ore $1,500 / gold $5,500 / diamond $15,000 base, scaling up
     function buyMine() {
-      if (money >= 10) {
+      const cost = mineCost('ore');
+      if (money >= cost) {
         oreMines += 1;
-        money -= 10;
+        money -= cost;
         factoryLayout.push({type: 'ore', active: true});
         updateUI();
       }
     }
     function buyGoldMine() {
-      if (money >= 100) {
+      const cost = mineCost('gold');
+      if (money >= cost) {
         goldMines += 1;
-        money -= 100;
+        money -= cost;
         factoryLayout.push({type: 'gold', active: true});
         updateUI();
       }
     }
     function buyDiamondMine() {
-      if (money >= 1000) {
+      const cost = mineCost('diamond');
+      if (money >= cost) {
         diamondMines += 1;
-        money -= 1000;
+        money -= cost;
         factoryLayout.push({type: 'diamond', active: true});
         updateUI();
       }
