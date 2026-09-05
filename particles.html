@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Particle Storm - Carter's Games</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden; background: #050914;
+    font-family: "Trebuchet MS", "Segoe UI", Verdana, sans-serif;
+    color: #fff;
+    user-select: none; -webkit-user-select: none;
+  }
+  /* animated nebula behind canvas */
+  #nebula {
+    position: fixed; inset: -20%;
+    background:
+      radial-gradient(600px 500px at 20% 20%, rgba(0,229,255,.16), transparent 60%),
+      radial-gradient(700px 600px at 80% 15%, rgba(178,75,255,.20), transparent 60%),
+      radial-gradient(800px 700px at 50% 100%, rgba(255,45,120,.14), transparent 60%),
+      linear-gradient(180deg, #050914, #0a1030 55%, #160a2e);
+    filter: saturate(1.3);
+    animation: neb 18s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+  @keyframes neb {
+    from { transform: translate3d(-2%, -1%, 0) scale(1); }
+    to { transform: translate3d(2%, 2%, 0) scale(1.08); }
+  }
+  #stars {
+    position: fixed; inset: 0; z-index: 0; opacity: .7; pointer-events: none;
+    background-image:
+      radial-gradient(1.5px 1.5px at 12% 22%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 68% 8%, #fff, transparent),
+      radial-gradient(2px 2px at 84% 42%, #9ef, transparent),
+      radial-gradient(1px 1px at 34% 66%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 52% 88%, #fda, transparent),
+      radial-gradient(1px 1px at 8% 78%, #fff, transparent),
+      radial-gradient(2px 2px at 44% 12%, #fdf, transparent),
+      radial-gradient(1px 1px at 92% 78%, #fff, transparent);
+    background-size: 520px 520px;
+    animation: tw 4s linear infinite alternate;
+  }
+  @keyframes tw { from {opacity:.45} to {opacity:.85} }
+  #scene { position: fixed; inset: 0; display: block; cursor: crosshair; z-index: 1; }
+
+  /* top HUD */
+  #hud {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 10; display: flex; gap: 8px; align-items: center;
+    background: rgba(8,12,28,.72); border: 1px solid rgba(0,229,255,.25);
+    border-radius: 999px; padding: 7px 10px; backdrop-filter: blur(12px);
+    box-shadow: 0 0 24px rgba(0,229,255,.15);
+    max-width: 96vw; flex-wrap: wrap; justify-content: center;
+  }
+  #hud .pill {
+    font-size: 12px; background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.12);
+    padding: 5px 11px; border-radius: 999px; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  #hud .pill b { color: #7df9ff; }
+  #hud button.mode {
+    font-size: 12px; font-weight: 700; cursor: pointer; color: #06121a;
+    background: linear-gradient(180deg, #7df9ff, #00c8e0);
+    border: none; border-radius: 999px; padding: 6px 13px;
+  }
+  #hud button.mode.ghost {
+    background: rgba(255,255,255,.08); color: #dff6ff;
+    border: 1px solid rgba(255,255,255,.18); font-weight: 400;
+  }
+  #hud button.mode:hover { filter: brightness(1.12); }
+  .back {
+    position: fixed; top: 10px; right: 10px; z-index: 11;
+    font-size: 12px; color: #c9f6ff; text-decoration: none;
+    background: rgba(8,12,28,.7); border: 1px solid rgba(255,255,255,.16);
+    padding: 7px 12px; border-radius: 999px;
+  }
+  .back:hover { border-color: #7df9ff; color: #fff; }
+
+  /* bottom dock */
+  #dock {
+    position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%);
+    z-index: 10; width: min(860px, 96vw);
+    background: rgba(8,12,28,.74); border: 1px solid rgba(178,75,255,.28);
+    border-radius: 18px; padding: 9px 10px 10px; backdrop-filter: blur(12px);
+    box-shadow: 0 8px 40px rgba(0,0,0,.5);
+  }
+  #dock .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; }
+  #dock .row + .row { margin-top: 7px; }
+  #dock .cap { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #8ea3c7; margin-right: 2px; }
+  button.chip {
+    font-size: 12px; color: #e8f6ff; cursor: pointer;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14);
+    border-radius: 999px; padding: 6px 10px; transition: all .15s;
+  }
+  button.chip:hover { background: rgba(0,229,255,.22); transform: translateY(-1px); }
+  button.chip.active {
+    background: linear-gradient(180deg, rgba(0,229,255,.5), rgba(178,75,255,.5));
+    border-color: #7df9ff; color: #fff;
+    box-shadow: 0 0 14px rgba(0,229,255,.5);
+  }
+  button.dot { width: 30px; height: 26px; padding: 0; border-radius: 8px; }
+  button.action {
+    background: linear-gradient(180deg, #ffd166, #ff5d8f);
+    border: none; color: #231303; font-weight: 800;
+  }
+  button.action.alt { background: linear-gradient(180deg, #9dff6e, #00c8a0); }
+  button.action:hover { filter: brightness(1.1); }
+
+  /* right lab */
+  #lab {
+    position: fixed; right: 10px; top: 64px; z-index: 10; width: 198px;
+    background: rgba(8,12,28,.72); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px; padding: 12px; backdrop-filter: blur(12px);
+  }
+  #lab h3 { margin: 0 0 4px; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #7df9ff; }
+  #lab p { margin: 0 0 8px; font-size: 11px; color: #8ea3c7; line-height: 1.5; }
+  label.slider { display: block; font-size: 11px; color: #c6d6f2; margin: 8px 0 2px; }
+  label.slider span { float: right; color: #fff; font-variant-numeric: tabular-nums; }
+  input[type="range"] { width: 100%; accent-color: #00e5ff; margin: 0; }
+  .togs { margin-top: 9px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #d5e5ff; }
+  .togs label { display: flex; gap: 7px; align-items: center; cursor: pointer; }
+  .togs input { accent-color: #b24bff; }
+  #labBtn {
+    display: none; position: fixed; right: 10px; bottom: 118px; z-index: 11;
+    background: rgba(178,75,255,.85); border: 1px solid rgba(255,255,255,.25);
+    color: #fff; border-radius: 999px; padding: 8px 12px; font-size: 13px; cursor: pointer;
+  }
+
+  #toast {
+    position: fixed; top: 62px; left: 50%; transform: translateX(-50%) scale(.9);
+    z-index: 12; font-size: 15px; font-weight: 800; letter-spacing: .5px;
+    background: linear-gradient(90deg, #00e5ff, #b24bff, #ff5d8f);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    opacity: 0; transition: all .3s; pointer-events: none; text-align: center;
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,.8));
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) scale(1.05); }
+
+  #overlay {
+    position: fixed; inset: 0; z-index: 20; display: none;
+    align-items: center; justify-content: center; padding: 20px;
+    background: rgba(3,6,16,.62); backdrop-filter: blur(6px);
+  }
+  #overlay.show { display: flex; }
+  #card {
+    width: min(430px, 94vw); text-align: center;
+    background: linear-gradient(180deg, rgba(20,28,60,.96), rgba(30,12,50,.96));
+    border: 1px solid rgba(0,229,255,.35); border-radius: 22px; padding: 26px 22px;
+    box-shadow: 0 20px 80px rgba(0,229,255,.25);
+  }
+  #card h2 { margin: 0 0 6px; font-size: 26px; }
+  #card p { margin: 6px 0; color: #b9cdf0; font-size: 13px; line-height: 1.6; }
+  #card .big { font-size: 44px; font-weight: 900; color: #fff; margin: 8px 0; text-shadow: 0 0 24px #00e5ff; }
+  #card button {
+    margin-top: 12px; font-size: 15px; font-weight: 800; cursor: pointer;
+    border: none; border-radius: 999px; padding: 12px 26px; color: #06121a;
+    background: linear-gradient(90deg, #7df9ff, #b28bff, #ff8fc7);
+  }
+  #card button:hover { filter: brightness(1.1); }
+  kbd { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 6px; padding: 0 6px; font-size: 11px; }
+
+  @media (max-width: 760px) {
+    #lab { transform: translateX(115%); transition: transform .25s; top: auto; bottom: 132px; }
+    #lab.open { transform: none; }
+    #labBtn { display: block; }
+    #hud { top: 8px; font-size: 11px; }
+    .back { display: none; }
+    #dock { bottom: 8px; }
+  }
+</style>
+</head>
+<body>
+<div id="nebula"></div>
+<div id="stars"></div>
+<canvas id="scene"></canvas>
+
+<div id="hud">
+  <span class="pill">⚡ <b id="h-score">0</b> pts</span>
+  <span class="pill">⏱ <b id="h-time">∞</b></span>
+  <span class="pill">🏆 <b id="h-best">0</b></span>
+  <span class="pill" id="h-shape">🧬 DNA</span>
+  <button class="mode ghost" id="m-sandbox">Sandbox</button>
+  <button class="mode" id="m-catch">▶ Catch!</button>
+  <button class="mode ghost" id="m-mute" title="sound">🔊</button>
+</div>
+<a class="back" href="index.html">← Games</a>
+
+<div id="lab">
+  <h3>⚗ Storm Lab</h3>
+  <p>Shape-shifting swarm. Stir it, blast it, catch gold orbs in Catch mode.</p>
+  <label class="slider">Swarm <span id="v-count"></span></label>
+  <input id="s-count" type="range" min="200" max="3000" step="50" value="1400" />
+  <label class="slider">Energy <span id="v-speed"></span></label>
+  <input id="s-speed" type="range" min="0" max="2.6" step="0.1" value="1.2" />
+  <label class="slider">Trails <span id="v-trail"></span></label>
+  <input id="s-trail" type="range" min="0.03" max="0.6" step="0.01" value="0.2" />
+  <label class="slider">Glow <span id="v-size"></span></label>
+  <input id="s-size" type="range" min="0.8" max="5.5" step="0.1" value="2.6" />
+  <label class="slider">Vortex <span id="v-spin"></span></label>
+  <input id="s-spin" type="range" min="0" max="2" step="0.05" value="0.6" />
+  <div class="togs">
+    <label><input type="checkbox" id="t-tour" checked /> Auto-morph storm</label>
+    <label><input type="checkbox" id="t-links" /> Neon web</label>
+    <label><input type="checkbox" id="t-streak" checked /> Comet tails</label>
+  </div>
+</div>
+<button id="labBtn">⚗ Lab</button>
+
+<div id="dock">
+  <div class="row" id="shapes"></div>
+  <div class="row">
+    <span class="cap">Ink</span>
+    <span id="palettes" style="display:contents"></span>
+  </div>
+  <div class="row">
+    <span class="cap">Touch</span>
+    <span id="tools" style="display:contents"></span>
+    <button class="chip action" id="b-super">💥 SUPERNOVA</button>
+    <button class="chip action alt" id="b-chaos">🌪 CHAOS</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="overlay">
+  <div id="card">
+    <h2 id="ov-title">🌪 Particle Storm</h2>
+    <div class="big" id="ov-big">60s</div>
+    <p id="ov-text">Catch the <b style="color:#ffd166">gold orbs</b> with your cursor.<br/>Dodge the <b style="color:#b24bff">void orbs</b> — they steal 15 pts!<br/>Your swarm morphs every level. Combo x2, x3… if you don't miss!</p>
+    <p><kbd>move</kbd> catch &nbsp; <kbd>click</kbd> supernova &nbsp; <kbd>1–6</kbd> morph &nbsp; <kbd>G</kbd> play</p>
+    <button id="ov-go">START CATCHING →</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* Particle Storm - same idea as terryfamily particles (morphing swarm + stir + fireworks),
+   rebuilt as a totally different arcade toy: new shapes, inks, physics, HUD, Catch game. */
+
+const canvas = document.getElementById("scene");
+const ctx = canvas.getContext("2d");
+let W = 0, H = 0, CX = 0, CY = 0;
+const TAU = Math.PI * 2;
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const BG_FADE = "8,10,26"; // rgb for trail fade over gradient bg
+
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth; H = window.innerHeight;
+  CX = W / 2; CY = H / 2;
+  canvas.width = Math.floor(W * dpr);
+  canvas.height = Math.floor(H * dpr);
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#050914";
+  ctx.fillRect(0, 0, W, H);
+  rebuildTargets();
+}
+window.addEventListener("resize", resize);
+
+/* ---------- all-new shapes (nothing reused from galaxy/sphere/torus/cube/wave/heart) ---------- */
+const SHAPES = {
+  dna: { label: "🧬 DNA", build(out, n) {
+    for (let i = 0; i < n; i++) {
+      const side = i % 2 ? 1 : -1;
+      const y = rand(-300, 300);
+      const a = y * 0.022;
+      const rung = Math.random() < 0.28;
+      out[i] = rung
+        ? { x: rand(-70, 70), y: y + rand(-6, 6), z: Math.cos(a) * 70 + rand(-8, 8), h: (y + 300) / 600 }
+        : { x: Math.sin(a) * 95 * side + rand(-10, 10), y, z: Math.cos(a) * 95 * side * 0.6 + rand(-10, 10), h: (y + 300) / 600 };
+    }
+  }},
+  tornado: { label: "🌪 Tornado", build(out, n) {
+    for (let i = 0; i < n; i++) {
+      const t = Math.random();              // 0 top wide -> 1 bottom tip (flip: wide top)
+      const y = -280 + t * 560;
+      const r = 200 * (1 - t) + 12;
+      const a = Math.random() * TAU + t * 9;
+      out[i] = { x: Math.cos(a) * r * (0.7 + Math.random() * 0.5), y, z: Math.sin(a) * r * (0.7 + Math.random() * 0.5), h: t };
+    }
+  }},
+  bloom: { label: "🌸 Bloom", build(out, n) {
+    const petals = 6;
+    for (let i = 0; i < n; i++) {
+      const petal = (i % petals) / petals * TAU;
+      const t = Math.pow(Math.random(), 0.7);
+      const r = t * 250;
+      const wob = Math.sin(r * 0.05) * 24;
+      const a = petal + rand(-0.28, 0.28) + t * 0.55;
+      out[i] = { x: Math.cos(a) * (r + wob), y: Math.sin(a) * (r + wob) * 0.9 + rand(-8, 8), z: Math.sin(a * 3) * 46 + rand(-10, 10), h: t };
+    }
+  }},
+  saturn: { label: "🪐 Saturn", build(out, n) {
+    for (let i = 0; i < n; i++) {
+      if (Math.random() < 0.42) { // planet
+        const u = Math.random() * TAU, v = Math.acos(rand(-1, 1));
+        const R = 120;
+        out[i] = { x: R * Math.sin(v) * Math.cos(u), y: R * Math.cos(v) * 0.9, z: R * Math.sin(v) * Math.sin(u), h: Math.random() * 0.35 };
+      } else { // rings
+        const a = Math.random() * TAU;
+        const r = rand(165, 285);
+        out[i] = { x: Math.cos(a) * r, y: Math.sin(a) * r * 0.28 + rand(-9, 9), z: Math.sin(a) * r * 0.32 + rand(-12, 12), h: 0.45 + Math.random() * 0.55 };
+      }
+    }
+  }},
+  starfish: { label: "⭐ Star", build(out, n) {
+    const S = 250;
+    for (let i = 0; i < n; i++) {
+      // pick a point along the 5-point star outline, then puff it
+      const seg = (Math.random() * 10) | 0;
+      const t = Math.random();
+      const R1 = S, R2 = S * 0.42;
+      const a1 = seg / 10 * TAU - Math.PI / 2, a2 = (seg + 1) / 10 * TAU - Math.PI / 2;
+      const r1 = seg % 2 === 0 ? R1 : R2, r2 = (seg + 1) % 2 === 0 ? R1 : R2;
+      const x = (Math.cos(a1) * r1 * (1 - t) + Math.cos(a2) * r2 * t) + rand(-14, 14);
+      const y = (Math.sin(a1) * r1 * (1 - t) + Math.sin(a2) * r2 * t) + rand(-14, 14);
+      out[i] = { x, y, z: rand(-46, 46) * (1 - t * 0.4), h: Math.random() };
+    }
+  }},
+  jelly: { label: "🪼 Jelly", build(out, n) {
+    for (let i = 0; i < n; i++) {
+      if (Math.random() < 0.5) { // dome
+        const u = Math.random() * TAU, v = Math.random() * Math.PI * 0.52;
+        const R = 165;
+        out[i] = { x: R * Math.sin(v) * Math.cos(u), y: -R * Math.cos(v) - 40, z: R * Math.sin(v) * Math.sin(u), h: v / 2 };
+      } else { // tentacles
+        const k = (Math.random() * 9) | 0;
+        const a = k / 9 * TAU;
+        const y = rand(-30, 260);
+        out[i] = { x: Math.cos(a) * (95 + Math.sin(y * 0.03) * 26) + rand(-9, 9), y, z: Math.sin(a) * (95 + Math.cos(y * 0.03) * 26) + rand(-9, 9), h: 0.55 + Math.random() * 0.45 };
+      }
+    }
+  }}
+};
+const SHAPE_ORDER = ["dna", "tornado", "bloom", "saturn", "starfish", "jelly"];
+
+/* ---------- all-new inks ---------- */
+const PALETTES = {
+  volcano: { label: "🌋 Volcano", dot: "#ff5d3a", fn: (h) => "hsl(" + (4 + h * 44) + ",100%," + (52 + h * 14) + "%)" },
+  glacier: { label: "🧊 Glacier", dot: "#7df9ff", fn: (h) => "hsl(" + (168 + h * 60) + ",100%," + (60 + h * 12) + "%)" },
+  toxic:   { label: "☢ Toxic", dot: "#9dff3a", fn: (h) => "hsl(" + (72 + h * 90) + ",100%," + (50 + h * 16) + "%)" },
+  candy:   { label: "🍬 Candy", dot: "#ff8fc7", fn: (h) => "hsl(" + (295 + h * 60) % 360 + ",100%,68%)" },
+  solar:   { label: "☀ Solar", dot: "#ffd166", fn: (h, t) => "hsl(" + ((36 + h * 30 + t * 10) % 360) + ",100%," + (55 + 10 * Math.sin(t * 2 + h * 9)) + "%)" },
+  abyss:   { label: "🌌 Abyss", dot: "#8b7bff", fn: (h) => "hsl(" + (230 + h * 70) + ",95%," + (62 + h * 14) + "%)" }
+};
+const PALETTE_ORDER = ["volcano", "glacier", "toxic", "candy", "solar", "abyss"];
+
+const TOOLS = {
+  hole: { label: "🕳 Hole" },
+  blow: { label: "🌬 Blow" },
+  vortex: { label: "🌀 Vortex" }
+};
+const TOOL_ORDER = ["hole", "blow", "vortex"];
+
+const state = {
+  shape: "dna", ink: "glacier", tool: "hole",
+  count: 1400, speed: 1.2, trail: 0.2, size: 2.6, spin: 0.6,
+  tour: true, links: false, streaks: true,
+  muted: false, mode: "sandbox"
+};
+
+/* ---------- swarm ---------- */
+let particles = [], targets = [];
+const sparks = [];      // screen-space firework bits
+const rings = [];       // shockwave rings
+function makeP(t) {
+  return { x: rand(-420, 420), y: rand(-320, 320), z: rand(-320, 320),
+    vx: 0, vy: 0, vz: 0, tx: t.x, ty: t.y, tz: t.z, hue: t.h,
+    tw: Math.random() * TAU, sx: -9999, sy: -9999, psx: -9999, psy: -9999 };
+}
+function rebuildTargets() {
+  if (!particles.length) return;
+  targets.length = 0;
+  SHAPES[state.shape].build(targets, particles.length);
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i], t = targets[i];
+    p.tx = t.x; p.ty = t.y; p.tz = t.z; p.hue = t.h;
+  }
+}
+function setCount(n) {
+  n = clamp(Math.round(n), 100, 3000);
+  if (n === particles.length) { rebuildTargets(); return; }
+  if (n > particles.length) {
+    const tmp = []; SHAPES[state.shape].build(tmp, n);
+    for (let i = particles.length; i < n; i++) particles.push(makeP(tmp[i]));
+    targets = tmp.slice();
+    for (let i = 0; i < n; i++) { particles[i].tx = tmp[i].x; particles[i].ty = tmp[i].y; particles[i].tz = tmp[i].z; particles[i].hue = tmp[i].h; }
+  } else { particles.length = n; rebuildTargets(); }
+  hardClear();
+}
+function setShape(name, silent) {
+  if (!SHAPES[name] || name === state.shape) return;
+  state.shape = name;
+  rebuildTargets(); hardClear(); tourTimer = 0;
+  document.getElementById("h-shape").textContent = SHAPES[name].label;
+  syncChips();
+  if (!silent) { pop(SHAPES[name].label + " storm!"); blip(520, 0.12, "triangle"); }
+}
+function setInk(name) { if (PALETTES[name]) { state.ink = name; syncChips(); hardClear(); } }
+function hardClear() {
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "#050914"; ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- audio (tiny synth, no files) ---------- */
+let AC = null;
+function ac() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (AC && AC.state === "suspended") AC.resume();
+  return AC;
+}
+function blip(freq, dur, type, vol, slide) {
+  if (state.muted) return;
+  const c = ac(); if (!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type || "sine"; o.frequency.setValueAtTime(freq, c.currentTime);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), c.currentTime + dur);
+  g.gain.setValueAtTime(vol || 0.12, c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(); o.stop(c.currentTime + dur + 0.02);
+}
+
+/* ---------- input ---------- */
+const mouse = { x: innerWidth / 2, y: innerHeight / 2, px: innerWidth / 2, py: innerHeight / 2, active: false, down: false };
+canvas.addEventListener("pointermove", (e) => {
+  mouse.px = mouse.x; mouse.py = mouse.y;
+  mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true;
+});
+canvas.addEventListener("pointerdown", (e) => {
+  ac(); mouse.down = true;
+  mouse.x = e.clientX; mouse.y = e.clientY; mouse.px = e.clientX; mouse.py = e.clientY; mouse.active = true;
+  supernova(e.clientX, e.clientY, false);
+});
+window.addEventListener("pointerup", () => { mouse.down = false; });
+canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  const t = e.touches[0];
+  mouse.px = mouse.x; mouse.py = mouse.y;
+  mouse.x = t.clientX; mouse.y = t.clientY; mouse.active = true;
+}, { passive: false });
+canvas.addEventListener("touchstart", (e) => {
+  ac();
+  const t = e.touches[0];
+  mouse.x = t.clientX; mouse.y = t.clientY; mouse.px = t.clientX; mouse.py = t.clientY; mouse.active = true;
+  supernova(t.clientX, t.clientY, false);
+}, { passive: true });
+
+function supernova(sx, sy, free) {
+  const wx = sx - CX, wy = sy - CY, R = 300;
+  for (const p of particles) {
+    const dx = p.x - wx, dy = p.y - wy, d = Math.hypot(dx, dy);
+    if (d < R && d > 1) {
+      const f = (1 - d / R) * 16;
+      p.vx += (dx / d) * f; p.vy += (dy / d) * f; p.vz += rand(-3, 3);
+    }
+  }
+  rings.push({ x: sx, y: sy, r: 8, a: 0.9 });
+  for (let i = 0; i < 110; i++) {
+    const a = Math.random() * TAU, sp = rand(1.5, 8.5);
+    sparks.push({ x: sx, y: sy, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1.2, life: 0, max: rand(0.5, 1.4), hue: Math.random() });
+  }
+  if (sparks.length > 1000) sparks.splice(0, sparks.length - 1000);
+  blip(rand(300, 700), 0.25, "sawtooth", 0.07, 500);
+  if (state.mode === "catch" && playing && !free) checkBlastCatch(sx, sy, R * 0.55);
+}
+function chaos() {
+  for (const p of particles) { p.vx += rand(-14, 14); p.vy += rand(-14, 14); p.vz += rand(-10, 10); }
+  rings.push({ x: CX + rand(-160, 160), y: CY + rand(-120, 120), r: 20, a: 0.7 });
+  blip(140, 0.4, "square", 0.06, 420);
+  pop("🌪 CHAOS!");
+}
+
+/* ---------- Catch game ---------- */
+let orbs = [], playing = false, score = 0, best = 0, timeLeft = 0, combo = 0, missFlash = 0, spawnT = 0, level = 1;
+try { best = parseInt(localStorage.getItem("particle-storm-best") || "0", 10) || 0; } catch (e) {}
+const hScore = document.getElementById("h-score"), hTime = document.getElementById("h-time"),
+      hBest = document.getElementById("h-best"), overlay = document.getElementById("overlay"),
+      ovTitle = document.getElementById("ov-title"), ovBig = document.getElementById("ov-big"),
+      ovText = document.getElementById("ov-text"), ovGo = document.getElementById("ov-go");
+
+function refreshHUD() {
+  hScore.textContent = score;
+  hBest.textContent = Math.max(best, score);
+  hTime.textContent = state.mode === "catch" ? Math.ceil(timeLeft) + "s" : "∞";
+}
+function pop(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(pop._h); pop._h = setTimeout(() => t.classList.remove("show"), 1400);
+}
+function spawnOrb() {
+  const gold = Math.random() > 0.24;
+  orbs.push({
+    x: rand(50, Math.max(60, W - 50)), y: -30,
+    vx: rand(-40, 40), vy: rand(70, 130 + level * 22),
+    r: gold ? rand(13, 17) : rand(15, 20),
+    gold, life: 0, max: 9, wob: Math.random() * TAU
+  });
+  if (orbs.length > 14) orbs.shift();
+}
+function startCatch() {
+  state.mode = "catch"; playing = true;
+  score = 0; combo = 0; level = 1; timeLeft = 60; orbs = []; spawnT = 0;
+  setShape(SHAPE_ORDER[(Math.random() * SHAPE_ORDER.length) | 0], true);
+  overlay.classList.remove("show");
+  document.getElementById("m-catch").textContent = "■ Stop";
+  document.getElementById("m-sandbox").classList.add("ghost");
+  document.getElementById("m-catch").classList.remove("ghost");
+  pop("Catch the GOLD! Avoid purple void!");
+  blip(660, 0.2, "square", 0.1, 330);
+  refreshHUD();
+}
+function stopCatch(win) {
+  playing = false; state.mode = "sandbox"; orbs = [];
+  document.getElementById("m-catch").textContent = "▶ Catch!";
+  if (score > best) { best = score; try { localStorage.setItem("particle-storm-best", String(best)); } catch (e) {} }
+  ovTitle.textContent = win === false ? "🛑 Storm stopped" : (score >= 200 ? "🏆 STORM LEGEND!" : score >= 100 ? "⚡ Storm Star!" : "🌪 Nice swirl!");
+  ovBig.textContent = score + " pts";
+  ovText.innerHTML = "Best: <b style='color:#7df9ff'>" + Math.max(best, score) + "</b> · Level " + level + "<br/>Catch gold, dodge void. Combos multiply when you don't miss!";
+  ovGo.textContent = "PLAY AGAIN →";
+  overlay.classList.add("show");
+  refreshHUD();
+}
+function checkBlastCatch(sx, sy, rad) {
+  for (let i = orbs.length - 1; i >= 0; i--) {
+    const o = orbs[i];
+    if (Math.hypot(o.x - sx, o.y - sy) < rad + o.r) {
+      if (o.gold) { catchOrb(i, true); } // supernova can also pop gold nearby
+    }
+  }
+}
+function catchOrb(i, viaBlast) {
+  const o = orbs[i]; orbs.splice(i, 1);
+  if (o.gold) {
+    combo++;
+    const pts = (10 + level * 2) * (combo >= 4 ? 3 : combo >= 2 ? 2 : 1);
+    score += pts;
+    rings.push({ x: o.x, y: o.y, r: 6, a: 0.9 });
+    for (let k = 0; k < 26; k++) {
+      const a = Math.random() * TAU, sp = rand(1, 5);
+      sparks.push({ x: o.x, y: o.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1, life: 0, max: rand(0.4, 1), hue: 0.12 });
+    }
+    blip(500 + combo * 90 + level * 30, 0.16, "square", 0.09, 240);
+    if (combo >= 2) pop("🔥 COMBO x" + (combo >= 4 ? 3 : 2) + "  +" + pts);
+    if (score > 0 && score % 80 < 20 && level < 8) {
+      const nl = 1 + Math.floor(score / 80);
+      if (nl !== level) { level = nl; setShape(SHAPE_ORDER[level % SHAPE_ORDER.length], true); pop("⬆ LEVEL " + level + " — " + SHAPES[state.shape].label); }
+    }
+  } else {
+    combo = 0; score = Math.max(0, score - 15); missFlash = 0.6;
+    rings.push({ x: o.x, y: o.y, r: 10, a: 0.8 });
+    blip(160, 0.3, "sawtooth", 0.11, -80);
+    pop("🕳 Void! -15");
+  }
+  refreshHUD();
+}
+document.getElementById("m-catch").addEventListener("click", () => {
+  ac();
+  if (state.mode === "catch") stopCatch(false); else { overlay.classList.add("show"); }
+});
+document.getElementById("m-sandbox").addEventListener("click", () => {
+  if (state.mode === "catch") stopCatch(false);
+  state.mode = "sandbox"; refreshHUD();
+});
+document.getElementById("m-mute").addEventListener("click", (e) => {
+  state.muted = !state.muted;
+  e.target.textContent = state.muted ? "🔇" : "🔊";
+});
+ovGo.addEventListener("click", () => { ac(); startCatch(); });
+document.getElementById("b-super").addEventListener("click", (e) => {
+  const r = canvas.getBoundingClientRect();
+  supernova(rand(W * 0.3, W * 0.7), rand(H * 0.35, H * 0.65), false);
+});
+document.getElementById("b-chaos").addEventListener("click", chaos);
+document.getElementById("labBtn").addEventListener("click", () => document.getElementById("lab").classList.toggle("open"));
+
+window.addEventListener("keydown", (e) => {
+  if (e.key >= "1" && e.key <= "6") setShape(SHAPE_ORDER[Number(e.key) - 1]);
+  else if (e.key === " ") { e.preventDefault(); }
+  else if (e.key === "g" || e.key === "G") { state.mode === "catch" ? stopCatch(false) : startCatch(); }
+  else if (e.key === "b" || e.key === "B" || e.key === "f" || e.key === "F") supernova(rand(W * 0.3, W * 0.7), rand(H * 0.3, H * 0.6), false);
+  else if (e.key === "Escape" && playing) stopCatch(false);
+});
+
+/* ---------- UI builders ---------- */
+function chipRow(el, items, current, onPick, dotMode) {
+  el.innerHTML = "";
+  for (const pair of items) {
+    const b = document.createElement("button");
+    b.className = "chip" + (dotMode ? " dot" : "") + (pair[0] === current ? " active" : "");
+    if (dotMode) { b.style.background = pair[2]; b.title = pair[1]; b.textContent = ""; }
+    else b.textContent = pair[1];
+    b.dataset.key = pair[0];
+    b.addEventListener("click", () => { ac(); onPick(pair[0]); });
+    el.appendChild(b);
+  }
+}
+function syncChips() {
+  document.querySelectorAll("#shapes .chip").forEach((b) => b.classList.toggle("active", b.dataset.key === state.shape));
+  document.querySelectorAll("#palettes .chip").forEach((b) => b.classList.toggle("active", b.dataset.key === state.ink));
+  document.querySelectorAll("#tools .chip").forEach((b) => b.classList.toggle("active", b.dataset.key === state.tool));
+}
+chipRow(document.getElementById("shapes"), SHAPE_ORDER.map((k) => [k, SHAPES[k].label]), state.shape, (k) => setShape(k));
+chipRow(document.getElementById("palettes"), PALETTE_ORDER.map((k) => [k, PALETTES[k].label, PALETTES[k].dot]), state.ink, setInk, true);
+chipRow(document.getElementById("tools"), TOOL_ORDER.map((k) => [k, TOOLS[k].label]), state.tool, (k) => { state.tool = k; syncChips(); });
+
+function bindSlider(id, key, fmt, after) {
+  const s = document.getElementById("s-" + id), v = document.getElementById("v-" + id);
+  const show = () => { v.textContent = fmt(state[key]); };
+  s.addEventListener("input", () => { state[key] = parseFloat(s.value); if (after) after(); show(); });
+  show();
+}
+bindSlider("count", "count", (v) => Math.round(v), () => setCount(state.count));
+bindSlider("speed", "speed", (v) => v.toFixed(1));
+bindSlider("trail", "trail", (v) => v.toFixed(2));
+bindSlider("size", "size", (v) => v.toFixed(1));
+bindSlider("spin", "spin", (v) => v.toFixed(2));
+document.getElementById("t-tour").addEventListener("change", (e) => { state.tour = e.target.checked; tourTimer = 0; });
+document.getElementById("t-links").addEventListener("change", (e) => { state.links = e.target.checked; });
+document.getElementById("t-streak").addEventListener("change", (e) => { state.streaks = e.target.checked; });
+
+/* ---------- sim ---------- */
+const FOV = 640, TILT = 0.46;
+let spinAngle = 0, tourTimer = 0, elapsed = 0, last = performance.now(), fps = 60, windT = 0;
+
+function update(dt) {
+  elapsed += dt; windT += dt;
+  spinAngle += state.spin * dt;
+  if (state.tour && state.mode === "sandbox") {
+    tourTimer += dt;
+    if (tourTimer > 9) {
+      const i = SHAPE_ORDER.indexOf(state.shape);
+      setShape(SHAPE_ORDER[(i + 1) % SHAPE_ORDER.length], true);
+      pop(SHAPES[state.shape].label + " storm!");
+    }
+  }
+
+  // catch-mode clock + spawns
+  if (state.mode === "catch" && playing) {
+    timeLeft -= dt;
+    spawnT -= dt;
+    if (spawnT <= 0) { spawnOrb(); if (level > 2 && Math.random() < 0.5) spawnOrb(); spawnT = Math.max(0.28, 0.9 - level * 0.08); }
+    if (timeLeft <= 0) { timeLeft = 0; stopCatch(true); }
+    refreshHUD();
+  }
+
+  const stiff = 3.1 * state.speed;
+  const damp = Math.pow(0.9, dt * 60);
+  const t = elapsed;
+  const windX = Math.sin(windT * 0.6) * 26 * state.speed;
+  const windY = Math.cos(windT * 0.43) * 14 * state.speed;
+  const wmx = mouse.x - CX, wmy = mouse.y - CY;
+  const dragVX = (mouse.x - mouse.px) * 0.4, dragVY = (mouse.y - mouse.py) * 0.4;
+  mouse.px = mouse.x; mouse.py = mouse.y;
+  const touching = mouse.active && mouse.down;
+  const spd = state.speed;
+  const jellyPulse = state.shape === "jelly" ? 1 + Math.sin(t * 3.1) * 0.06 : 1;
+  const nadoSpin = state.shape === "tornado" ? t * 2.2 : 0;
+
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
+    let gx = p.tx * jellyPulse, gy = p.ty * jellyPulse, gz = p.tz;
+    if (state.shape === "tornado") { // extra funnel spin
+      const c = Math.cos(nadoSpin * 0.12), s = Math.sin(nadoSpin * 0.12);
+      const nx = gx * c - gz * s, nz = gx * s + gz * c;
+      gx = nx; gz = nz;
+    }
+    if (state.shape === "jelly") gy += Math.sin(t * 3 + p.hue * 9) * 14;
+    if (state.shape === "bloom") { const b = Math.sin(t * 1.6 + p.hue * 12) * 10; gx += b; gy += b * 0.5; }
+    if (state.shape === "dna") gx += Math.sin(t * 2 + p.ty * 0.02) * 12;
+
+    p.vx += (gx - p.x) * stiff * dt + windX * dt;
+    p.vy += (gy - p.y) * stiff * dt + windY * dt;
+    p.vz += (gz - p.z) * stiff * dt;
+
+    // plasma turbulence (stronger than before = wilder look)
+    p.vx += Math.sin(p.y * 0.02 + t * 2.1 + p.tw) * 26 * spd * dt;
+    p.vy += Math.cos(p.x * 0.017 - t * 1.7 + p.tw) * 22 * spd * dt;
+    p.vz += Math.sin((p.x + p.y) * 0.013 + t) * 18 * spd * dt;
+
+    if (mouse.active) {
+      const dx = p.x - wmx, dy = p.y - wmy, d2 = dx * dx + dy * dy, R = touching ? 260 : 180;
+      if (d2 < R * R && d2 > 4) {
+        const d = Math.sqrt(d2), fall = 1 - d / R, s = fall * fall * (touching ? 1500 : 850) * dt;
+        if (state.tool === "hole") { p.vx -= (dx / d) * s; p.vy -= (dy / d) * s; }
+        else if (state.tool === "blow") { p.vx += (dx / d) * s; p.vy += (dy / d) * s; }
+        else { p.vx += (-dy / d) * s; p.vy += (dx / d) * s; }
+      }
+      p.vx += dragVX * dt * 2.4; p.vy += dragVY * dt * 2.4;
+    }
+    p.vx *= damp; p.vy *= damp; p.vz *= damp;
+    p.x += p.vx * dt * 60 * 0.16;
+    p.y += p.vy * dt * 60 * 0.16;
+    p.z += p.vz * dt * 60 * 0.16;
+  }
+
+  // sparks + rings
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i]; s.life += dt;
+    if (s.life >= s.max) { sparks.splice(i, 1); continue; }
+    s.vy += 3.4 * dt; s.vx *= 0.985; s.vy *= 0.99;
+    s.x += s.vx * dt * 60 * 0.96; s.y += s.vy * dt * 60 * 0.96;
+  }
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const r = rings[i]; r.r += dt * 620; r.a -= dt * 1.6;
+    if (r.a <= 0) rings.splice(i, 1);
+  }
+
+  // orbs (catch mode, screen space)
+  if (state.mode === "catch" && playing) {
+    for (let i = orbs.length - 1; i >= 0; i--) {
+      const o = orbs[i];
+      o.life += dt; o.wob += dt * 5;
+      o.x += (o.vx + Math.sin(o.wob) * 30) * dt;
+      o.y += o.vy * dt;
+      if (o.x < 20 || o.x > W - 20) o.vx *= -1;
+      // caught by cursor?
+      if (Math.hypot(o.x - mouse.x, o.y - mouse.y) < 46 + o.r * 0.4) { catchOrb(i, false); continue; }
+      if (o.y > H + 40 || o.life > o.max) {
+        if (o.gold && o.y > H) { combo = 0; } // missed gold breaks combo silently
+        orbs.splice(i, 1);
+      }
+    }
+  }
+  if (missFlash > 0) missFlash -= dt;
+}
+
+function project(x, y, z) {
+  const bob = Math.sin(elapsed * 0.7) * 24;
+  const c = Math.cos(spinAngle), s = Math.sin(spinAngle);
+  const xr = x * c + z * s, zr = -x * s + z * c;
+  const ct = Math.cos(TILT), st = Math.sin(TILT);
+  const yr = (y + bob * 0.15) * ct - zr * st, zr2 = (y + bob * 0.15) * st + zr * ct;
+  const scale = FOV / (FOV + zr2);
+  return { x: xr * scale + CX, y: yr * scale + CY, scale };
+}
+
+function draw() {
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "rgba(" + BG_FADE + "," + state.trail + ")";
+  ctx.fillRect(0, 0, W, H);
+  if (missFlash > 0) { ctx.fillStyle = "rgba(178,30,80," + (missFlash * 0.35) + ")"; ctx.fillRect(0, 0, W, H); }
+
+  ctx.globalCompositeOperation = "lighter";
+  const pal = PALETTES[state.ink].fn;
+  const base = state.size, n = particles.length;
+  const px = new Array(n), py = new Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const p = particles[i];
+    p.psx = p.sx; p.psy = p.sy;
+    const pr = project(p.x, p.y, p.z);
+    p.sx = pr.x; p.sy = pr.y;
+    if (pr.x < -30 || pr.x > W + 30 || pr.y < -30 || pr.y > H + 30) { px[i] = -9999; continue; }
+    const twk = 0.7 + 0.3 * Math.sin(elapsed * 4 + p.tw);
+    const r = Math.max(0.4, base * pr.scale * twk);
+    ctx.fillStyle = pal(p.hue, elapsed);
+    ctx.globalAlpha = clamp(pr.scale, 0.15, 1);
+    if (state.streaks && p.psx > -9000 && Math.hypot(p.sx - p.psx, p.sy - p.psy) > 7) {
+      ctx.strokeStyle = ctx.fillStyle; ctx.lineWidth = r * 0.9; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(p.psx, p.psy); ctx.lineTo(p.sx, p.sy); ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(pr.x, pr.y, r, 0, TAU); ctx.fill();
+    }
+    px[i] = pr.x; py[i] = pr.y;
+  }
+  ctx.globalAlpha = 1;
+
+  if (state.links && n <= 2200) {
+    const step = n > 1100 ? 2 : 1, cell = 95, grid = new Map();
+    for (let i = 0; i < n; i += step) {
+      if (px[i] === -9999) continue;
+      const k = ((px[i] / cell) | 0) + ":" + ((py[i] / cell) | 0);
+      let a = grid.get(k); if (!a) { a = []; grid.set(k, a); } a.push(i);
+    }
+    ctx.strokeStyle = "rgba(125,249,255,0.13)"; ctx.lineWidth = 1;
+    ctx.beginPath();
+    const R2 = 100 * 100;
+    for (const arr of grid.values())
+      for (let a = 0; a < arr.length; a++) for (let b = a + 1; b < arr.length; b++) {
+        const i = arr[a], j = arr[b], dx = px[i] - px[j], dy = py[i] - py[j];
+        if (dx * dx + dy * dy < R2) { ctx.moveTo(px[i], py[i]); ctx.lineTo(px[j], py[j]); }
+      }
+    ctx.stroke();
+  }
+
+  // orbs
+  for (const o of orbs) {
+    const pulse = 1 + Math.sin(o.wob * 2) * 0.12;
+    if (o.gold) {
+      const g = ctx.createRadialGradient(o.x, o.y, 1, o.x, o.y, o.r * 2.4 * pulse);
+      g.addColorStop(0, "rgba(255,240,180,1)");
+      g.addColorStop(0.35, "rgba(255,209,102,.9)");
+      g.addColorStop(1, "rgba(255,120,40,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 2.4 * pulse, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#fff6cf";
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 0.55, 0, TAU); ctx.fill();
+      ctx.fillStyle = "rgba(120,60,0,.9)";
+      ctx.font = "bold " + Math.round(o.r * 1.1) + "px sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("★", o.x, o.y + 1);
+    } else {
+      const g = ctx.createRadialGradient(o.x, o.y, 1, o.x, o.y, o.r * 2.6 * pulse);
+      g.addColorStop(0, "rgba(220,170,255,.95)");
+      g.addColorStop(0.4, "rgba(140,50,220,.75)");
+      g.addColorStop(1, "rgba(40,0,80,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 2.6 * pulse, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#1a0530";
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 0.62, 0, TAU); ctx.fill();
+      ctx.strokeStyle = "rgba(200,140,255,.9)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(o.x, o.y, o.r * 0.62, 0, TAU); ctx.stroke();
+    }
+  }
+
+  // sparks + rings
+  for (const s of sparks) {
+    const a = 1 - s.life / s.max;
+    ctx.fillStyle = PALETTES[state.ink].fn(s.hue, elapsed);
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(s.x, s.y, 1.4 + a * 2.4, 0, TAU); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (const r of rings) {
+    ctx.strokeStyle = "rgba(125,249,255," + Math.max(0, r.a) + ")";
+    ctx.lineWidth = 2 + r.a * 4;
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, TAU); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,140,200," + Math.max(0, r.a * 0.6) + ")";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(r.x, r.y, r.r * 0.72, 0, TAU); ctx.stroke();
+  }
+  ctx.globalCompositeOperation = "source-over";
+}
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  let dt = (now - last) / 1000; last = now;
+  if (dt > 0.05) dt = 0.05;
+  if (dt <= 0) return;
+  fps += ((1 / dt) - fps) * 0.05;
+  update(dt);
+  draw();
+}
+
+/* ---------- go ---------- */
+resize();
+document.getElementById("h-shape").textContent = SHAPES[state.shape].label;
+document.getElementById("h-best").textContent = best;
+setCount(1400);
+refreshHUD();
+requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
+setTimeout(() => supernova(CX, CY - 60, true), 700);
+setTimeout(() => { if (state.mode === "sandbox") overlay.classList.add("show"); }, 900);
+</script>
+</body>
+</html>
