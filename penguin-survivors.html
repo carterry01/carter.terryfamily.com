@@ -267,6 +267,40 @@ function fmtTime(s) {
 }
 
 let vigCanvas = null, vigRed = null; // pre-rendered screen overlays (rebuilt on resize)
+let auroraA = null, auroraB = null; // animated sky shimmer (pre-rendered, drawn w/ pulsing alpha)
+let plateSprite = null; // dark disc behind enemies so emoji pop on bright ice
+let glowSprites = {}; // pre-rendered radial glows keyed by hex color
+function glowSprite(color) {
+  const S = 64;
+  const c = document.createElement("canvas");
+  c.width = S; c.height = S;
+  const g = c.getContext("2d");
+  const gr = g.createRadialGradient(S / 2, S / 2, 1, S / 2, S / 2, S / 2);
+  gr.addColorStop(0, color);
+  gr.addColorStop(0.35, color + "AA");
+  gr.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, S, S);
+  return c;
+}
+function buildSprites() {
+  glowSprites = {
+    "#ffd166": glowSprite("#ffd166"),
+    "#7dff9d": glowSprite("#7dff9d"),
+    "#7df9ff": glowSprite("#7df9ff"),
+    "#7db4ff": glowSprite("#7db4ff"),
+    "#ffffff": glowSprite("#ffffff"),
+    "#ff5d7a": glowSprite("#ff5d7a"),
+  };
+  const S = 96; // dark contrast plate
+  plateSprite = document.createElement("canvas");
+  plateSprite.width = S; plateSprite.height = S;
+  const pg = plateSprite.getContext("2d");
+  const pr = pg.createRadialGradient(S / 2, S / 2, 2, S / 2, S / 2, S / 2);
+  pr.addColorStop(0, "rgba(3,9,22,0.88)");
+  pr.addColorStop(0.62, "rgba(3,9,22,0.72)");
+  pr.addColorStop(1, "rgba(3,9,22,0)");
+  pg.fillStyle = pr; pg.fillRect(0, 0, S, S);
+}
 function buildVignettes() {
   function make(draw) {
     const c = document.createElement("canvas");
@@ -289,6 +323,22 @@ function buildVignettes() {
     const gr = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.7);
     gr.addColorStop(0, "rgba(255,0,60,0)");
     gr.addColorStop(1, "rgba(255,0,60,0.55)");
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+  auroraA = make((g, w, h) => { // cyan→violet sky band
+    const gr = g.createLinearGradient(0, 0, w, h * 0.9);
+    gr.addColorStop(0.2, "rgba(0,229,255,0)");
+    gr.addColorStop(0.4, "rgba(0,229,255,0.10)");
+    gr.addColorStop(0.55, "rgba(178,75,255,0.09)");
+    gr.addColorStop(0.75, "rgba(178,75,255,0)");
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+  auroraB = make((g, w, h) => { // green→pink sky band, mirrored
+    const gr = g.createLinearGradient(w, 0, 0, h * 0.8);
+    gr.addColorStop(0.2, "rgba(125,255,212,0)");
+    gr.addColorStop(0.42, "rgba(125,255,212,0.08)");
+    gr.addColorStop(0.58, "rgba(255,143,199,0.08)");
+    gr.addColorStop(0.78, "rgba(255,143,199,0)");
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
   });
 }
@@ -482,11 +532,11 @@ function pickType() {
   return "crab";
 }
 const EBASE = {
-  crab:    { hp: 20, r: 15, spd: 62,  dmg: 10, xp: 1, emo: "🦀", score: 1 },
-  gull:    { hp: 13, r: 13, spd: 118, dmg: 8,  xp: 1, emo: "🐦", score: 1 },
-  fox:     { hp: 34, r: 14, spd: 96,  dmg: 12, xp: 3, emo: "🦊", score: 1 },
-  imp:     { hp: 28, r: 14, spd: 66,  dmg: 9,  xp: 3, emo: "👹", score: 1 },
-  snowman: { hp: 95, r: 19, spd: 38,  dmg: 18, xp: 6, emo: "⛄", score: 1 },
+  crab:    { hp: 20, r: 16, spd: 62,  dmg: 10, xp: 1, emo: "🦀", score: 1 },
+  gull:    { hp: 13, r: 14, spd: 118, dmg: 8,  xp: 1, emo: "🐦", score: 1 },
+  fox:     { hp: 34, r: 15, spd: 96,  dmg: 12, xp: 3, emo: "🦊", score: 1 },
+  imp:     { hp: 28, r: 15, spd: 66,  dmg: 9,  xp: 3, emo: "👹", score: 1 },
+  snowman: { hp: 95, r: 21, spd: 38,  dmg: 18, xp: 6, emo: "⛄", score: 1 },
 };
 function spawnEnemy(force, elite, ringA, ringR) {
   if (G.enemies.length > 170) return;
@@ -1265,6 +1315,12 @@ function drawGround() {
       } else {
         ctx.beginPath(); ctx.arc(sx, sy, 2, 0, TAU); ctx.fill();
       }
+      const h2 = hash2(gx * 11 + 5, gy * 7 + 13);
+      if (h2 < 0.14) { // frost sheet: pale ice patch for depth
+        ctx.fillStyle = "rgba(140,190,240,0.09)";
+        ctx.beginPath(); ctx.ellipse(sx - 30, sy + 24, 46, 18, 0.3, 0, TAU); ctx.fill();
+        ctx.fillStyle = "rgba(125,200,255,0.13)";
+      }
       if (h < 0.10) { // ice shine
         ctx.strokeStyle = "rgba(150,220,255,0.18)";
         ctx.lineWidth = 2;
@@ -1281,14 +1337,14 @@ function drawGround() {
 }
 function w2s(x, y) { return [x - G.cam.x, y - G.cam.y]; }
 
-// Cheap glow: stacked alpha circles under 'lighter'. Same neon look as
-// shadowBlur at a fraction of the cost (shadowBlur stalls the GPU per shape).
+// Cheap glow: one pre-rendered sprite blit. Same neon look as shadowBlur
+// at a fraction of the cost (shadowBlur stalls the GPU per shape).
 function glowDot(x, y, r, color, alpha) {
+  const s = glowSprites[color] || glowSprites["#7df9ff"];
+  if (!s) return;
+  const size = r * 4.6;
   ctx.globalAlpha = alpha || 0.3;
-  ctx.fillStyle = color;
-  ctx.beginPath(); ctx.arc(x, y, r * 2.1, 0, TAU); ctx.fill();
-  ctx.globalAlpha = Math.min(1, (alpha || 0.3) + 0.45);
-  ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  ctx.drawImage(s, x - size / 2, y - size / 2, size, size);
   ctx.globalAlpha = 1;
 }
 // Crisp outlined text — replaces shadowBlur'd floating text (very slow).
@@ -1361,42 +1417,46 @@ function draw() {
     ctx.restore();
   }
 
-  // enemies
+  // enemies — dark plate + outline ring + chunky emoji so they pop on ice
   for (const e of G.enemies) {
     const [sx, sy] = w2s(e.x, e.y);
-    if (sx < -80 || sx > W + 80 || sy < -80 || sy > H + 80) continue;
+    if (sx < -90 || sx > W + 90 || sy < -90 || sy > H + 90) continue;
+    const wob = Math.sin(e.t * 8) * 2;
+    const cy = sy + wob;
     // shadow
     ctx.fillStyle = "rgba(0,0,0,.35)";
     ctx.beginPath(); ctx.ellipse(sx, sy + e.r * 0.85, e.r * 0.9, e.r * 0.32, 0, 0, TAU); ctx.fill();
-    if (e.elite) { // threat ring — elites/bosses pop at a glance
-      ctx.strokeStyle = e.boss ? "rgba(255,93,122,0.85)" : "rgba(255,209,102,0.7)";
-      ctx.lineWidth = e.boss ? 3 : 2;
-      ctx.beginPath(); ctx.ellipse(sx, sy, e.r + 7, (e.r + 7) * 0.92, 0, 0, TAU); ctx.stroke();
+    // dark contrast plate — the key to readability on bright ice
+    if (plateSprite) {
+      const pw = e.r * (e.boss ? 4.6 : 3.8);
+      ctx.drawImage(plateSprite, sx - pw / 2, cy - pw / 2, pw, pw);
     }
-    const wob = Math.sin(e.t * 8) * 2;
+    // outline ring on everything; threat colors for elite/boss
+    ctx.lineWidth = e.boss ? 3.5 : e.elite ? 2.5 : 1.5;
+    ctx.strokeStyle = e.boss ? "rgba(255,93,122,0.9)" : e.elite ? "rgba(255,209,102,0.85)" : "rgba(220,240,255,0.5)";
+    ctx.beginPath(); ctx.arc(sx, cy, e.r + (e.boss ? 10 : 7), 0, TAU); ctx.stroke();
     ctx.save();
-    ctx.translate(sx, sy + wob);
+    ctx.translate(sx, cy);
     if (e.flash > 0) ctx.globalAlpha = 0.6;
-    const size = e.r * 2.1;
-    ctx.font = Math.round(size) + "px " + EMOJI_FONT;
+    const size = Math.round(e.r * (e.boss ? 2.2 : 2.45));
+    ctx.font = size + "px " + EMOJI_FONT;
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     ctx.fillText(e.emo, 0, 0);
     if (e.boss) {
-      ctx.font = "16px " + EMOJI_FONT;
-      ctx.fillText("👑", 0, -e.r - 16);
+      ctx.font = "18px " + EMOJI_FONT;
+      ctx.fillText("👑", 0, -e.r - 20);
     } else if (e.elite) {
-      ctx.font = "11px sans-serif";
-      ctx.fillStyle = "#ffd166";
-      ctx.fillText("★ ELITE", 0, -e.r - 12);
+      popText("★ ELITE", 0, -e.r - 15, "#ffd166", "bold 11px sans-serif");
     }
     ctx.restore();
     ctx.globalAlpha = 1;
     if (e.hp < e.maxhp) {
-      const w = e.boss ? 90 : e.elite ? 46 : 30;
-      ctx.fillStyle = "rgba(0,0,0,.5)";
-      ctx.fillRect(sx - w / 2, sy - e.r - 12, w, 5);
+      const w = e.boss ? 96 : e.elite ? 50 : 34;
+      const bx = sx - w / 2, by = sy - e.r - 15;
+      ctx.fillStyle = "rgba(0,0,0,.55)";
+      ctx.fillRect(bx - 1, by - 1, w + 2, 7);
       ctx.fillStyle = e.boss ? "#ff5d7a" : "#7dff9d";
-      ctx.fillRect(sx - w / 2, sy - e.r - 12, w * clamp(e.hp / e.maxhp, 0, 1), 5);
+      ctx.fillRect(bx, by, w * clamp(e.hp / e.maxhp, 0, 1), 5);
     }
   }
 
@@ -1458,6 +1518,11 @@ function draw() {
     const blink = P.inv > 0 && Math.floor(G.worldTime * 14) % 2 === 0;
     ctx.save();
     ctx.translate(sx, sy);
+    // cyan light pool so the hero reads instantly in a crowd
+    if (glowSprites["#7df9ff"]) {
+      ctx.globalAlpha = 0.4;
+      ctx.drawImage(glowSprites["#7df9ff"], -60, -50, 120, 100);
+    }
     // shadow
     ctx.fillStyle = "rgba(0,0,0,.35)";
     ctx.beginPath(); ctx.ellipse(0, 14, 16, 6, 0, 0, TAU); ctx.fill();
@@ -1570,6 +1635,16 @@ function draw() {
     ctx.fillRect(f.x, f.y, r, r);
   }
   ctx.globalAlpha = 1;
+  // aurora sky shimmer (pre-rendered bands, gently breathing)
+  if (auroraA) {
+    ctx.globalAlpha = 0.55 + Math.sin(G.worldTime * 0.4) * 0.18;
+    ctx.drawImage(auroraA, 0, 0, W, H);
+  }
+  if (auroraB) {
+    ctx.globalAlpha = 0.4 + Math.cos(G.worldTime * 0.3) * 0.14;
+    ctx.drawImage(auroraB, 0, 0, W, H);
+  }
+  ctx.globalAlpha = 1;
   if (vigCanvas) ctx.drawImage(vigCanvas, 0, 0, W, H);
   // frenzy tint
   if (G.frenzyXP > 0) {
@@ -1596,6 +1671,7 @@ function frame(now) {
 }
 
 /* ---------- boot ---------- */
+buildSprites();
 resetWorld();
 hBest.textContent = fmtTime(G.best);
 refreshHUD();
