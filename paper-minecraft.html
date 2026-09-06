@@ -85,6 +85,26 @@
   .panel-box { width: min(620px, 96vw); max-height: 88vh; overflow-y: auto; background: #1c2530; border-radius: 14px;
     border: 3px solid #ffffff44; padding: 18px; color: #fff; box-shadow: 0 20px 60px #000c; }
   .panel-box h2 { color: #7ed957; letter-spacing: 1px; margin-bottom: 8px; }
+  .panel-box h3 { color: #ffe14d; font-size: 14px; margin: 12px 0 6px; letter-spacing: 1px; }
+  #craft-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .craft-row { display: flex; align-items: center; gap: 10px; background: #ffffff0d; border-radius: 10px; padding: 6px 10px; }
+  .craft-row img { width: 34px; height: 34px; image-rendering: pixelated; }
+  .craft-mid { flex: 1; } .craft-mid b { font-size: 13.5px; display: block; }
+  .craft-mid small { color: #9fb3d9; font-size: 11.5px; }
+  .craft-btn { border: none; border-radius: 9px; padding: 8px 14px; font-weight: 900; cursor: pointer;
+    background: linear-gradient(180deg,#8df07a,#3fae2a); color: #083008; }
+  .craft-btn:disabled { background: #555; color: #999; cursor: default; }
+  #inv-main { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+  #inv-hot { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+  .cell { aspect-ratio: 1; background: #8b8b8b; border: 2px solid #555; outline: 2px solid #c6c6c6; outline-offset: -3px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; min-height: 40px; }
+  .cell.sel { outline: 3px solid #ffe14d; outline-offset: -3px; }
+  .cell img { width: 78%; height: 78%; image-rendering: pixelated; pointer-events: none; }
+  .cell .cnt { position: absolute; bottom: 0; right: 3px; font-size: 12px; color: #fff; text-shadow: 2px 2px 0 #000; font-weight: 900; }
+  #cursor-stack { position: fixed; z-index: 99; width: 40px; height: 40px; pointer-events: none;
+    background: #8b8b8bcc; border: 2px solid #ffe14d; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  #cursor-stack img { width: 30px; height: 30px; image-rendering: pixelated; }
+  #cursor-stack span { position: absolute; bottom: -2px; right: 2px; font-size: 12px; color: #fff; text-shadow: 2px 2px 0 #000; font-weight: 900; }
   .panel-box table { width: 100%; border-collapse: collapse; margin-top: 8px; }
   .panel-box td { padding: 6px 8px; border-bottom: 1px solid #ffffff18; font-size: 13.5px; }
   .panel-box td:first-child { font-weight: 800; color: #ffe14d; white-space: nowrap; width: 150px; }
@@ -153,14 +173,19 @@
       <button class="btn btn-gray" id="btn-options">⚙ Options</button>
       <button class="btn btn-gray hidden" id="btn-continue">📂 Continue</button>
     </div>
-    <div class="tiny"><b>←</b> <b>→</b> or <b>A</b> <b>D</b> to walk • <b>↑</b> / <b>Space</b> to jump • <b>Left-click</b> (hold) to mine • <b>Right-click</b> to place • <b>E</b> blocks • single-player fan remake</div>
+    <div class="tiny"><b>←</b> <b>→</b> or <b>A</b> <b>D</b> to walk • <b>↑</b> / <b>Space</b> to jump • <b>Left-click</b> (hold) to mine • <b>Right-click</b> to place • <b>E</b> inventory + crafting • use the right tool (pickaxe/axe/shovel) to mine fast!</div>
   </div>
 </div>
 
 <div id="inventory" class="panel hidden"><div class="panel-box">
-  <h2>🎒 Blocks — click to put in selected hotbar slot</h2>
-  <div class="row"><input id="inv-search" placeholder="Search blocks…" /></div>
-  <div id="inv-grid"></div>
+  <h2 id="inv-title">🎒 Inventory</h2>
+  <div id="craft-sec"><h3>🛠 Crafting</h3><div id="craft-list"></div></div>
+  <div id="picker-sec" class="hidden">
+    <div class="row"><input id="inv-search" placeholder="Search blocks & tools…" /></div>
+    <div id="inv-grid"></div>
+  </div>
+  <h3>🎒 Backpack</h3><div id="inv-main"></div>
+  <h3>Hotbar (keys 1–9)</h3><div id="inv-hot"></div>
   <div class="row"><button class="btn btn-green" id="btn-close-inv">✔ Done (E)</button></div>
 </div></div>
 
@@ -173,12 +198,12 @@
     <tr><td><span class="kbd">Right Click</span></td><td>Place selected block</td></tr>
     <tr><td><span class="kbd">Middle Click</span></td><td>Pick the block you're pointing at</td></tr>
     <tr><td><span class="kbd">1</span>–<span class="kbd">9</span> / wheel</td><td>Change hotbar slot</td></tr>
-    <tr><td><span class="kbd">E</span></td><td>Open block picker</td></tr>
+    <tr><td><span class="kbd">E</span></td><td>Inventory + crafting (Survival) / block picker (Creative)</td></tr>
     <tr><td><span class="kbd">F</span></td><td>Toggle fly (Creative only)</td></tr>
     <tr><td><span class="kbd">F3</span></td><td>Debug info</td></tr>
     <tr><td><span class="kbd">Esc</span></td><td>Pause menu</td></tr>
   </table>
-  <p style="margin-top:8px">💡 Survival: punch trees to get wood, dig for coal/iron/diamonds, eat apples (right-click with 🍎 selected) to refill hunger, and hide at night — zombies come out and burn at sunrise!</p>
+  <p style="margin-top:8px">💡 Survival: punch trees to get wood, craft planks → sticks → a <b>wooden pickaxe</b> (E → Crafting), then mine stone for better tools. Stone/ores need a pickaxe or they drop nothing — higher tiers (iron, diamond) need better pickaxes! Swords hurt mobs more. Eat apples (right-click with 🍎 selected) to refill hunger, and hide at night!</p>
   <div class="row"><button class="btn btn-green" id="btn-close-how">✔ Got it!</button></div>
 </div></div>
 
@@ -247,30 +272,30 @@ const sfx = {
 const B = { AIR:0, GRASS:1, DIRT:2, STONE:3, COBBLE:4, BEDROCK:5, SAND:6, LOG:7, LEAVES:8, PLANKS:9, GLASS:10, BRICK:11, SNOW:12, WATER:13, COAL:14, IRON:15, DIAMOND:16, FLOWER:17, TALLGRASS:18, LAMP:19, GOLD:20, DIAMONDBLOCK:21, APPLE:22, TNT:23 };
 const BLOCKS = [];
 function defBlock(id,name,o){ BLOCKS[id]=Object.assign({id:id,name:name,hard:1,solid:true,color:'#888'},o); }
-defBlock(B.GRASS,'Grass Block',{hard:0.65,color:'#6abe4e'});
-defBlock(B.DIRT,'Dirt',{hard:0.55,color:'#8a5a2b'});
-defBlock(B.STONE,'Stone',{hard:1.9,color:'#8d8d8d'});
-defBlock(B.COBBLE,'Cobblestone',{hard:2.0,color:'#7a7a7a'});
-defBlock(B.BEDROCK,'Bedrock',{hard:Infinity,color:'#3a3a3a'});
-defBlock(B.SAND,'Sand',{hard:0.5,color:'#e3d79b'});
-defBlock(B.LOG,'Oak Log',{hard:1.2,color:'#6b4a26'});
+defBlock(B.GRASS,'Grass Block',{hard:0.65,tool:'shovel',color:'#6abe4e'});
+defBlock(B.DIRT,'Dirt',{hard:0.55,tool:'shovel',color:'#8a5a2b'});
+defBlock(B.STONE,'Stone',{hard:1.9,tool:'pick',tier:1,color:'#8d8d8d'});
+defBlock(B.COBBLE,'Cobblestone',{hard:2.0,tool:'pick',tier:1,color:'#7a7a7a'});
+defBlock(B.BEDROCK,'Bedrock',{hard:Infinity,tool:'pick',tier:99,color:'#3a3a3a'});
+defBlock(B.SAND,'Sand',{hard:0.5,tool:'shovel',color:'#e3d79b'});
+defBlock(B.LOG,'Oak Log',{hard:1.2,tool:'axe',color:'#6b4a26'});
 defBlock(B.LEAVES,'Oak Leaves',{hard:0.3,color:'#3f9e2f'});
-defBlock(B.PLANKS,'Oak Planks',{hard:1.2,color:'#b08a4f'});
-defBlock(B.GLASS,'Glass',{hard:0.4,color:'#cfeaff'});
-defBlock(B.BRICK,'Bricks',{hard:2.0,color:'#b0563f'});
-defBlock(B.SNOW,'Snowy Grass',{hard:0.65,color:'#eef6ff'});
+defBlock(B.PLANKS,'Oak Planks',{hard:1.2,tool:'axe',color:'#b08a4f'});
+defBlock(B.GLASS,'Glass',{hard:0.4,tool:'pick',tier:1,color:'#cfeaff'});
+defBlock(B.BRICK,'Bricks',{hard:2.0,tool:'pick',tier:1,color:'#b0563f'});
+defBlock(B.SNOW,'Snowy Grass',{hard:0.65,tool:'shovel',color:'#eef6ff'});
 defBlock(B.WATER,'Water',{hard:Infinity,solid:false,color:'#3b7de0'});
-defBlock(B.COAL,'Coal Ore',{hard:2.2,color:'#555'});
-defBlock(B.IRON,'Iron Ore',{hard:2.6,color:'#c9a488'});
-defBlock(B.DIAMOND,'Diamond Ore',{hard:3.2,color:'#5ff2e0'});
+defBlock(B.COAL,'Coal Ore',{hard:2.2,tool:'pick',tier:1,color:'#555'});
+defBlock(B.IRON,'Iron Ore',{hard:2.6,tool:'pick',tier:2,color:'#c9a488'});
+defBlock(B.DIAMOND,'Diamond Ore',{hard:3.2,tool:'pick',tier:3,color:'#5ff2e0'});
 defBlock(B.FLOWER,'Poppy',{hard:0.05,solid:false,color:'#e23b3b'});
 defBlock(B.TALLGRASS,'Tall Grass',{hard:0.05,solid:false,color:'#5fc24e'});
-defBlock(B.LAMP,'Glowstone',{hard:0.8,color:'#ffd76a'});
-defBlock(B.GOLD,'Gold Block',{hard:2.0,color:'#f5c542'});
-defBlock(B.DIAMONDBLOCK,'Diamond Block',{hard:3.0,color:'#5ff2e0'});
+defBlock(B.LAMP,'Glowstone',{hard:0.8,tool:'pick',tier:2,color:'#ffd76a'});
+defBlock(B.GOLD,'Gold Block',{hard:2.0,tool:'pick',tier:2,color:'#f5c542'});
+defBlock(B.DIAMONDBLOCK,'Diamond Block',{hard:3.0,tool:'pick',tier:2,color:'#5ff2e0'});
 defBlock(B.APPLE,'Apple',{hard:0.4,color:'#e23b3b'});
 defBlock(B.TNT,'TNT',{hard:0.8,color:'#d23b2a'});
-const PLACEABLE = [1,2,3,4,6,7,8,9,10,11,12,14,15,16,19,20,21,22,23,5];
+const PLACEABLE = [1,2,3,4,6,7,8,9,10,11,12,14,15,16,17,18,19,20,21,22,23,5];
 
 /* ---------- Pixel textures (16x16) ---------- */
 const TPX = 16;
@@ -338,8 +363,54 @@ const bgTileCvs=document.createElement('canvas'); bgTileCvs.width=bgTileCvs.heig
 { const g=bgTileCvs.getContext('2d'); const R=mulberry32(555);
   fillNoise(g,'#2e2114',22,R); speckle(g,['#241a0e','#3d2c19'],30,R); }
 const iconURL = {};
+const iconCvs = {};
 for(const id of PLACEABLE){ const c=document.createElement('canvas'); c.width=c.height=48;
-  const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.drawImage(tileCvs[id],0,0,48,48); iconURL[id]=c.toDataURL(); }
+  const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.drawImage(tileCvs[id],0,0,48,48); iconURL[id]=c.toDataURL(); iconCvs[id]=c; }
+
+/* ---------- Items: sticks + tools (wood/stone/iron/diamond) ---------- */
+const I = { STICK:100,
+  W_PICK:101, S_PICK:102, I_PICK:103, D_PICK:104,
+  W_AXE:105, S_AXE:106, I_AXE:107, D_AXE:108,
+  W_SHOVEL:109, S_SHOVEL:110, I_SHOVEL:111, D_SHOVEL:112,
+  W_SWORD:113, S_SWORD:114, I_SWORD:115, D_SWORD:116 };
+const ITEMS = [];
+function defItem(id,name,o){ ITEMS[id]=Object.assign({id:id,name:name,maxStack:64,tool:null,tier:0,mult:1,dmg:2},o); }
+const TIER_COLORS=['#000','#b08a4f','#8d8d8d','#e8e8e8','#5ff2e0'];
+const TIER_NAMES=['','Wooden','Stone','Iron','Diamond'];
+const TOOL_MULT=[1,2,4,6,9];
+const SWORD_DMG=[2,4,5,7,9];
+defItem(I.STICK,'Stick',{maxStack:64});
+const _kinds=[['PICK','Pickaxe','pick'],['AXE','Axe','axe'],['SHOVEL','Shovel','shovel'],['SWORD','Sword','sword']];
+for(let t=1;t<=4;t++)for(const k of _kinds){
+  const id=I[['W','S','I','D'][t-1]+'_'+k[0]];
+  defItem(id,TIER_NAMES[t]+' '+k[1],{maxStack:1,tool:k[2],tier:t,mult:TOOL_MULT[t],
+    dmg:k[2]==='sword'?SWORD_DMG[t]:3});
+}
+function itemName(id){ if(id<100)return BLOCKS[id]?BLOCKS[id].name:'?'; return ITEMS[id]?ITEMS[id].name:'?'; }
+function itemMaxStack(id){ return id<100?64:(ITEMS[id]?ITEMS[id].maxStack:64); }
+function isPlaceable(id){ return id<100&&PLACEABLE.indexOf(id)>=0; }
+// pixel-art tool icons
+function makeItemIcon(id){
+  const c=document.createElement('canvas'); c.width=c.height=TPX; const g=c.getContext('2d');
+  g.imageSmoothingEnabled=false; g.clearRect(0,0,16,16);
+  if(id===I.STICK){ g.fillStyle='#6b4a26'; g.fillRect(7,2,2,12); g.fillStyle='#8a5f30'; g.fillRect(7,2,1,12); return c; }
+  const it=ITEMS[id], col=TIER_COLORS[it.tier], dark=shade(col==='#e8e8e8'?'#e8e8e8':col,-46);
+  g.save(); g.translate(8,8); g.rotate(-Math.PI/4);
+  g.fillStyle='#6b4a26'; g.fillRect(-1,-7,2,13); // handle
+  g.fillStyle='#8a5f30'; g.fillRect(-1,-7,1,13);
+  g.restore();
+  g.fillStyle=col;
+  if(it.tool==='pick'){ g.fillRect(2,1,12,3); g.fillRect(2,1,3,6); g.fillRect(11,1,3,6); g.fillStyle='rgba(255,255,255,.45)'; g.fillRect(2,1,12,1); }
+  else if(it.tool==='axe'){ g.fillRect(7,1,6,6); g.fillRect(9,5,3,3); g.fillStyle='rgba(255,255,255,.45)'; g.fillRect(7,1,6,1); }
+  else if(it.tool==='shovel'){ g.fillRect(6,0,5,6); g.fillRect(7,6,3,2); g.fillStyle='rgba(255,255,255,.45)'; g.fillRect(6,0,5,1); }
+  else if(it.tool==='sword'){ g.save(); g.translate(8,8); g.rotate(-Math.PI/4);
+    g.fillStyle=col; g.fillRect(-1,-8,2,11); g.fillStyle='rgba(255,255,255,.5)'; g.fillRect(-1,-8,1,11);
+    g.fillStyle='#8a5f30'; g.fillRect(-3,3,6,2); g.fillStyle='#6b4a26'; g.fillRect(-1,5,2,3); g.restore(); }
+  return c;
+}
+for(let id=100;id<=116;id++){ const c=makeItemIcon(id); iconCvs[id]=c;
+  const big=document.createElement('canvas'); big.width=big.height=48;
+  const bg=big.getContext('2d'); bg.imageSmoothingEnabled=false; bg.drawImage(c,0,0,48,48); iconURL[id]=big.toDataURL(); }
 
 /* ---------- Noise ---------- */
 function makeNoise1D(rand){
@@ -458,16 +529,49 @@ const cam={x:0,y:0};
 /* ---------- Player ---------- */
 const player={ x:W/2, y:20, vx:0, vy:0, w:0.6, h:1.8, onGround:false, inWater:false, headInWater:false,
   facing:1, walkPhase:0, health:20, hunger:20, air:10, dead:false, fly:false };
-let hotbar=[B.LOG,B.PLANKS,B.DIRT,B.STONE,B.SAND,B.GLASS,B.COBBLE,B.APPLE,B.TNT];
-let inv={}; let selSlot=0;
+let invSlots=new Array(36).fill(null); // {id,n} — slots 0..8 = hotbar
+let selSlot=0;
+let cursor=null; // held stack while inventory open {id,n}
+function heldId(){ const s=invSlots[selSlot]; return s?s.id:null; }
+function heldItem(){ const id=heldId(); if(id==null)return null; return id<100?null:ITEMS[id]; }
+function countOf(id){ let t=0; for(const s of invSlots)if(s&&s.id===id)t+=s.n; if(cursor&&cursor.id===id)t+=cursor.n; return t; }
+function addToInv(id,n){
+  const max=itemMaxStack(id);
+  for(let i=0;i<invSlots.length&&n>0;i++){ const s=invSlots[i];
+    if(s&&s.id===id&&s.n<max){ const room=max-s.n, take=Math.min(room,n); s.n+=take; n-=take; } }
+  for(let i=0;i<invSlots.length&&n>0;i++){ if(!invSlots[i]){
+    const take=Math.min(max,n); invSlots[i]={id:id,n:take}; n-=take; } }
+  return n; // leftover (0 = all fit)
+}
+function removeFromInv(id,n){
+  if(countOf(id)<n)return false;
+  if(cursor&&cursor.id===id){ const take=Math.min(cursor.n,n); cursor.n-=take; n-=take; if(cursor.n<=0)cursor=null; }
+  for(let i=0;i<invSlots.length&&n>0;i++){ const s=invSlots[i];
+    if(s&&s.id===id){ const take=Math.min(s.n,n); s.n-=take; n-=take; if(s.n<=0)invSlots[i]=null; } }
+  return true;
+}
+function clearEmptyCursor(){ if(cursor&&cursor.n<=0)cursor=null; }
 const keys={};
-function findSpawn(){
-  const x=W>>1;
+function spawnSpotAt(x){
   for(let y=2;y<H-2;y++){ const id=getBlock(x,y);
     if(id!==B.AIR&&BLOCKS[id].solid&&id!==B.LEAVES&&id!==B.LOG
       &&!isSolid(x,y-1)&&!isSolid(x,y-2)&&getBlock(x,y-1)!==B.WATER&&isSolid(x,y+1)){
-      player.x=x+0.5; player.y=y-2.999; player.vx=player.vy=0; return; } }
-  player.x=x+0.5; player.y=10; player.vx=player.vy=0;
+      return {x:x+0.5,y:y-player.h,id:id}; } }
+  return null;
+}
+function findSpawn(){
+  // spawn right ON TOP of the surface — prefer dry grass near world middle
+  const mid=W>>1;
+  const order=[0];
+  for(let d=4;d<W/2-4;d+=4){ order.push(d); order.push(-d); }
+  let fallback=null;
+  for(const dx of order){ const x=mid+dx; if(x<3||x>=W-3)continue;
+    const s=spawnSpotAt(x); if(!s)continue;
+    if(!fallback)fallback=s;
+    if(s.id===B.GRASS||s.id===B.SNOW){ player.x=s.x; player.y=s.y; player.vx=player.vy=0; return; } }
+  if(fallback){ player.x=fallback.x; player.y=fallback.y; }
+  else { player.x=mid+0.5; player.y=10; }
+  player.vx=player.vy=0;
 }
 function playerCenter(){ return {x:player.x, y:player.y+player.h/2}; }
 function feetTile(){ return {x:Math.floor(player.x), y:Math.floor(player.y+player.h-0.05)}; }
@@ -578,8 +682,20 @@ let breakKey=null, breakProg=0, placeCd=0;
 function screenToTile(px,py){ return {x:Math.floor((px+cam.x)/TILE), y:Math.floor((py+cam.y)/TILE)}; }
 function facingTile(){ return {x:Math.floor(player.x+player.facing*1.1), y:Math.floor(player.y+player.h*0.55)}; }
 function reach(tx,ty){ const c=playerCenter(); return Math.hypot(tx+0.5-c.x,ty+0.5-c.y)<=7.5; }
-function hardnessOf(id){ if(gameMode==='creative') return id===B.BEDROCK?Infinity:0.16;
-  const h=BLOCKS[id].hard; return h===Infinity?Infinity:h; }
+function effectiveNeed(id){
+  // {need seconds, drops bool} based on held tool — like Minecraft
+  const b=BLOCKS[id];
+  if(b.hard===Infinity)return {need:Infinity,drops:false};
+  if(gameMode==='creative')return {need:0.16,drops:false};
+  const held=heldItem();
+  if(b.tool==='pick'){
+    if(held&&held.tool==='pick'&&held.tier>=b.tier)return {need:b.hard/held.mult,drops:true};
+    if(b.tier>=99)return {need:Infinity,drops:false}; // bedrock
+    return {need:b.hard*3.33,drops:false}; // wrong tool: slow + no loot
+  }
+  if(b.tool&&held&&held.tool===b.tool)return {need:b.hard/held.mult,drops:true};
+  return {need:b.hard,drops:true};
+}
 function mobAtPixel(px,py){
   const wx=(px+cam.x)/TILE, wy=(py+cam.y)/TILE;
   for(const m of mobs){ if(wx>=m.x-m.w/2-0.1&&wx<=m.x+m.w/2+0.1&&wy>=m.y-0.1&&wy<=m.y+m.h+0.1){
@@ -598,7 +714,7 @@ function mineTick(dt){
   if(wantMine&&highlightTile){
     const id=getBlock(tx,ty);
     if(id!==B.AIR&&id!==B.WATER){
-      const key=tx+','+ty, need=hardnessOf(id);
+      const key=tx+','+ty, eff=effectiveNeed(id), need=eff.need;
       if(need===Infinity){breakKey=null;breakProg=0;}
       else{
         if(breakKey!==key){breakKey=key;breakProg=0;}
@@ -616,9 +732,13 @@ function doBreak(tx,ty,id){
   burst(tx+0.5,ty+0.5,BLOCKS[id].color,18);
   sfx.break();
   if(gameMode==='survival'){
-    if(id===B.FLOWER||id===B.TALLGRASS){ /* nothing */ }
-    else if(id===B.LEAVES){ addItem(B.LEAVES,1); if(Math.random()<0.12){addItem(B.APPLE,1);toast('🍎 +1 apple');} }
-    else addItem(id,1);
+    const eff=effectiveNeed(id);
+    if(eff.drops){
+      if(id===B.LEAVES){ give(B.LEAVES,1); if(Math.random()<0.12){give(B.APPLE,1);toast('🍎 +1 apple');} }
+      else give(id,1);
+    } else if(BLOCKS[id].tool==='pick'){
+      toast('⚒ '+BLOCKS[id].name+' needs a better pickaxe — no loot!');
+    }
     addHunger(-0.03);
   }
   if(id===B.TNT)explode(tx,ty);
@@ -639,10 +759,15 @@ function tryPlace(tx,ty){
   if(!reach(tx,ty))return;
   const cur=getBlock(tx,ty);
   if(cur!==B.AIR&&cur!==B.WATER&&cur!==B.FLOWER&&cur!==B.TALLGRASS)return;
-  const id=hotbar[selSlot];
-  if(id===B.APPLE&&gameMode==='survival'&&player.hunger<20&&(inv[B.APPLE]||0)>0){
-    addItem(B.APPLE,-1); addHunger(4); heal(1); sfx.eat(); toast('🍎 yummy!'); return; }
-  if(gameMode==='survival'&&(inv[id]||0)<=0){ toast('⛏ Mine some '+BLOCKS[id].name+' first!'); return; }
+  const slot=invSlots[selSlot];
+  if(!slot||slot.id>=100){
+    if(gameMode==='survival')toast(!slot?'👆 Select a block first (E = inventory)':'🛠 '+itemName(slot?slot.id:-1)+' is a tool — not placeable');
+    return; }
+  const id=slot.id;
+  if(id===B.APPLE&&player.hunger<20){
+    slot.n--; if(slot.n<=0)invSlots[selSlot]=null;
+    addHunger(4); heal(1); sfx.eat(); renderHotbar(); refreshInvPanel(); toast('🍎 yummy!'); return; }
+  if(gameMode==='survival'&&slot.n<=0){ toast('⛏ Out of '+itemName(id)+'!'); return; }
   // overlap player?
   if(BLOCKS[id].solid){
     const l=tx,r=tx+1,t=ty,b=ty+1;
@@ -652,15 +777,17 @@ function tryPlace(tx,ty){
       if(l<mr&&r>ml&&t<mb&&b>mt)return; }
   }
   setBlock(tx,ty,id);
-  if(gameMode==='survival')addItem(id,-1);
+  if(gameMode==='survival'){ slot.n--; if(slot.n<=0)invSlots[selSlot]=null; }
   burst(tx+0.5,ty+0.5,BLOCKS[id].color,5);
-  sfx.place();
+  sfx.place(); renderHotbar(); refreshInvPanel();
 }
-function addItem(id,n){ inv[id]=Math.max(0,(inv[id]||0)+n); renderHotbar(); }
+function give(id,n){ const left=addToInv(id,n); renderHotbar(); refreshInvPanel();
+  if(left>0)toast('🎒 Inventory full!'); }
 function pickBlock(tx,ty){ const id=getBlock(tx,ty);
-  if(id===B.AIR||id===B.WATER)return;
-  if(PLACEABLE.indexOf(id)<0)return;
-  hotbar[selSlot]=id; renderHotbar(); showSelName(); sfx.click(); }
+  if(id===B.AIR||id===B.WATER||!isPlaceable(id))return;
+  if(gameMode==='creative'){ invSlots[selSlot]={id:id,n:itemMaxStack(id)}; renderHotbar(); showSelName(); sfx.click(); return; }
+  for(let i=0;i<9;i++){ if(invSlots[i]&&invSlots[i].id===id){ selSlot=i; renderHotbar(); showSelName(); sfx.click(); return; } }
+  toast("🎒 You don't have any "+itemName(id)); }
 
 /* ---------- Particles ---------- */
 const parts=[];
@@ -695,7 +822,7 @@ function mobsTick(dt){
   }
   for(let i=mobs.length-1;i>=0;i--){ const m=mobs[i];
     if(m.hp<=0){ burst(m.x,m.y+m.h/2,m.kind==='pig'?'#f2a0b5':'#5da24a',16);
-      if(m.kind==='pig'&&gameMode==='survival'){ addItem(B.APPLE,2); toast('🍎 +2 food'); }
+      if(m.kind==='pig'&&gameMode==='survival'){ give(B.APPLE,2); toast('🍎 +2 food'); }
       mobs.splice(i,1); continue; }
     m.hitCd-=dt; if(m.flash>0)m.flash-=dt;
     if(m.kind==='zombie'&&!player.dead){
@@ -720,7 +847,8 @@ function mobsTick(dt){
   }
 }
 function hitMob(m){
-  const dmg=gameMode==='creative'?100:5;
+  const held=heldItem();
+  const dmg=gameMode==='creative'?100:(held&&held.tool==='sword'?held.dmg:(held?3:2));
   m.hp-=dmg; m.flash=0.18; m.vx=(m.x>player.x?1:-1)*4; m.vy=-4;
   burst(m.x,m.y+m.h/2,'#ff5555',8); tone(220,0.1,'square',0.25,-100);
 }
@@ -829,6 +957,12 @@ function drawSteve(){
   const ax=sx+w*0.5+f*w*0.3-w*0.09;
   ctx.fillRect(ax,sy+h-legH-bodyH+2+(f>0?-swing:swing)*0.5,w*0.18,bodyH*0.95);
   ctx.fillStyle='#00a3a3'; ctx.fillRect(ax,sy+h-legH-bodyH+2+(f>0?-swing:swing)*0.5,w*0.18,5);
+  // held item in hand
+  const hid=heldId();
+  if(hid!=null&&iconCvs[hid]){
+    const hy=sy+h-legH-bodyH+bodyH*0.7+(f>0?-swing:swing)*0.5;
+    ctx.drawImage(iconCvs[hid],ax-w*0.28,hy,w*0.62,w*0.62);
+  }
   // head
   const hxx=sx+w/2-headS/2+f*1.5, hyy=sy+h-legH-bodyH-headS+2;
   ctx.fillStyle='#c8916d'; ctx.fillRect(hxx,hyy,headS,headS);
@@ -868,15 +1002,19 @@ function flashDmg(){ const v=$('vignette'); v.style.opacity=1; const f=$('dmg-fl
   setTimeout(()=>{v.style.opacity=0;f.style.opacity=0;},220); }
 function renderHotbar(){
   const hb=$('hotbar'); hb.innerHTML='';
-  hotbar.forEach((id,i)=>{ const s=document.createElement('div'); s.className='slot'+(i===selSlot?' sel':'');
-    let inner='<span class="num">'+(i+1)+'</span><img src="'+iconURL[id]+'" alt="'+BLOCKS[id].name+'">';
-    if(gameMode==='survival')inner+='<span class="cnt">'+(inv[id]||0)+'</span>';
+  for(let i=0;i<9;i++){ const s=document.createElement('div'); s.className='slot'+(i===selSlot?' sel':'');
+    const slot=invSlots[i];
+    let inner='<span class="num">'+(i+1)+'</span>';
+    if(slot){ inner+='<img src="'+iconURL[slot.id]+'" alt="'+itemName(slot.id)+'">';
+      if(gameMode==='survival'&&slot.n>1)inner+='<span class="cnt">'+slot.n+'</span>'; }
     s.innerHTML=inner;
-    s.onclick=()=>{ selSlot=i; renderHotbar(); sfx.click(); showSelName(); };
-    hb.appendChild(s); });
+    s.onclick=()=>{ selSlot=i; renderHotbar(); refreshInvPanel(); sfx.click(); showSelName(); };
+    hb.appendChild(s); }
+  updateCursorChip();
 }
 let selTimer=null;
-function showSelName(){ const el=$('sel-name'); el.textContent=BLOCKS[hotbar[selSlot]].name; el.style.opacity=1;
+function showSelName(){ const el=$('sel-name'); const id=heldId();
+  el.textContent=id==null?'✊ Empty hand':itemName(id); el.style.opacity=1;
   clearTimeout(selTimer); selTimer=setTimeout(()=>el.style.opacity=0,1200); }
 function updateVitals(){
   let s=''; for(let i=0;i<10;i++){ const hp=player.health-i*2; s+=hp>=2?'❤️':hp>=1?'💔':'🖤'; }
@@ -884,22 +1022,104 @@ function updateVitals(){
   let b=''; if(gameMode==='survival'){ for(let i=0;i<10;i++){ const hu=player.hunger-i*2; b+=hu>=2?'🍗':hu>=1?'🍖':'⬛'; } }
   $('hunger').innerHTML=b;
 }
-function renderInventory(filter){
+/* ---------- Crafting ---------- */
+const RECIPES=[];
+(function(){
+  RECIPES.push({out:B.PLANKS,n:4,cost:[[B.LOG,1]]});
+  RECIPES.push({out:I.STICK,n:4,cost:[[B.PLANKS,2]]});
+  const mats=[B.PLANKS,B.COBBLE,B.IRON,B.DIAMOND];
+  const pre=['W','S','I','D'];
+  for(let t=0;t<4;t++){
+    RECIPES.push({out:I[pre[t]+'_PICK'],n:1,cost:[[mats[t],3],[I.STICK,2]]});
+    RECIPES.push({out:I[pre[t]+'_AXE'],n:1,cost:[[mats[t],3],[I.STICK,2]]});
+    RECIPES.push({out:I[pre[t]+'_SHOVEL'],n:1,cost:[[mats[t],1],[I.STICK,2]]});
+    RECIPES.push({out:I[pre[t]+'_SWORD'],n:1,cost:[[mats[t],2],[I.STICK,1]]});
+  }
+})();
+function recipeRoom(id,n){ const max=itemMaxStack(id); let room=0;
+  for(const s of invSlots){ if(!s)room+=max; else if(s.id===id)room+=max-s.n; }
+  return room; }
+function canCraft(r){ for(const c of r.cost)if(countOf(c[0])<c[1])return false;
+  return recipeRoom(r.out,r.n)>=r.n; }
+function doCraft(r){
+  if(!canCraft(r)){ toast('❌ Need: '+r.cost.map(c=>c[1]+'× '+itemName(c[0])).join(', ')); return; }
+  for(const c of r.cost)removeFromInv(c[0],c[1]);
+  const left=addToInv(r.out,r.n);
+  if(left>0){ cursor={id:r.out,n:left}; }
+  tone(500,0.08,'square',0.2,200); setTimeout(()=>tone(750,0.1,'square',0.2,200),80);
+  renderHotbar(); renderInvPanel();
+  toast('🛠 Crafted '+r.n+'× '+itemName(r.out));
+}
+
+/* ---------- Inventory panel ---------- */
+function clickSlot(i){
+  const slot=invSlots[i];
+  if(!cursor){ if(slot){ cursor=slot; invSlots[i]=null; sfx.click(); } }
+  else if(!slot){ invSlots[i]=cursor; cursor=null; sfx.click(); }
+  else if(slot.id===cursor.id&&itemMaxStack(slot.id)>1){
+    const max=itemMaxStack(slot.id), room=max-slot.n, take=Math.min(room,cursor.n);
+    slot.n+=take; cursor.n-=take; if(cursor.n<=0)cursor=null; sfx.click();
+  } else { invSlots[i]=cursor; cursor=slot; sfx.click(); }
+  renderHotbar(); renderInvPanel();
+}
+function slotCell(i){
+  const d=document.createElement('div'); d.className='cell'+(i===selSlot&&i<9?' sel':'');
+  const slot=invSlots[i];
+  if(slot){ d.innerHTML='<img src="'+iconURL[slot.id]+'">'+(slot.n>1?'<span class="cnt">'+slot.n+'</span>':''); }
+  d.title=slot?itemName(slot.id):'Empty';
+  d.onclick=()=>clickSlot(i);
+  return d;
+}
+function renderInvPanel(){
+  if($('inventory').classList.contains('hidden'))return;
+  const surv=gameMode==='survival';
+  $('inv-title').textContent=surv?'🎒 Inventory — click a stack, then a slot':'🎒 Blocks & Tools — click to load hotbar slot '+(selSlot+1);
+  $('craft-sec').classList.toggle('hidden',!surv);
+  $('picker-sec').classList.toggle('hidden',surv);
+  if(surv){
+    const cl=$('craft-list'); cl.innerHTML='';
+    for(const r of RECIPES){ const ok=canCraft(r);
+      const row=document.createElement('div'); row.className='craft-row';
+      row.innerHTML='<img src="'+iconURL[r.out]+'"><div class="craft-mid"><b>'+(r.n>1?r.n+'× ':'')+itemName(r.out)+'</b><small>'+
+        r.cost.map(c=>c[1]+'× '+itemName(c[0])).join(' + ')+'</small></div>';
+      const btn=document.createElement('button'); btn.className='craft-btn'; btn.textContent='Craft'; btn.disabled=!ok;
+      btn.onclick=()=>doCraft(r);
+      row.appendChild(btn); cl.appendChild(row); }
+  } else {
+    renderPicker($('inv-search').value);
+  }
+  const main=$('inv-main'); main.innerHTML='';
+  for(let i=9;i<36;i++)main.appendChild(slotCell(i));
+  const hot=$('inv-hot'); hot.innerHTML='';
+  for(let i=0;i<9;i++)hot.appendChild(slotCell(i));
+  updateCursorChip();
+}
+function refreshInvPanel(){ renderInvPanel(); }
+function renderPicker(filter){
   filter=filter||'';
   const g=$('inv-grid'); g.innerHTML='';
-  for(const id of PLACEABLE){ const b=BLOCKS[id];
-    if(filter&&b.name.toLowerCase().indexOf(filter.toLowerCase())<0)continue;
-    const d=document.createElement('div'); d.className='inv-item'+(hotbar[selSlot]===id?' sel':'');
-    d.innerHTML='<img src="'+iconURL[id]+'"><small>'+b.name+(gameMode==='survival'?' ('+(inv[id]||0)+')':'')+'</small>';
-    d.onclick=()=>{ hotbar[selSlot]=id; renderHotbar(); renderInventory($('inv-search').value); sfx.click(); };
+  const all=PLACEABLE.concat([100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116]);
+  for(const id of all){ const nm=itemName(id);
+    if(filter&&nm.toLowerCase().indexOf(filter.toLowerCase())<0)continue;
+    const d=document.createElement('div'); d.className='inv-item';
+    d.innerHTML='<img src="'+iconURL[id]+'"><small>'+nm+'</small>';
+    d.onclick=()=>{ invSlots[selSlot]={id:id,n:itemMaxStack(id)}; renderHotbar(); renderInvPanel(); showSelName(); sfx.click(); };
     g.appendChild(d); }
 }
+function updateCursorChip(){ let chip=$('cursor-stack');
+  if(!cursor){ if(chip)chip.remove(); return; }
+  if(!chip){ chip=document.createElement('div'); chip.id='cursor-stack'; document.body.appendChild(chip); }
+  chip.innerHTML='<img src="'+iconURL[cursor.id]+'">'+(cursor.n>1?'<span>'+cursor.n+'</span>':'');
+  chip.style.left=(mouse.x+14)+'px'; chip.style.top=(mouse.y+14)+'px';
+}
+function renderInventory(filter){ renderPicker(filter); }
 
 /* ---------- Save / load ---------- */
 function saveGame(silent){
   if(!playing)return;
-  try{ const data={seed:worldSeed,mode:gameMode,edits:Array.from(edits.entries()),
-    p:{x:player.x,y:player.y,f:player.facing},hotbar:hotbar,inv:inv,health:player.health,hunger:player.hunger,time:dayTime};
+  try{ if(cursor){ const left=addToInv(cursor.id,cursor.n); cursor=left>0?{id:cursor.id,n:left}:null; }
+    const data={seed:worldSeed,mode:gameMode,edits:Array.from(edits.entries()),
+    p:{x:player.x,y:player.y,f:player.facing},slots:invSlots,sel:selSlot,health:player.health,hunger:player.hunger,time:dayTime};
     localStorage.setItem('paper-save',JSON.stringify(data));
     if(!silent)toast('💾 World saved!');
   }catch(e){ if(!silent)toast('⚠ Save failed'); }
@@ -969,8 +1189,10 @@ $('btn-quit').onclick=()=>{ saveGame(true); location.reload(); };
 $('btn-respawn').onclick=()=>respawn();
 $('btn-death-quit').onclick=()=>location.reload();
 function toggleInventory(){ const el=$('inventory'); const open=el.classList.contains('hidden');
-  if(open){ renderInventory($('inv-search').value); el.classList.remove('hidden'); }
-  else el.classList.add('hidden'); mouse.downL=false; }
+  if(open){ el.classList.remove('hidden'); renderInvPanel(); }
+  else { el.classList.add('hidden');
+    if(cursor){ const left=addToInv(cursor.id,cursor.n); cursor=left>0?{id:cursor.id,n:left}:null; renderHotbar(); } }
+  mouse.downL=false; }
 function showPause(){ if(player.dead)return;
   $('pause-info').textContent=(gameMode==='creative'?'🧱 Creative':'❤️ Survival')+' • seed '+worldSeed;
   $('pause').classList.remove('hidden'); mouse.downL=false; mouse.downR=false; }
@@ -1000,15 +1222,24 @@ function startGame(useSave){
     edits.clear(); for(const e of s.edits) edits.set(e[0],e[1]);
     computeCover();
     player.x=s.p.x; player.y=s.p.y; player.facing=s.p.f||1;
-    hotbar=s.hotbar||hotbar; inv=s.inv||{}; player.health=s.health!=null?s.health:20;
+    invSlots=new Array(36).fill(null); cursor=null;
+    if(s.slots){ for(let i=0;i<Math.min(36,s.slots.length);i++){ const sl=s.slots[i];
+      if(sl&&sl.id!=null)invSlots[i]={id:sl.id,n:sl.n||1}; } }
+    else if(s.hotbar){ // compat with old saves
+      for(let i=0;i<Math.min(9,s.hotbar.length);i++){ const id=s.hotbar[i];
+        invSlots[i]={id:id,n:s.inv&&s.inv[id]?Math.min(64,s.inv[id]):1}; } }
+    selSlot=s.sel||0;
+    player.health=s.health!=null?s.health:20;
     player.hunger=s.hunger!=null?s.hunger:20; dayTime=s.time!=null?s.time:0.32;
   } else {
     findSpawn();
     player.health=20; player.hunger=20; player.air=10; dayTime=0.32; player.fly=false;
-    if(mode==='creative'){ hotbar=[B.GRASS,B.DIRT,B.STONE,B.COBBLE,B.PLANKS,B.LOG,B.LEAVES,B.GLASS,B.LAMP]; inv={}; }
-    else { hotbar=[B.LOG,B.PLANKS,B.DIRT,B.STONE,B.SAND,B.GLASS,B.COBBLE,B.APPLE,B.TNT]; inv={}; inv[B.APPLE]=3; }
+    invSlots=new Array(36).fill(null); cursor=null;
+    if(mode==='creative'){ const preset=[B.GRASS,B.DIRT,B.STONE,B.COBBLE,B.PLANKS,B.LOG,B.LEAVES,B.GLASS,B.LAMP];
+      for(let i=0;i<9;i++)invSlots[i]={id:preset[i],n:64}; }
+    else { invSlots[7]={id:B.APPLE,n:3}; }
     selSlot=0;
-    toast(mode==='survival'?'❤️ Survive! Punch trees, dig, hide at night!':'🧱 Creative! Press F to fly');
+    toast(mode==='survival'?'❤️ Survive! Punch trees, craft tools (E), hide at night!':'🧱 Creative! Press F to fly');
   }
   player.vx=player.vy=0; player.dead=false;
   cam.x=clamp(player.x*TILE-VW/2,0,W*TILE-VW); cam.y=clamp((player.y+1)*TILE-VH/2,0,Math.max(0,H*TILE-VH));
@@ -1072,10 +1303,36 @@ function runSelftest(){
   }
   trial('Right', 'ArrowRight');
   trial('Left', 'ArrowLeft');
+  for(let i=0;i<120;i++)physStep(1/60);
+  const below=getBlock(Math.floor(player.x),Math.floor(player.y+player.h));
+  lines.push('spawn: onGround='+player.onGround+' below='+itemName(below));
+  // inventory + crafting functional test
+  invSlots=new Array(36).fill(null); cursor=null;
+  addToInv(B.LOG,5);
+  const t1=countOf(B.LOG);
+  doCraft(RECIPES[0]); // 1 log -> 4 planks
+  const t2=countOf(B.PLANKS), t3=countOf(B.LOG);
+  doCraft(RECIPES[1]); // 2 planks -> 4 sticks
+  const t4=countOf(I.STICK);
+  doCraft(RECIPES[0]); // more planks
+  doCraft(RECIPES[2]); // wooden pickaxe
+  lines.push('craft: log='+t1+' planks='+t2+' logLeft='+t3+' sticks='+t4+' wPick='+countOf(I.W_PICK)+' planksLeft='+countOf(B.PLANKS));
+  // tool speed + harvest rules
+  invSlots[0]=null;
+  const handStone=effectiveNeed(B.STONE);
+  invSlots[0]={id:I.W_PICK,n:1}; selSlot=0;
+  const pickStone=effectiveNeed(B.STONE);
+  const pickDiamond=effectiveNeed(B.DIAMOND);
+  invSlots[0]={id:I.I_PICK,n:1};
+  const ironPickDia=effectiveNeed(B.DIAMOND);
+  lines.push('stone hand='+handStone.need.toFixed(2)+'s/'+handStone.drops+' wpick='+pickStone.need.toFixed(2)+'s/'+pickStone.drops);
+  lines.push('diamond wpick='+pickDiamond.drops+' ipick='+ironPickDia.drops);
+  renderHotbar();
   const msg='SELFTEST '+lines.join(' | ')+' hunger='+player.hunger.toFixed(2)+' hp='+player.health;
   document.title=msg;
   const d=document.createElement('div'); d.id='selftest-result'; d.textContent=msg;
   document.body.appendChild(d);
+  toggleInventory(); // leave inventory open for screenshot check
 }
 </script>
 </body>
