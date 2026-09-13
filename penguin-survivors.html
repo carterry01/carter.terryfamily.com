@@ -44,9 +44,9 @@
   #hud {
     position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
     z-index: 11; display: flex; gap: 7px; align-items: center; flex-wrap: wrap; justify-content: center;
-    background: rgba(6,14,30,.75); border: 1px solid rgba(0,229,255,.30);
+    background: rgba(8,16,36,.78); border: 1px solid rgba(0,229,255,.6);
     border-radius: 999px; padding: 7px 12px; backdrop-filter: blur(12px);
-    box-shadow: 0 0 28px rgba(0,229,255,.18);
+    box-shadow: 0 0 34px rgba(0,229,255,.42), 0 0 14px rgba(178,75,255,.28), inset 0 0 18px rgba(0,229,255,.08);
     max-width: 96vw;
   }
   .pill {
@@ -55,7 +55,7 @@
     padding: 5px 12px; border-radius: 999px; white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
-  .pill b { color: #7df9ff; }
+  .pill b { color: #7df9ff; text-shadow: 0 0 8px rgba(0,229,255,.9); }
   #hp-wrap { display:flex; align-items:center; gap:6px; padding: 5px 10px; background: rgba(255,255,255,.06); border-radius:999px; border:1px solid rgba(255,255,255,.12);}
   #hp-track { width: 110px; height: 10px; background: rgba(255,255,255,.14); border-radius: 999px; overflow: hidden; }
   #hp-fill { height: 100%; width: 100%; background: linear-gradient(90deg,#ff5d7a,#ffd166); border-radius: 999px; transition: width .15s; }
@@ -66,6 +66,16 @@
     font-size: 14px; background: rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14);
     border-radius: 9px; padding: 3px 6px;
   }
+  #groove-wrap { width: 64px; height: 10px; background: rgba(255,255,255,.12); border-radius: 999px; overflow:hidden; display:inline-block; vertical-align:middle;}
+  #groove-fill { height: 100%; width: 0%; background: linear-gradient(90deg,#00e5ff,#b24bff,#ff2d78); border-radius:999px; display:block;}
+  #hud.groove-on { border-color:#ffd166; box-shadow: 0 0 30px rgba(255,209,102,.55); }
+  #beatdot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #7df9ff; display: inline-flex; align-items:center; justify-content:center; font-size:11px; transition: transform .08s, box-shadow .08s; }
+  #beatdot.hit { transform: scale(1.4); box-shadow: 0 0 14px #7df9ff, 0 0 26px #b24bff; }
+  #track-list { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+  .track { border:1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05); border-radius:12px; padding:8px 12px; cursor:pointer; font-size:12px; color:#b9cdf0;}
+  .track:hover { border-color:#7df9ff; }
+  .track.sel { border-color:#ffd166; background: rgba(255,209,102,.12); }
+  .track b { display:block; font-size:13px; color:#fff; }
 
   .top-right { position: fixed; top: 14px; right: 10px; z-index: 11; display:flex; gap:6px; }
   .icon-btn {
@@ -200,6 +210,8 @@
   <span class="pill">💀 <b id="h-kills">0</b></span>
   <span class="pill">⭐ <b id="h-level">1</b></span>
   <span class="pill">🏆 <b id="h-best">0:00</b></span>
+  <span class="pill"><span id="beatdot">♪</span> <b id="h-combo">x1</b></span>
+  <span class="pill" title="Groove meter — fills on beat hits">🎵 <span id="groove-wrap"><span id="groove-fill" style="display:block"></span></span></span>
   <span id="hp-wrap">🐧 <span id="hp-track"><span id="hp-fill" style="display:block"></span></span></span>
   <span class="pill" title="Dash cooldown">💨 <span id="dash-wrap"><span id="dash-fill" style="display:block"></span></span></span>
   <span class="pill">💣 <b id="h-bombs">1</b></span>
@@ -238,8 +250,9 @@
       <div class="stat"><div class="n" id="ov-level">1</div><div class="l">Level</div></div>
     </div>
     <div id="newbest">★ NEW BEST! ★</div>
+    <div id="track-list"></div>
     <div id="lvl-choices" style="display:none"></div>
-    <p id="ov-help" style="margin-top:10px"><kbd>WASD</kbd> <kbd>←↑↓→</kbd> move &nbsp; <kbd>SPACE</kbd> dash &nbsp; <kbd>B</kbd> bomb &nbsp; <kbd>P</kbd> pause<br/>Snowballs fire on their own — you just dodge and collect!</p>
+    <p id="ov-help" style="margin-top:10px"><kbd>WASD</kbd> <kbd>←↑↓→</kbd> move &nbsp; <kbd>SPACE</kbd> dash &nbsp; <kbd>B</kbd> bomb &nbsp; <kbd>P</kbd> pause<br/>Snowballs fire on their own — you just dodge and collect!<br/>Shots on the <b>♪ beat</b> hit 2× harder and charge <b>🎵 GROOVE</b> → supernova!</p>
     <button class="big" id="ov-go">▶ START WADDLING</button>
     <div style="margin-top:10px; font-size:12px; color:#8ea3c7;">Sound on recommended 🔊 — press M to mute</div>
   </div>
@@ -312,7 +325,7 @@ function buildVignettes() {
   vigCanvas = make((g, w, h) => {
     const gr = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.42, w / 2, h / 2, Math.max(w, h) * 0.72);
     gr.addColorStop(0, "rgba(2,8,20,0)");
-    gr.addColorStop(1, "rgba(2,8,20,0.42)");
+    gr.addColorStop(1, "rgba(2,8,20,0.30)");
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
     const top = g.createLinearGradient(0, 0, 0, h * 0.35);
     top.addColorStop(0, "rgba(120,200,255,0.07)");
@@ -328,16 +341,16 @@ function buildVignettes() {
   auroraA = make((g, w, h) => { // cyan→violet sky band
     const gr = g.createLinearGradient(0, 0, w, h * 0.9);
     gr.addColorStop(0.2, "rgba(0,229,255,0)");
-    gr.addColorStop(0.4, "rgba(0,229,255,0.10)");
-    gr.addColorStop(0.55, "rgba(178,75,255,0.09)");
+    gr.addColorStop(0.4, "rgba(0,229,255,0.17)");
+    gr.addColorStop(0.55, "rgba(178,75,255,0.15)");
     gr.addColorStop(0.75, "rgba(178,75,255,0)");
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
   });
   auroraB = make((g, w, h) => { // green→pink sky band, mirrored
     const gr = g.createLinearGradient(w, 0, 0, h * 0.8);
     gr.addColorStop(0.2, "rgba(125,255,212,0)");
-    gr.addColorStop(0.42, "rgba(125,255,212,0.08)");
-    gr.addColorStop(0.58, "rgba(255,143,199,0.08)");
+    gr.addColorStop(0.42, "rgba(125,255,212,0.14)");
+    gr.addColorStop(0.58, "rgba(255,143,199,0.14)");
     gr.addColorStop(0.78, "rgba(255,143,199,0)");
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
   });
@@ -362,6 +375,7 @@ let AC = null, muted = false;
 function ac() {
   if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
   if (AC && AC.state === "suspended") AC.resume();
+  if (AC) musicInit();
   return AC;
 }
 function tone(freq, dur, type, vol, slide) {
@@ -390,6 +404,152 @@ const sfx = {
   boss() { tone(80, 0.8, "sawtooth", 0.13, 60); },
 };
 
+/* ---------- groove music (Starfall merge: procedural beat, 100% offline) ---------- */
+const TRACKS = [
+  { emoji: "🪩", name: "Nebula Funk", meta: "112 BPM · groovy", bpm: 112, root: 41.2, bright: 0.7,
+    bass: [0,0,7,0, 3,0,5,7, 0,0,7,0, 10,7,5,3], lead: [12,15,19,15, 12,19,22,19, 12,15,19,24, 19,15,12,10] },
+  { emoji: "🌌", name: "Void Synthwave", meta: "128 BPM · driving", bpm: 128, root: 55, bright: 1.0,
+    bass: [0,0,0,3, 0,0,5,3, 0,0,0,3, 7,5,3,2], lead: [12,12,15,19, 22,19,15,12, 12,12,15,19, 24,22,19,15] },
+  { emoji: "🐧", name: "Penguin Polka", meta: "140 BPM · chaotic", bpm: 140, root: 49, bright: 1.25,
+    bass: [0,4,7,4, 5,7,5,4, 0,4,7,4, 7,5,4,2], lead: [12,16,19,16, 12,16,19,24, 19,16,12,16, 19,16,12,7] },
+];
+let trackSel = 1;
+let musicGain = null, noiseBuf = null, schedTimer = null, nextStepTime = 0, stepIdx = 0, lastBeatPerf = 0;
+const midi = (root, semi) => root * Math.pow(2, semi / 12);
+function musicInit() {
+  if (!AC || musicGain) return;
+  musicGain = AC.createGain(); musicGain.gain.value = 0.4;
+  musicGain.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  nextStepTime = AC.currentTime + 0.1; stepIdx = 0;
+  if (!schedTimer) schedTimer = setInterval(musicSchedule, 25);
+}
+function mKick(t, v) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(150, t);
+  o.frequency.exponentialRampToValueAtTime(40, t + 0.12);
+  g.gain.setValueAtTime(0.9 * v, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.24);
+  o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + 0.26);
+}
+function mHat(t, open, v) {
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 7000;
+  const g = AC.createGain(); const dur = open ? 0.18 : 0.05;
+  g.gain.setValueAtTime(0.22 * v, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  s.connect(f); f.connect(g); g.connect(musicGain); s.start(t); s.stop(t + dur + 0.02);
+}
+function mSnare(t, v) {
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1800;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.5 * v, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+  s.connect(f); f.connect(g); g.connect(musicGain); s.start(t); s.stop(t + 0.2);
+}
+function mBass(t, freq, dur) {
+  const o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter();
+  o.type = "sawtooth"; o.frequency.value = freq; f.type = "lowpass";
+  f.frequency.setValueAtTime(900, t);
+  f.frequency.exponentialRampToValueAtTime(200, t + dur);
+  g.gain.setValueAtTime(0.3, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(f); f.connect(g); g.connect(musicGain); o.start(t); o.stop(t + dur + 0.02);
+}
+function mPluck(t, freq, bright) {
+  const o = AC.createOscillator(), g = AC.createGain(), f = AC.createBiquadFilter();
+  o.type = "square"; o.frequency.value = freq; f.type = "lowpass";
+  f.frequency.value = 1200 + 2500 * bright;
+  g.gain.setValueAtTime(0.15, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  o.connect(f); f.connect(g); g.connect(musicGain); o.start(t); o.stop(t + 0.3);
+}
+function mPad(t, freq) {
+  const o1 = AC.createOscillator(), o2 = AC.createOscillator(), g = AC.createGain();
+  o1.type = "sawtooth"; o2.type = "sawtooth";
+  o1.frequency.value = freq; o2.frequency.value = freq * 1.005;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.06, t + 0.4);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+  o1.connect(g); o2.connect(g); g.connect(musicGain);
+  o1.start(t); o2.start(t); o1.stop(t + 1.7); o2.stop(t + 1.7);
+}
+function musicSchedule() {
+  if (!AC || muted || G.mode !== "play") return;
+  const tr = TRACKS[trackSel];
+  const stepDur = 60 / tr.bpm / 4; // 16th notes
+  while (nextStepTime < AC.currentTime + 0.15) {
+    musicStep(stepIdx, nextStepTime, tr, stepDur);
+    nextStepTime += stepDur;
+    stepIdx = (stepIdx + 1) % 64; // 4 bars
+  }
+}
+function musicStep(s, t, tr, stepDur) {
+  const bar16 = s % 16, bar = (s / 16) | 0;
+  if (bar16 % 4 === 0) mKick(t, 1);
+  if (bar16 === 4 || bar16 === 12) { mKick(t + stepDur, 0.6); mSnare(t, 1); }
+  mHat(t, bar16 === 14, bar16 % 2 === 0 ? 0.8 : 0.4);
+  mBass(t, midi(tr.root, tr.bass[bar16]), stepDur * 1.8);
+  if (bar16 % 2 === 0) {
+    const li = (((bar16 / 2) | 0) + bar * 3) % tr.lead.length;
+    mPluck(t, midi(tr.root * 2, tr.lead[li]), tr.bright);
+  }
+  if (bar16 === 0) mPad(t, midi(tr.root * 2, [0, 3, 7, 5][bar % 4]));
+  if (s % 2 === 0) { // gameplay beat on every 8th note
+    const ms = Math.max(0, (t - AC.currentTime) * 1000);
+    setTimeout(onGrooveBeat, ms);
+  }
+}
+setInterval(() => { // fallback beat clock when muted / audio unavailable
+  if (G.mode !== "play") return;
+  if (AC && !muted) return;
+  const iv = 60000 / TRACKS[trackSel].bpm / 2;
+  const now = performance.now();
+  if (now - lastBeatPerf >= iv) { lastBeatPerf = now; onGrooveBeat(); }
+}, 30);
+function onGrooveBeat() {
+  if (G.mode !== "play") return;
+  G.beatPulse = 1;
+  const bd = document.getElementById("beatdot");
+  if (bd) { bd.classList.add("hit"); setTimeout(() => bd.classList.remove("hit"), 120); }
+  if (P.weapons.aurora > 0) { // aurora zaps extra on the beat
+    const al = P.weapons.aurora;
+    const dmg = (16 + al * 9) * P.dmgMul * 2 * (G.grooveMode > 0 ? 1.5 : 1);
+    const inRange = G.enemies.filter(e => dist2(e.x, e.y, P.x, P.y) < 460 * 460);
+    if (inRange.length) {
+      const tgt = inRange[(Math.random() * inRange.length) | 0];
+      damageEnemy(tgt, dmg, true);
+      G.beams.push({ x1: P.x, y1: P.y - 10, x2: tgt.x, y2: tgt.y, life: 0, max: 0.22 });
+      burst(tgt.x, tgt.y, 8, ["#b8fff0", "#7df9ff", "#ffffff"], 220);
+    }
+  }
+}
+function addGroove(n) {
+  if (G.grooveMode > 0 || G.mode !== "play") return;
+  G.groove = clamp(G.groove + n, 0, 100);
+  if (G.groove >= 100) {
+    G.grooveMode = 8;
+    pop("🌟 SUPERNOVA GROOVE! 1.5× damage! 🌟");
+    sfx.level();
+    G.rings.push({ x: P.x, y: P.y, r: 12, a: 1, max: 300 });
+  }
+}
+function renderTracks() {
+  const box = el("track-list"); if (!box) return;
+  box.innerHTML = "";
+  TRACKS.forEach((tr, i) => {
+    const d = document.createElement("div");
+    d.className = "track" + (i === trackSel ? " sel" : "");
+    d.innerHTML = "<b>" + tr.emoji + " " + tr.name + "</b>" + tr.meta;
+    d.addEventListener("click", (ev) => { ev.stopPropagation(); trackSel = i; ac(); renderTracks(); });
+    box.appendChild(d);
+  });
+}
+
 /* ---------- upgrades ---------- */
 const UPGRADES = {
   snowball: { icon: "❄️", name: "Snowball Toss", max: 5, desc: lvl => lvl === 0 ? "Auto-throws snowballs at baddies." : "+" + (lvl + 1) + ": more balls, more ouch. (" + lvl + "→" + (lvl + 1) + ")" },
@@ -417,6 +577,7 @@ const G = {
   parts: [], floaters: [], beams: [], rings: [], flakes: [],
   pendingLevels: 0,
   cam: { x: 0, y: 0 },
+  beatPulse: 0, groove: 0, grooveMode: 0, combo: 0, comboT: 0,
 };
 try {
   G.best = parseFloat(localStorage.getItem("penguin-panic-best") || "0") || 0;
@@ -446,6 +607,7 @@ function resetWorld() {
   G.bosses = {}; G.finalSpawned = false; G.finalDead = false;
   G.enemies = []; G.shots = []; G.ebullets = []; G.gems = []; G.pickups = [];
   G.parts = []; G.floaters = []; G.beams = []; G.rings = []; G.pendingLevels = 0;
+  G.beatPulse = 0; G.groove = 0; G.grooveMode = 0; G.combo = 0; G.comboT = 0;
   P.x = 0; P.y = 0; P.vx = 0; P.vy = 0;
   P.hp = 100; P.maxhp = 100; P.speed = 250;
   P.inv = 1; P.dashT = 0; P.dashCD = 0; P.bombs = 1;
@@ -469,7 +631,8 @@ const hTime = el("h-time"), hKills = el("h-kills"), hLevel = el("h-level"), hBes
   newbest = el("newbest"), lvlBox = el("lvl-choices"), ovHelp = el("ov-help"),
   toast = el("toast"), flash = el("flash"),
   bossbar = el("bossbar"), bossFill = el("boss-fill"), bossHpText = el("boss-hp-text"), bossName = el("boss-name"),
-  bombCount = el("bomb-count");
+  bombCount = el("bomb-count"),
+  grooveFill = el("groove-fill"), hCombo = el("h-combo"), hudEl = el("hud");
 
 function refreshHUD() {
   const t = fmtTime(G.time);
@@ -485,6 +648,10 @@ function refreshHUD() {
   if (P.bombs !== refreshHUD._bo) { refreshHUD._bo = P.bombs; hBombs.textContent = P.bombs; bombCount.textContent = "x" + P.bombs; }
   const xp = (clamp(G.xp / G.xpNext, 0, 1) * 100) | 0;
   if (xp !== refreshHUD._xp) { refreshHUD._xp = xp; xpfill.style.width = xp + "%"; }
+  grooveFill.style.width = (G.grooveMode > 0 ? (G.grooveMode / 8 * 100) : G.groove) + "%";
+  hudEl.classList.toggle("groove-on", G.grooveMode > 0);
+  const mult = 1 + Math.floor(G.combo / 8);
+  if (mult !== refreshHUD._m) { refreshHUD._m = mult; hCombo.textContent = "x" + mult; }
   let wh = "";
   for (const k of ["snowball", "orbit", "aurora", "nova"]) {
     if (P.weapons[k] > 0) wh += "<span title='" + k + " lv" + P.weapons[k] + "'>" + WEAPON_ICON[k] + "<sup style='font-size:9px'>" + P.weapons[k] + "</sup></span>";
@@ -641,13 +808,14 @@ function fireWeapons(dt) {
       const cd = Math.max(0.22, (0.95 - sl * 0.08)) * haste;
       P.snowT = cd;
       const count = sl >= 5 ? 4 : sl >= 3 ? 3 : sl >= 2 ? 2 : 1;
-      const dmg = (11 + sl * 4) * P.dmgMul;
+      const onBeat = G.beatPulse > 0.45;
+      const dmg = (11 + sl * 4) * P.dmgMul * (onBeat ? 2 : 1) * (G.grooveMode > 0 ? 1.5 : 1);
       const sorted = G.enemies.slice().sort((a, b) => dist2(a.x, a.y, P.x, P.y) - dist2(b.x, b.y, P.x, P.y)).slice(0, count);
       for (const tgt of sorted) {
         const a = Math.atan2(tgt.y - P.y, tgt.x - P.x) + rand(-0.06, 0.06);
-        G.shots.push({ x: P.x, y: P.y - 6, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, r: 6, dmg, pierce: sl >= 4 ? 1 : 0, life: 1.4 });
+        G.shots.push({ x: P.x, y: P.y - 6, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, r: 6, dmg, pierce: sl >= 4 ? 1 : 0, life: 1.4, beat: onBeat });
       }
-      if (sorted.length) sfx.shoot();
+      if (sorted.length) { sfx.shoot(); if (onBeat) addGroove(2); }
     }
   }
   // aurora
@@ -675,7 +843,7 @@ function fireWeapons(dt) {
     if (P.novaT <= 0) {
       P.novaT = Math.max(1.6, (4.6 - nl * 0.35)) * haste;
       const radius = 115 + nl * 28;
-      const dmg = (14 + nl * 11) * P.dmgMul;
+      const dmg = (14 + nl * 11) * P.dmgMul * (G.grooveMode > 0 ? 1.5 : 1);
       G.rings.push({ x: P.x, y: P.y, r: 12, a: 1, max: radius });
       for (const e of G.enemies.slice()) {
         const d = Math.hypot(e.x - P.x, e.y - P.y);
@@ -695,6 +863,7 @@ function damageEnemy(e, dmg, skipFloat) {
   if (e.hp <= 0) return;
   e.hp -= dmg;
   e.flash = 0.09;
+  if (G.beatPulse > 0.45) { G.combo++; G.comboT = 2.5; addGroove(1); }
   if (!skipFloat && Math.random() < 0.6) floater(e.x + rand(-8, 8), e.y - e.r - 6, "-" + Math.round(dmg), "#ffd166");
   if (e.hp <= 0) killEnemy(e);
 }
@@ -820,6 +989,7 @@ function showEnd(win) {
   lvlBox.style.display = "none";
   ovHelp.style.display = "";
   ovGo.style.display = "";
+  el("track-list").style.display = "";
   ovGo.textContent = win ? "↻ WADDLE AGAIN" : "↻ TRY AGAIN";
   overlay.classList.remove("hidden");
   refreshHUD();
@@ -837,6 +1007,7 @@ function togglePause() {
     newbest.classList.remove("show");
     lvlBox.style.display = "none";
     ovHelp.style.display = "";
+    el("track-list").style.display = "none";
     ovGo.textContent = "▶ RESUME";
     overlay.classList.remove("hidden");
   } else if (G.mode === "pause") {
@@ -879,6 +1050,7 @@ function openLevelUp() {
   lvlBox.innerHTML = "";
   ovHelp.style.display = "none";
   ovGo.style.display = "none";
+  el("track-list").style.display = "none";
   picks.forEach((id, i) => {
     const d = document.createElement("div");
     d.className = "lvl-card";
@@ -1015,6 +1187,10 @@ function update(dt) {
   G.slowmo = Math.max(0, G.slowmo - dt);
   const gdt = dt * tscale;
   G.time += gdt;
+  G.beatPulse = Math.max(0, G.beatPulse - gdt * 2.2);
+  G.comboT -= gdt; if (G.comboT <= 0) G.combo = 0;
+  if (G.grooveMode > 0) { G.grooveMode -= gdt; if (G.grooveMode <= 0) G.groove = 0; }
+  else G.groove = Math.max(0, G.groove - gdt * 1.2);
   if (G.shake > 0) G.shake = Math.max(0, G.shake - dt * 30);
   if (P.inv > 0) P.inv -= gdt;
   if (P.dashCD > 0) P.dashCD -= gdt;
@@ -1298,13 +1474,20 @@ function update(dt) {
    frame peeks through as smeary "lagging edges". */
 const SHAKE_PAD = 40;
 function drawGround() {
-  ctx.fillStyle = "#0a1c34";
+  ctx.fillStyle = "#122c52";
   ctx.fillRect(-SHAKE_PAD, -SHAKE_PAD, W + SHAKE_PAD * 2, H + SHAKE_PAD * 2);
   const cell = 150;
   const x0 = Math.floor((G.cam.x - SHAKE_PAD) / cell), y0 = Math.floor((G.cam.y - SHAKE_PAD) / cell);
   const x1 = Math.floor((G.cam.x + W + SHAKE_PAD) / cell), y1 = Math.floor((G.cam.y + H + SHAKE_PAD) / cell);
+  // neon grid — one batched stroke, very cheap
+  ctx.strokeStyle = "rgba(0,229,255,0.12)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let gx = x0; gx <= x1; gx++) { const px = gx * cell - G.cam.x; ctx.moveTo(px, -SHAKE_PAD); ctx.lineTo(px, H + SHAKE_PAD); }
+  for (let gy = y0; gy <= y1; gy++) { const py = gy * cell - G.cam.y; ctx.moveTo(-SHAKE_PAD, py); ctx.lineTo(W + SHAKE_PAD, py); }
+  ctx.stroke();
   // soft grid dots
-  ctx.fillStyle = "rgba(125,200,255,0.13)";
+  ctx.fillStyle = "rgba(140,220,255,0.24)";
   for (let gx = x0; gx <= x1; gx++) {
     for (let gy = y0; gy <= y1; gy++) {
       const sx = gx * cell - G.cam.x + (hash2(gx, gy) - 0.5) * 60;
@@ -1317,20 +1500,20 @@ function drawGround() {
       }
       const h2 = hash2(gx * 11 + 5, gy * 7 + 13);
       if (h2 < 0.14) { // frost sheet: pale ice patch for depth
-        ctx.fillStyle = "rgba(140,190,240,0.09)";
+        ctx.fillStyle = "rgba(150,200,250,0.13)";
         ctx.beginPath(); ctx.ellipse(sx - 30, sy + 24, 46, 18, 0.3, 0, TAU); ctx.fill();
-        ctx.fillStyle = "rgba(125,200,255,0.13)";
+        ctx.fillStyle = "rgba(140,220,255,0.24)";
       }
       if (h < 0.10) { // ice shine
-        ctx.strokeStyle = "rgba(150,220,255,0.18)";
+        ctx.strokeStyle = "rgba(170,230,255,0.32)";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(sx - 22, sy + 8); ctx.lineTo(sx - 6, sy - 4); ctx.lineTo(sx + 14, sy + 2);
         ctx.stroke();
       } else if (h > 0.93) { // snow pile
-        ctx.fillStyle = "rgba(200,230,255,0.10)";
+        ctx.fillStyle = "rgba(210,235,255,0.16)";
         ctx.beginPath(); ctx.ellipse(sx + 20, sy - 14, 26, 12, 0, 0, TAU); ctx.fill();
-        ctx.fillStyle = "rgba(125,200,255,0.13)";
+        ctx.fillStyle = "rgba(140,220,255,0.24)";
       }
     }
   }
@@ -1342,7 +1525,7 @@ function w2s(x, y) { return [x - G.cam.x, y - G.cam.y]; }
 function glowDot(x, y, r, color, alpha) {
   const s = glowSprites[color] || glowSprites["#7df9ff"];
   if (!s) return;
-  const size = r * 4.6;
+  const size = r * 5.4;
   ctx.globalAlpha = alpha || 0.3;
   ctx.drawImage(s, x - size / 2, y - size / 2, size, size);
   ctx.globalAlpha = 1;
@@ -1382,7 +1565,7 @@ function draw() {
     if (sx < -30 || sx > W + 30 || sy < -30 || sy > H + 30) continue;
     const bob = Math.sin(gm.t * 5) * 2;
     const r = gm.v >= 20 ? 8 : gm.v >= 5 ? 6.5 : 5;
-    glowDot(sx, sy + bob, r, gm.v >= 20 ? "#ffd166" : gm.v >= 5 ? "#7dff9d" : "#7df9ff", 0.26);
+    glowDot(sx, sy + bob, r, gm.v >= 20 ? "#ffd166" : gm.v >= 5 ? "#7dff9d" : "#7df9ff", 0.45);
   }
   ctx.restore();
   for (const gm of G.gems) {
@@ -1407,8 +1590,8 @@ function draw() {
     const bob = Math.sin(u.t * 4) * 3;
     ctx.save();
     ctx.translate(sx, sy + bob);
-    ctx.fillStyle = "rgba(255,209,102,0.18)";
-    ctx.beginPath(); ctx.arc(0, 0, 24, 0, TAU); ctx.fill();
+    ctx.fillStyle = "rgba(255,209,102,0.3)";
+    ctx.beginPath(); ctx.arc(0, 0, 26, 0, TAU); ctx.fill();
     ctx.fillStyle = "rgba(8,16,34,.9)";
     ctx.strokeStyle = "#ffd166"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(0, 0, 15, 0, TAU); ctx.fill(); ctx.stroke();
@@ -1433,7 +1616,7 @@ function draw() {
     }
     // outline ring on everything; threat colors for elite/boss
     ctx.lineWidth = e.boss ? 3.5 : e.elite ? 2.5 : 1.5;
-    ctx.strokeStyle = e.boss ? "rgba(255,93,122,0.9)" : e.elite ? "rgba(255,209,102,0.85)" : "rgba(220,240,255,0.5)";
+    ctx.strokeStyle = e.boss ? "rgba(255,93,122,0.95)" : e.elite ? "rgba(255,209,102,0.95)" : "rgba(220,240,255,0.8)";
     ctx.beginPath(); ctx.arc(sx, cy, e.r + (e.boss ? 10 : 7), 0, TAU); ctx.stroke();
     ctx.save();
     ctx.translate(sx, cy);
@@ -1465,18 +1648,18 @@ function draw() {
   ctx.globalCompositeOperation = "lighter";
   for (const s of G.shots) {
     const [sx, sy] = w2s(s.x, s.y);
-    ctx.fillStyle = "rgba(125,220,255,0.30)";
-    ctx.beginPath(); ctx.arc(sx, sy, s.r * 2.2, 0, TAU); ctx.fill();
+    ctx.fillStyle = s.beat ? "rgba(255,209,102,0.55)" : "rgba(125,220,255,0.5)";
+    ctx.beginPath(); ctx.arc(sx, sy, s.r * 2.6, 0, TAU); ctx.fill();
     ctx.fillStyle = "#ffffff";
     ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, TAU); ctx.fill();
-    ctx.fillStyle = "#7df9ff";
+    ctx.fillStyle = s.beat ? "#ffd166" : "#7df9ff";
     ctx.beginPath(); ctx.arc(sx, sy, s.r * 0.55, 0, TAU); ctx.fill();
   }
   // enemy bullets
   for (const b of G.ebullets) {
     const [sx, sy] = w2s(b.x, b.y);
-    ctx.fillStyle = "rgba(90,140,255,0.35)";
-    ctx.beginPath(); ctx.arc(sx, sy, b.r * 2.2, 0, TAU); ctx.fill();
+    ctx.fillStyle = "rgba(90,140,255,0.55)";
+    ctx.beginPath(); ctx.arc(sx, sy, b.r * 2.6, 0, TAU); ctx.fill();
     ctx.fillStyle = "#dcecff";
     ctx.beginPath(); ctx.arc(sx, sy, b.r, 0, TAU); ctx.fill();
     ctx.fillStyle = "#ffffff";
@@ -1494,8 +1677,8 @@ function draw() {
       const [sx, sy] = w2s(P.x + Math.cos(a) * radius, P.y + Math.sin(a) * radius);
       ctx.save();
       ctx.translate(sx, sy); ctx.rotate(a + Math.PI / 2);
-      ctx.fillStyle = "rgba(125,255,212,0.22)";
-      ctx.beginPath(); ctx.arc(0, 0, 16, 0, TAU); ctx.fill();
+      ctx.fillStyle = "rgba(125,255,212,0.35)";
+      ctx.beginPath(); ctx.arc(0, 0, 18, 0, TAU); ctx.fill();
       ctx.fillStyle = "#ff9f43";
       ctx.beginPath(); ctx.ellipse(0, 0, 10, 5.5, 0, 0, TAU); ctx.fill();
       ctx.beginPath();
@@ -1507,7 +1690,7 @@ function draw() {
     }
     const [pcx, pcy] = w2s(P.x, P.y);
     ctx.save();
-    ctx.strokeStyle = "rgba(125,255,212,.22)"; ctx.lineWidth = 1.5;
+    ctx.strokeStyle = "rgba(125,255,212,.4)"; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(pcx, pcy, radius, 0, TAU); ctx.stroke();
     ctx.restore();
   }
@@ -1520,7 +1703,7 @@ function draw() {
     ctx.translate(sx, sy);
     // cyan light pool so the hero reads instantly in a crowd
     if (glowSprites["#7df9ff"]) {
-      ctx.globalAlpha = 0.4;
+      ctx.globalAlpha = 0.6;
       ctx.drawImage(glowSprites["#7df9ff"], -60, -50, 120, 100);
     }
     // shadow
@@ -1550,7 +1733,7 @@ function draw() {
     // body
     ctx.fillStyle = getBodyGrad();
     ctx.beginPath(); ctx.ellipse(0, 0, 14, 18, 0, 0, TAU); ctx.fill();
-    ctx.strokeStyle = "rgba(160,220,255,0.55)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.strokeStyle = "rgba(140,240,255,0.95)"; ctx.lineWidth = 2; ctx.stroke();
     // belly
     ctx.fillStyle = "#f4f9ff";
     ctx.beginPath(); ctx.ellipse(0, 4, 8.5, 12, 0, 0, TAU); ctx.fill();
@@ -1591,11 +1774,11 @@ function draw() {
   for (const b of G.beams) {
     const a = 1 - b.life / b.max;
     const [x1, y1] = w2s(b.x1, b.y1), [x2, y2] = w2s(b.x2, b.y2);
-    ctx.strokeStyle = "rgba(125,255,212," + (a * 0.28) + ")";
-    ctx.lineWidth = 8 + a * 4;
+    ctx.strokeStyle = "rgba(125,255,212," + (a * 0.45) + ")";
+    ctx.lineWidth = 10 + a * 5;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-    ctx.strokeStyle = "rgba(220,255,244," + (a * 0.95) + ")";
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = "rgba(230,255,246," + (a * 0.98) + ")";
+    ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
   }
   // particles
@@ -1609,8 +1792,8 @@ function draw() {
   // rings
   for (const r of G.rings) {
     const [sx, sy] = w2s(r.x, r.y);
-    ctx.strokeStyle = "rgba(125,249,255," + Math.max(0, r.a) + ")";
-    ctx.lineWidth = 3 + r.a * 4;
+    ctx.strokeStyle = "rgba(140,250,255," + Math.max(0, r.a) + ")";
+    ctx.lineWidth = 4 + r.a * 5;
     ctx.beginPath(); ctx.arc(sx, sy, r.r, 0, TAU); ctx.stroke();
     ctx.strokeStyle = "rgba(255,209,102," + Math.max(0, r.a * 0.6) + ")";
     ctx.lineWidth = 1.5;
@@ -1630,18 +1813,18 @@ function draw() {
   // screen snow (rects, not arcs — identical look at 1-3px, much faster)
   ctx.fillStyle = "#ffffff";
   for (const f of G.flakes) {
-    ctx.globalAlpha = 0.20 + f.z * 0.45;
+    ctx.globalAlpha = 0.35 + f.z * 0.5;
     const r = 1 + f.z * 1.8;
     ctx.fillRect(f.x, f.y, r, r);
   }
   ctx.globalAlpha = 1;
   // aurora sky shimmer (pre-rendered bands, gently breathing)
   if (auroraA) {
-    ctx.globalAlpha = 0.55 + Math.sin(G.worldTime * 0.4) * 0.18;
+    ctx.globalAlpha = 0.85 + Math.sin(G.worldTime * 0.4) * 0.15;
     ctx.drawImage(auroraA, 0, 0, W, H);
   }
   if (auroraB) {
-    ctx.globalAlpha = 0.4 + Math.cos(G.worldTime * 0.3) * 0.14;
+    ctx.globalAlpha = 0.65 + Math.cos(G.worldTime * 0.3) * 0.15;
     ctx.drawImage(auroraB, 0, 0, W, H);
   }
   ctx.globalAlpha = 1;
@@ -1673,6 +1856,7 @@ function frame(now) {
 /* ---------- boot ---------- */
 buildSprites();
 resetWorld();
+renderTracks();
 hBest.textContent = fmtTime(G.best);
 refreshHUD();
 requestAnimationFrame((t) => { last = t; requestAnimationFrame(frame); });
