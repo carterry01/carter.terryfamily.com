@@ -358,6 +358,8 @@ let PROF=defProf();
 try{const s=JSON.parse(localStorage.getItem(PROF_KEY));if(s&&typeof s==='object')PROF={...defProf(),...s,owned:{...defProf().owned,...(s.owned||{})},hack:{...defProf().hack,...(s.hack||{})}}}catch(e){}
 best=PROF.best||best;
 function saveProf(){PROF.best=Math.max(PROF.best,best);try{localStorage.setItem(PROF_KEY,JSON.stringify(PROF));localStorage.setItem('bladeArena2Best',String(PROF.best))}catch(e){}}
+let saveT=0;
+function saveSoon(){const n=performance.now();saveProf();if(n-saveT>1500){saveT=n;refreshProfileUI()}}
 function skin(){return SKINS.find(s=>s.id===PROF.skin)||SKINS[0]}
 function trailColor(){if(PROF.hack&&PROF.hack.rainbow)return `hsl(${(T*160)%360},90%,65%)`;return (TRAILS.find(t=>t.id===PROF.trail)||TRAILS[0]).color}
 function dashFx(){return DASHFX.find(d=>d.id===PROF.dashFx)||DASHFX[0]}
@@ -532,8 +534,8 @@ function dash(ox,oy){
 }
 function updateBestLine(){
   const el=document.getElementById('bestLine');
+  if(!el)return;
   el.innerHTML=best>0?`BEST RUN — <b>${best} kills</b> &nbsp;•&nbsp; think you can beat it?`:`No runs yet — go make a legend.`;
-  refreshProfileUI();
 }
 
 // ================= SHOP =================
@@ -667,13 +669,13 @@ function update(dt){
  // pickups (magnet hack vacuums from far)
  const pickR=hackOn('magnet')?P.r+110:P.r+18;
  for(let i=S.length-1;i>=0;i--){if(D(P,S[i])<pickR){
-   if(S[i].coin){coins+=8;floatText(P.x,P.y-30,'+8 🪙','#ffd45c');boom(P.x,P.y,4,'#ffd45c');sfx.coin();popPill('coi')}
+   if(S[i].coin){coins+=8;PROF.bank+=8;saveSoon();floatText(P.x,P.y-30,'+8 🪙','#ffd45c');boom(P.x,P.y,4,'#ffd45c');sfx.coin();popPill('coi')}
    else{P.blades++;floatText(P.x,P.y-30,'+1 ⚔','#5ce7ff');boom(P.x,P.y,4,'#5ce7ff');ring(P.x,P.y,'#5ce7ff',34);sfx.pickup();popPill('bld')}
    S.splice(i,1);S.push(shard())}}
  // combat (identical rules, juicier feedback)
  outer:for(let bi=B.length-1;bi>=0;bi--){let b=B[bi];
    for(let i=0;i<P.blades;i++)if(D(bp(P,i),b)<b.r+10){b.blades--;b.hit=1;boom(b.x,b.y,4,'#ff8fa8');sfx.hit();
-     if(b.blades<=0){B.splice(bi,1);B.push(bot());kills++;coins+=10;boom(b.x,b.y,14,'#ff5f7d');ring(b.x,b.y,'#ff5f7d',80);floatText(b.x,b.y-24,'SHREDDED +10','#ff8fa8');shake=Math.max(shake,7);sfx.kill();rumble(.8,.4,150);popPill('kil');popPill('coi');
+     if(b.blades<=0){B.splice(bi,1);B.push(bot());kills++;coins+=10;PROF.bank+=10;PROF.totalKills++;saveSoon();boom(b.x,b.y,14,'#ff5f7d');ring(b.x,b.y,'#ff5f7d',80);floatText(b.x,b.y-24,'SHREDDED +10','#ff8fa8');shake=Math.max(shake,7);sfx.kill();rumble(.8,.4,150);popPill('kil');popPill('coi');
        if(kills===3)killPop('TRIPLE SHRED!','KEEP GOING');else if(kills===5)killPop('RAMPAGE!','5 KILLS');else if(kills===10)killPop('UNSTOPPABLE!','10 KILLS');else if(kills%5===0)killPop(kills+' KILLS!','BEAST MODE');else killPop('SHREDDED!','+10 🪙')}
      break}
     if(P.shield<=0)for(let i=0;i<b.blades;i++)if(D(bp(b,i),P)<P.r+10){
@@ -918,10 +920,10 @@ function loop(t){
    document.getElementById('fBlades').textContent=P.blades;
    const isBest=kills>best;
    if(isBest){best=kills}
-   // bank run earnings (solo)
-   PROF.bank+=coins;PROF.totalKills+=kills;PROF.best=Math.max(PROF.best,best);saveProf();
+   // solo earnings were already banked live during the run — just sync best + save
+   PROF.best=Math.max(PROF.best,best);saveProf();refreshProfileUI();
    document.getElementById('newBest').style.display=isBest?'block':'none';
-   document.getElementById('score').innerHTML=`${kills} kills • ${coins} coins • ${P.blades} blades<br>Best: <b style="color:#ffd45c">${best} kills</b><br><span style="color:#7dff9b">+${coins} 🪙 banked!</span>`;
+   document.getElementById('score').innerHTML=`${kills} kills • ${coins} coins • ${P.blades} blades<br>Best: <b style="color:#ffd45c">${best} kills</b><br><span style="color:#7dff9b">🪙 Bank: ${PROF.bank}</span>`;
    document.getElementById('end').style.display='grid';
    updateBestLine();
    requestAnimationFrame(loop); // keep polling so Plus/Start restarts with controller
